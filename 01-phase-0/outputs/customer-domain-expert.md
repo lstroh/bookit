@@ -148,16 +148,14 @@
 
 1. **Customer Domain Expert → Product Owner**
 
-   * Is payment in-scope for MVP or optional?
-2. **Customer Domain Expert → Product Owner**
+   * Is payment in-scope for MVP or optional? It is optional in the MVP, but a must in the end product.
 
-   * Should repeat bookings be first-class or manual?
 3. **Customer Domain Expert → Compliance**
 
    * Are SMS/email reminders assumed or optional?
 4. **Customer Domain Expert → Product Owner**
 
-   * Is client self-rescheduling required or admin-only?
+   * Is client self-rescheduling required or admin-only? client self-rescheduling is a required, but need to update the admins.
 
 ---
 
