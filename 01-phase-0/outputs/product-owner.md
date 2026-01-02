@@ -39,7 +39,7 @@ The MVP is successful if:
 
 3. **Client Self-Booking**
 
-   * Clients book directly via a shareable link.
+   * Clients book directly via a the website/mobile app.
 
 4. **Client Self-Rescheduling**
 
@@ -115,13 +115,17 @@ The following are **out of scope for MVP**:
 
    * Plain UK-focused language, no SaaS jargon.
 
+8. **The admin/owner should not use the WP admin panel except for the first time setup**
+
+   * All data for the admin/owner like view the booking, calender and other details should be avilable from the application/mobile app and not from WP admin panel.
+
 ---
 
 ## 6. Key User Journeys (Happy Path Only)
 
 ### Journey 1: First Booking (Client)
 
-1. Client opens booking link.
+1. Client opens website/monile app.
 2. Sees only available events.
 3. Selects a slot.
 4. Enters minimal details.
@@ -140,7 +144,7 @@ The following are **out of scope for MVP**:
 
 ### Journey 3: Client Rescheduling
 
-1. Client opens reschedule link.
+1. Client opens website/monile app.
 2. Chooses a new available slot.
 3. Receives confirmation.
 4. Owner is notified of the change.
