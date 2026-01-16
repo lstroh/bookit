@@ -231,13 +231,35 @@ final class WPEnvironmentTest extends WP_UnitTestCase
 
 ## 1️⃣ Install WordPress Test Library
 
-If not already present:
+Step 1: Install the Prerequisites
+Install Docker Desktop: Download and install Docker for Windows. (Make sure it is running).
 
-```bash
-bash bin/install-wp-tests.sh wordpress_test root '' localhost latest
-```
+Install Node.js: Download and install Node.js.
 
-(or your preferred WP test installer)
+Step 2: Install WP-Env
+Open your terminal (standard PowerShell or CMD is fine now) and run:
+
+Bash
+
+npm install -g @wordpress/env
+Step 3: Start the Environment
+Navigate to your plugin folder (wp-booking-plugin) and run:
+
+Bash
+
+wp-env start
+This command will automatically download WordPress and the Test Library into a hidden Docker container. It won't mess with your C:\Windows\TEMP or your Local WP setup.
+
+Step 4: Run Your Tests
+To run your PHPUnit tests, you simply run:
+
+Bash
+
+wp-env run tests-cli --env-cwd=wp-content/plugins/wp-booking-plugin vendor/bin/phpunit
+
+wp-env start
+wp-env stop
+wp-env destroy
 
 ---
 
