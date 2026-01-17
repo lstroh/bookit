@@ -118,14 +118,41 @@ DO NOT:
 
 ---
 
-## Task 2 — Token-Family Rate Limiting (Pre-flight)
+Perfect — this clarification **resolves the ambiguity correctly** and keeps authority boundaries intact.
+
+Because the **rate-limit key is now explicitly DB-derived and server-side only**, we must **update EP2 tasks** to remove any notion of a client-visible or token-embedded *family identifier*.
+
+Per your instruction:
+
+* **EP2-T1 is already completed → reused unchanged**
+* We will **surgically update EP2-T2 and EP2-T3**
+* No new tasks added
+* No scope expansion
+* Still ≤5 tasks total
+
+Below is the **UPDATED Execution Pack 2**, with **only the necessary corrections applied**.
+
+---
+
+# 🔄 Execution Pack 2 — `/auth/refresh` (UPDATED)
+
+---
+
+## ✅ EP2-T1 — Register `/auth/refresh` REST Route
+
+**Status:** COMPLETED
+(No changes)
+
+---
+
+## 🔁 EP2-T2 — Server-Side Token-Family Rate Limiting (UPDATED)
 
 ### 1. Task Metadata
 
 * **Task ID:** EP2-T2
 * **Phase / Sub-phase:** Phase 2 — REST API / Auth
 * **Depends on:** EP2-T1
-* **Objective:** Enforce refresh-token-family rate limiting before controller execution.
+* **Objective:** Enforce refresh rate limiting **per token family**, resolved internally from the database.
 
 ---
 
@@ -133,17 +160,18 @@ DO NOT:
 
 **In-scope**
 
-* 10 requests per hour per token family
-* Enforcement in `permission_callback`
+* Hash incoming `refresh_token`
+* DB lookup for matching refresh token row
+* Read `family_internal_id` from DB
+* Rate limit: **10 refreshes per family per 60 minutes**
 * Immediate 429 on breach
-* `retry_after = 3600`
 
 **Out-of-scope**
 
+* Client-provided family identifiers
+* JWT claims
 * IP-based limits
-* JWT-based limits
 * Abuse heuristics
-* Token revocation logic
 
 **Files allowed**
 
@@ -153,43 +181,54 @@ DO NOT:
 **Files that MUST NOT be touched**
 
 * Login rate limiter
-* Global middleware
+* JWT middleware
+* DB schema definitions
 
 ---
 
 ### 3. Cursor Implementation Prompt
 
 ```
-Implement rate limiting for a SPECIFIC endpoint.
+You are implementing server-side rate limiting for a REST endpoint.
 
 Target endpoint:
 - POST /wp-json/bookit/v1/auth/refresh
 
-Rules:
-- Limit: 10 requests per hour
-- Keyed by refresh token FAMILY identifier
-- Check MUST run in permission_callback
-- Controller MUST NOT execute on breach
-
-On breach:
-- Return HTTP 429
-- Body:
-  {
-    "error": "rate_limited",
-    "retry_after": 3600
-  }
+Authoritative flow:
+1. Read refresh_token from JSON body
+2. Hash refresh_token
+3. Look up matching DB row
+4. If not found → STOP (handled elsewhere)
+5. Read family_internal_id from DB row
+6. Count refresh attempts for this family_internal_id
+   - Window: last 60 minutes
+   - Limit: 10
+7. If limit exceeded:
+   - Return HTTP 429
+   - Body:
+     {
+       "error": "rate_limited",
+       "retry_after": 3600
+     }
+   - STOP execution
 
 DO:
-- Apply ONLY to /auth/refresh
+- Derive family identifier ONLY from DB
+- Enforce rate limiting before reuse detection and rotation
 - Fail closed
 
 DO NOT:
+- Expect family identifiers from the client
+- Read JWT claims
 - Key by IP
-- Continue processing after breach
-- Log token values
+- Continue execution after 429
+
+Security:
+- Token-family identity is server-authoritative
+- No information leakage
 
 STOP IMMEDIATELY if:
-- Token family identifier is unavailable
+- You need to invent a client-visible family identifier
 ```
 
 ---
@@ -197,45 +236,51 @@ STOP IMMEDIATELY if:
 ### 4. Unit Test Prompt (Separate)
 
 ```
-Write PHPUnit tests for refresh token family rate limiting.
+Write PHPUnit tests for server-side refresh token family rate limiting.
 
 Test location:
 - tests/rest/auth/test-auth-refresh-rate-limit.php
 
 Test cases:
-- 10 refresh attempts allowed per family per hour
-- 11th attempt returns 429
-- retry_after equals 3600
-- Controller is not executed on 429
+1. Valid refresh token resolves to a family_internal_id
+2. ≤10 refresh attempts in 60 minutes succeed
+3. 11th attempt returns:
+   - HTTP 429
+   - { "error": "rate_limited" }
+   - retry_after = 3600
+4. Rate limiting is keyed by family_internal_id, not token value
+5. Controller is not executed after 429
 
-Negative:
-- Different token families do not share limits
+DO NOT:
+- Pass family identifiers via request
+- Modify production code
 ```
 
 ---
 
 ### 5. Manual Verification Checklist
 
-* Confirm limiter runs before handler
-* Confirm only refresh endpoint is affected
-* Confirm correct retry_after
+* Confirm family ID is resolved from DB, not request
+* Confirm rate limit applies across rotated tokens
+* Confirm retry_after is correct
 
 ---
 
 ### 6. Escalation Flags
 
-* If token family cannot be derived → STOP
+* If family_internal_id is not available from DB → **STOP**
+* If rate limit executes after reuse detection → **STOP**
 
 ---
 
-## Task 3 — Refresh Token Validation & Reuse Detection
+## 🔁 EP2-T3 — Refresh Token Validation, Reuse Detection & Rotation (UPDATED)
 
 ### 1. Task Metadata
 
 * **Task ID:** EP2-T3
 * **Phase / Sub-phase:** Phase 2 — REST API / Auth
-* **Depends on:** EP2-T1
-* **Objective:** Validate refresh token and detect reuse events.
+* **Depends on:** EP2-T2
+* **Objective:** Validate refresh token, detect reuse, and rotate within same family.
 
 ---
 
@@ -243,55 +288,56 @@ Negative:
 
 **In-scope**
 
-* Presence check for `refresh_token`
-* Detect invalid token → 401
-* Detect reuse → 403
-* Immediate family-wide failure
+* Hash incoming refresh_token
+* DB lookup
+* Reuse detection via `used_at`
+* Family-wide revocation on reuse
+* Rotation:
+
+  * Mark old token `used_at`
+  * Issue new refresh token
+  * Preserve same `family_internal_id`
 
 **Out-of-scope**
 
-* Token rotation
-* JWT issuance
-* DB schema decisions
-
-**Files allowed**
-
-* `includes/rest/validation/auth-refresh.php` (new)
-* `includes/rest/routes/auth-refresh.php` (modify)
-
-**Files that MUST NOT be touched**
-
-* JWT middleware
-* Login validation
+* JWT generation
+* DB schema changes
+* Grace windows
 
 ---
 
 ### 3. Cursor Implementation Prompt
 
 ```
-Implement refresh token validation logic.
+Implement refresh token validation and rotation.
 
-Rules:
-- Require refresh_token in request body
-- If token is invalid or unknown:
-  - Return 401
-  - Body: { "error": "invalid_refresh_token" }
-- If token reuse is detected:
-  - Revoke entire token family immediately
-  - Return 403
-  - Body: { "error": "refresh_token_reuse_detected" }
+Authoritative flow:
+1. Read refresh_token from request body
+2. Hash token
+3. DB lookup
+4. If not found:
+   - Return 401
+   - { "error": "invalid_refresh_token" }
+5. If used_at already set:
+   - Revoke entire token family
+   - Return 403
+   - { "error": "refresh_token_reuse_detected" }
+6. Else:
+   - Mark old token used_at
+   - Issue new refresh token
+   - Reuse same family_internal_id
 
 DO:
-- Fail closed
 - Treat reuse as a hard security event
+- Fail closed
 
 DO NOT:
 - Allow partial success
 - Implement grace windows
-- Reveal token state
+- Expose token state
 
 STOP IMMEDIATELY if:
-- Reuse detection semantics are unclear
+- Token reuse semantics are unclear
 ```
 
 ---
@@ -299,34 +345,54 @@ STOP IMMEDIATELY if:
 ### 4. Unit Test Prompt (Separate)
 
 ```
-Write PHPUnit tests for refresh token validation.
+Write PHPUnit tests for refresh token validation and reuse detection.
 
 Test location:
 - tests/rest/auth/test-auth-refresh-validation.php
 
 Test cases:
-- Missing refresh_token → 401 invalid_refresh_token
+- Missing token → 401 invalid_refresh_token
 - Invalid token → 401 invalid_refresh_token
-- Reused token → 403 refresh_token_reuse_detected
+- used_at already set → 403 refresh_token_reuse_detected
+- Valid unused token rotates successfully
+- Rotated token keeps same family_internal_id
 
 DO NOT:
-- Test JWT generation
+- Assert JWT contents
 ```
 
 ---
 
 ### 5. Manual Verification Checklist
 
-* Verify reuse causes immediate failure
-* Verify no partial success path exists
+* Verify reuse revokes entire family
+* Verify rotation preserves family_internal_id
+* Verify no partial success paths
 
 ---
 
 ### 6. Escalation Flags
 
-* If reuse detection is not DB-authoritative → STOP
+* If reuse detection is not DB-authoritative → **STOP**
 
 ---
+
+## EP2-T4 & EP2-T5
+
+✅ **Remain unchanged**
+(Error semantics + success response shape are still valid)
+
+---
+
+## ✅ Final Status
+
+* Ambiguity resolved **without guessing**
+* REST / Security boundary preserved
+* Cursor no longer blocked
+* EP2 is now **fully implementation-safe**
+
+When ready, we can proceed to **Execution Pack 3 — JWT Validation Middleware**.
+
 
 ## Task 4 — Error Semantics Enforcement (401 / 403 / 429)
 
