@@ -1,366 +1,693 @@
-## UK Market Research Summary
+# Your Final Business Model - Monthly Subscription (Updated)
 
-Based on my research, here's what I found:
+## 1. PRICING STRATEGY - Simplified 2-Tier Structure
 
-### **Website Development Pricing in UK (2024-2025)**
+### **Package 1: "Starter Booking Site"** - £495 setup + £79/month
+**Target:** Solo practitioners (1-2 staff)
+**Contract:** Month-to-month (cancel anytime with 30 days notice)
 
-Custom websites with booking systems in the UK range from £3,000 to £10,000 depending on complexity and features. Basic websites between one and five pages cost £650 to £1,100 plus VAT from UK developers.
-
-**London-specific pricing:** Web developers in London charge anywhere between £40 and £100 per hour on average in 2024.
-
-### **Ongoing Maintenance & Hosting Costs**
-
-Website maintenance in the UK for 2024 typically ranges from £50 to £500 per month depending on the type of website and level of service required. Small-to-medium UK sites spend £28 to £395 per month on maintenance covering domain, hosting, security, updates, and support.
-
-### **Booking System Subscription Costs (What Your Clients Currently Pay)**
-
-Paid booking system plans offering advanced features like class booking and text reminders typically cost between £25/month and £30/month per location. Systems like Mindbody start at £109.00/month, while Classforkids offers a base plan starting at £34.99 per month.
-
-Most businesses tend to use options in the range of $25 to $200 per month on average, though basic systems might cost around $5 per month while specialized custom systems can run as high as $2,000 monthly.
-
----
-
-## Your Recommended Business Model
-
-Based on this research and your target audience (salons, physios, coaches, photographers), here's a business model designed specifically for you:
-
----
-
-## 1. PRICING STRATEGY - Tiered Package Structure
-
-### **Package 1: "Essential Booking Site"** - £2,995 one-time
-**Target:** Solo practitioners or micro-businesses (1-2 staff)
 **Includes:**
-- 5-8 page professional website
-- Basic booking plugin (1 service provider)
-- Up to 3 services/offerings
+- 5-page professional website
+- Basic booking system (1-2 service providers)
+- Up to 5 services/offerings
 - Email reminders (no SMS)
 - Google Calendar integration
-- Basic branding (your company branding in dashboard)
+- **Your company branding in dashboard** ("Powered by [YourCompany]" footer)
 - Payment integration (Stripe OR PayPal)
 - Mobile-responsive design
-- Domain + SSL certificate (year 1 included)
+- Domain + SSL certificate included
 
-**Ongoing:** £49/month (hosting, maintenance, updates, email support)
+**Monthly (£79):** Hosting, maintenance, security updates, email support
 
-**Why this works:** 
-- Undercuts standalone booking platforms (£25-109/month = £300-1,308/year)
-- Your clients save £300+ annually vs. Mindbody, Calendly Pro, etc.
-- Profitable for you: £588/year recurring after year 1
+**Upon Cancellation:**
+- Client receives complete website code (WordPress export)
+- Client receives all booking data (CSV export)
+- Booking functionality stops working (plugin deactivates)
+- They can keep the website by moving it to their own hosting
+
+**Client's Total Cost:**
+- Year 1: £495 + (£79 × 12) = **£1,443**
+- Year 2+: **£948/year** (if they stay)
+- Can cancel anytime after Month 1
 
 ---
 
-### **Package 2: "Professional Booking Site"** - £4,995 one-time ⭐ **RECOMMENDED**
-**Target:** Small teams (2-5 staff) - YOUR SWEET SPOT (Sarah, James, Emma personas)
+### **Package 2: "Professional Booking Site"** - £995 setup + £99/month ⭐ **RECOMMENDED**
+**Target:** Small teams (2-5 staff) - YOUR SWEET SPOT
+**Contract:** Month-to-month (cancel anytime with 30 days notice)
+
 **Includes:**
-- Everything in Essential, PLUS:
+- Everything in Starter, PLUS:
+- 8-10 page professional website
 - Up to 5 staff members with individual calendars
-- Up to 10 services
-- SMS + Email reminders (100 SMS/month included)
+- Up to 15 services
+- SMS + Email reminders (50 SMS/month included)
 - Recurring appointments functionality
 - Package/membership bookings
 - Group class bookings
 - Deposit collection (% or fixed amount)
 - Custom intake forms (3 forms)
-- White-label option: Client branding in dashboard (£500 value)
+- **✨ Co-Branded Dashboard (INCLUDED - Not an add-on):**
+  - Client's logo in dashboard header
+  - Client's brand colors throughout
+  - Dashboard shows their company name
+  - **"Powered by [YourCompany]" in small footer text** (your branding)
+  - **Customer-facing booking page:** Client branding ONLY (no "Powered by")
+  - **Customer emails:** Client branding ONLY (no "Powered by")
 - Zoom/Google Meet integration
 - Advanced calendar rules (buffer times, blackout dates)
 - Basic reporting dashboard
 
-**Ongoing:** £89/month (hosting, maintenance, updates, priority email support, 100 SMS/month)
+**Monthly (£99):** Hosting, maintenance, updates, priority email support, 50 SMS/month
 
-**Why this works:**
-- Targets your 4 core personas perfectly
-- Replaces £50-100/month subscription tools
-- Saves clients £600-1,200 annually
-- Your profit: £1,068/year recurring
-- White-label included = competitive edge
+**Upon Cancellation:**
+- Client receives complete website code (WordPress export)
+- Client receives all booking data (customers, appointments, payments - CSV)
+- Booking plugin deactivates (they can't use booking features anymore)
+- They can keep the website by hosting it themselves
+- **Data ownership:** They own all customer data (GDPR compliant)
 
----
-
-### **Package 3: "Enterprise Booking Site"** - £7,995 one-time
-**Target:** Larger businesses (6-10 staff, multiple locations)
-**Includes:**
-- Everything in Professional, PLUS:
-- Up to 10 staff members
-- Unlimited services
-- Multi-location support
-- SMS + Email reminders (300 SMS/month included)
-- CRM-lite (client notes, history, preferences - GDPR compliant)
-- Advanced reporting & analytics
-- Staff performance tracking
-- Custom email sequences (confirmation → reminder → follow-up)
-- Multiple payment gateway options
-- API access for custom integrations
-- Custom onboarding + 2 hours staff training
-
-**Ongoing:** £149/month (hosting, maintenance, updates, phone + email support, 300 SMS/month)
-
-**Why this works:**
-- Serves growing businesses outgrowing basic tools
-- Competes with £100-200/month enterprise solutions
-- Your profit: £1,788/year recurring
-- Training included = less support burden long-term
+**Client's Total Cost:**
+- Year 1: £995 + (£99 × 12) = **£2,183**
+- Year 2+: **£1,188/year** (if they stay)
+- Can cancel anytime after Month 1
 
 ---
 
-### **Add-On Services (Upsells)**
+### **Why 2 Tiers Instead of 3?**
 
-| Add-On | One-Time | Monthly | Notes |
-|--------|----------|---------|-------|
-| **Extra staff member** | £150/each | — | Beyond package limit |
-| **SMS credits (per 100)** | — | £15 | After monthly allowance |
-| **Staff training session** | £150/hr | — | On-demand |
-| **Custom feature development** | £500+ | — | Case-by-case |
-| **Logo + branding design** | £750 | — | If they don't have brand assets |
-| **SEO package (6 months)** | — | £199 | Drive more traffic |
-| **Premium support (4hr response SLA)** | — | +£50 | Upgrade from standard support |
+I've removed the "Premium" tier for now because:
+- You're targeting 10 clients in Year 1 (not 20+)
+- Premium tier adds complexity (multi-location, CRM-lite, training sessions)
+- You want to minimize support time (5 hrs/month max)
+- Better to master 2 tiers first, add Premium in Year 2 if demand exists
+
+**You can always offer Premium features as custom quotes** if a client asks.
 
 ---
 
-## 2. REVENUE MODEL - Hybrid (Build + Recurring)
+### **Add-On Services**
 
-### **One-Time Website Build Revenue**
-- 10 websites/year × £4,995 average = **£49,950 upfront revenue**
-- Less conservative: Mix of packages averages £4,500 = **£45,000**
-
-### **Recurring Monthly Revenue (Year 2+)**
-Assuming 10 clients on Professional tier (£89/month):
-- 10 clients × £89 × 12 months = **£10,680 annual recurring revenue (ARR)**
-- By Year 3 (20 clients): **£21,360 ARR**
-- By Year 5 (40 clients, 90% retention): **£38,448 ARR**
-
-**Your Business Model Math:**
-- **Year 1:** £49,950 (builds) + £5,340 (6 months avg recurring) = **£55,290**
-- **Year 2:** £49,950 (builds) + £10,680 (recurring) = **£60,630**
-- **Year 3:** £49,950 (builds) + £21,360 (recurring) = **£71,310**
-
-*This assumes you continue building 10 new sites/year while retaining existing clients.*
+| Add-On | Setup Fee | Monthly Add-On | Notes |
+|--------|-----------|----------------|-------|
+| **Extra staff member** | £100/each | +£10/month | Beyond package limit (5+) |
+| **Extra SMS credits (per 50)** | — | £10 | After 50/month allowance |
+| **On-demand training** | £100/hr | — | If client needs help beyond docs |
+| **Custom feature development** | £500+ | — | Case-by-case estimate |
+| **Logo + branding design** | £400 | — | If they don't have brand assets |
+| **SEO boost package** | — | £79/month | Keyword optimization, backlinks (6-month min) |
+| **Premium support (4hr response)** | — | +£30/month | Upgrade from 24-48hr standard |
 
 ---
 
-## 3. SUPPORT MODEL - Tiered & Automated
+## 2. CONTRACT TERMS - Month-to-Month Model
 
-### **Support Tiers by Package**
+### **Cancellation Policy:**
 
-| Support Level | Essential | Professional | Enterprise |
-|---------------|-----------|--------------|------------|
-| **Response Time** | 48 hours | 24 hours | 4 hours |
-| **Channels** | Email only | Email + Video call | Email, Phone, Video |
-| **Monthly Limit** | Self-service priority | 1 hour support | 2 hours support |
-| **After-Hours** | No | No | Yes (emergencies) |
+**Client can cancel anytime with 30 days written notice.**
 
-### **Automation Strategy (Hands-Off Approach)**
+**What happens upon cancellation:**
 
-To keep support under 5 hours/month per client:
+1. **Final month:** Client continues to have full access for 30 days
+2. **Data handover:** You provide within 7 days:
+   - WordPress website export (XML file)
+   - Database backup (SQL file)
+   - Customer data export (CSV: names, emails, phones, consent status)
+   - Booking history export (CSV: all appointments, payments, statuses)
+   - Payment transaction export (CSV: Stripe/PayPal records)
+3. **Service termination:** After 30 days:
+   - Booking plugin deactivates (stops accepting new bookings)
+   - Website goes offline (unless they've moved it to their hosting)
+   - Your hosting/domain expires
+4. **Data deletion:** After 90 days (GDPR retention period):
+   - All client data deleted from your servers
+   - Backups permanently removed
 
-1. **Knowledge Base** (Build this first!)
-   - Video tutorials for common tasks (adding services, blocking time, viewing reports)
-   - Written guides with screenshots
-   - FAQ section covering 80% of questions
-   - **Time investment:** 20 hours upfront, saves 3-4 hours/month per client
+**Client's options after cancellation:**
 
-2. **In-Dashboard Help**
-   - Contextual tooltips ("What's this?" icons)
-   - Onboarding wizard for first-time setup
-   - Quick-start checklist
-   - **Reduces support tickets by 40-50%**
+**Option A: Keep the website (DIY)**
+- Move website files to their own hosting (£5-20/month)
+- Website continues to work as static site
+- Booking features stop working (plugin won't function without your backend)
+- They'd need to find alternative booking solution
 
-3. **Automated Onboarding**
-   - Welcome email sequence (Days 1, 3, 7, 14)
-   - "Getting Started" video sent automatically
-   - Scheduled 30-min onboarding call (Essential/Professional) or 1-hour (Enterprise)
-   - **One onboarding call = fewer ongoing questions**
+**Option B: Upgrade to "Website Ownership"**
+- Pay one-time £1,500 buyout fee
+- Get full source code + plugin license (if you decide to offer this later)
+- They can self-host and maintain everything
+- **You're not obligated to offer this in Phase 1** (decide later based on demand)
 
-4. **Monthly Office Hours** (Optional, but effective)
-   - 1-hour group Zoom session, 1st Tuesday each month
-   - Clients can drop in with questions
-   - Record and share afterwards
-   - **Scales support to many clients simultaneously**
-
-### **Realistic Support Time Budget**
-
-With good automation:
-- **Essential clients:** 30 min/month average (mostly self-service)
-- **Professional clients:** 1 hour/month average
-- **Enterprise clients:** 2 hours/month average
-
-**Total for 10 Professional clients = 10 hours/month** (2 hours/month per client is conservative)
-
-If you hit your 5 hours/month capacity with current setup, you can:
-- Increase automation (reduce to 0.5 hrs/client)
-- Hire part-time VA for £15-20/hour (costs £150-200/month, covered by 2 client payments)
-- Limit to 10 active clients until you scale
-- **OR reduce new website builds to 5-6/year and focus on recurring revenue**
+**Option C: Just walk away**
+- Stop paying, receive data export
+- Website goes offline
+- They start fresh elsewhere
 
 ---
 
-## 4. VALUE PROPOSITION - Why Choose You?
+### **Why Month-to-Month Works for You:**
 
-### **Your Unique Selling Points (USPs):**
+✅ **Easier to sell:** "No long-term commitment" removes objection  
+✅ **Confidence signal:** "We're so sure you'll love it, we don't lock you in"  
+✅ **Client retention:** If your product is good, they won't leave (most SaaS has 90%+ retention)  
+✅ **Fair pricing:** Your £995 setup fee covers initial build, so you're not losing money if they cancel Month 2  
 
-**vs. DIY Booking Plugins (Bookly, Amelia):**
-- ✅ **You:** Complete website + booking system, professionally designed
-- ❌ **Them:** They still need to hire someone to build the website around it
-- ✅ **You:** Separate business dashboard (staff don't touch WordPress)
-- ❌ **Them:** Requires WordPress admin access (risky for non-technical users)
+**Risk mitigation:**
+- Setup fee (£495-995) covers your initial 20-30 hours of work
+- Even if client cancels after 3 months, you've made £1,292 (£995 + £297) for ~30 hours work = £43/hour (fair rate)
+- Most clients won't cancel if you deliver value (automated bookings save them 5-10 hrs/week)
 
-**vs. Standalone Booking Platforms (Calendly, Fresha, Mindbody):**
-- ✅ **You:** Seamless, branded experience on THEIR website
-- ❌ **Them:** External redirect, breaks user experience
-- ✅ **You:** One-time fee + low monthly (saves £600-1,200/year long-term)
-- ❌ **Them:** £50-109/month forever = £600-1,308/year recurring cost
-- ✅ **You:** Full control, no platform lock-in
-- ❌ **Them:** Trapped in ecosystem, data portability issues
+---
+
+## 3. BRANDING STRATEGY - Co-Branded by Default
+
+### **How Branding Works:**
+
+**Starter Tier (Your Branding):**
+- Dashboard header: **Your company logo**
+- Dashboard footer: "Powered by [YourCompany]"
+- Customer booking page: **Your company branding** + client's business name
+- Customer emails: "Powered by [YourCompany]" in footer
+
+**Professional Tier (Co-Branded - INCLUDED):**
+
+**Business Owner/Staff Dashboard:**
+- Dashboard header: **Client's logo** (you upload during setup)
+- Dashboard colors: **Client's brand colors** (primary + secondary)
+- Dashboard footer: Small text "Powered by [YourCompany]" + your logo (discrete)
+- Example: Client sees their salon logo at top, your small "Powered by" at bottom
+
+**Customer-Facing Booking Page:**
+- **Client's branding ONLY** (their logo, colors, business name)
+- **NO "Powered by [YourCompany]"** visible to end customers
+- Clean, professional, looks like custom-built system
+- Example: Customer booking haircut sees "Shine & Style Salon" branding, not yours
+
+**Customer Emails (Confirmation, Reminder, Cancellation):**
+- **Client's branding ONLY** (their logo, business name)
+- **NO "Powered by [YourCompany]"** in customer emails
+- Emails come from client's domain (e.g., bookings@shinestylsalon.co.uk)
+- Example: Customer receives "Your appointment at Shine & Style is confirmed" with salon logo
+
+**Staff/Business Owner Emails (Internal notifications):**
+- Co-branded (client's logo + "Powered by [YourCompany]" footer)
+- Example: When staff gets "New booking assigned to you", footer shows your branding
+
+---
+
+### **Why This Branding Strategy Works:**
+
+✅ **Customer experience:** End customers never see your branding (professional, seamless)  
+✅ **Client satisfaction:** Business owners love that it looks custom-built  
+✅ **Your brand awareness:** Staff/business owners see your branding daily (builds trust, referrals)  
+✅ **No upsell friction:** Co-branding is standard in Professional tier, not an expensive add-on  
+✅ **Competitive edge:** Most DIY plugins show "Powered by Bookly" to customers (you don't)  
+
+**Marketing angle:**
+*"Unlike other booking systems that plaster their branding all over YOUR customer-facing pages, we keep it clean—your customers only see YOUR brand. We're proud to put our name in your dashboard footer because we know you'll love the system, but your clients? They just see your beautiful, professional business."*
+
+---
+
+## 4. REVENUE MODEL - Month-to-Month Subscription
+
+### **Year 1 Projections (10 clients, gradual ramp-up)**
+
+**Assumptions:**
+- 2 clients on Starter (£495 + £79/month)
+- 8 clients on Professional (£995 + £99/month)
+- Clients acquired evenly over 12 months
+- 90% retention (1 client cancels)
+
+**Month-by-month breakdown:**
+
+| Month | New Clients | Setup Fees | Monthly Recurring | Total Month | Cumulative |
+|-------|-------------|------------|-------------------|-------------|------------|
+| **1** | 0 | £0 | £0 | £0 | £0 |
+| **2** | 0 | £0 | £0 | £0 | £0 |
+| **3** | 0 | £0 | £0 | £0 | £0 |
+| **4** | 0 | £0 | £0 | £0 | £0 |
+| **5** | 0 | £0 | £0 | £0 | £0 |
+| **6** | 0 | £0 | £0 | £0 | £0 |
+| **7** | 2 (1 Start, 1 Pro) | £1,490 | £178 | £1,668 | £1,668 |
+| **8** | 2 (1 Start, 1 Pro) | £1,490 | £356 | £1,846 | £3,514 |
+| **9** | 2 (2 Pro) | £1,990 | £554 | £2,544 | £6,058 |
+| **10** | 2 (2 Pro) | £1,990 | £752 | £2,742 | £8,800 |
+| **11** | 1 (1 Pro) | £995 | £851 | £1,846 | £10,646 |
+| **12** | 1 (1 Pro) | £995 | £950 | £1,945 | £12,591 |
+
+**Year 1 Total Revenue: £12,591**
+
+**Breakdown:**
+- Setup fees: £8,950
+- Recurring revenue: £3,641 (6 months average, ramping up)
+
+---
+
+### **Year 2 Projections (Same 10 clients + 10 new)**
+
+**Assumptions:**
+- 9 clients retained from Year 1 (1 cancelled - 90% retention)
+- 10 new clients (2 Starter, 8 Professional)
+- New clients acquired evenly throughout year
+
+| | Year 2 |
+|---|---|
+| **Setup fees (10 new clients)** | £8,950 |
+| **Recurring from Year 1 clients (9 clients × 12 months)** | £10,692 |
+| **Recurring from Year 2 clients (avg 6 months)** | £4,455 |
+| **Total Year 2 Revenue** | **£24,097** |
+
+---
+
+### **Year 3 Projections (18 retained + 10 new)**
+
+**Assumptions:**
+- 18 clients retained (9 from Year 1 × 90% + 9 from Year 2 × 90%)
+- 10 new clients
+
+| | Year 3 |
+|---|---|
+| **Setup fees (10 new clients)** | £8,950 |
+| **Recurring from existing 18 clients** | £21,384 |
+| **Recurring from new clients (avg 6 months)** | £4,455 |
+| **Total Year 3 Revenue** | **£34,789** |
+
+---
+
+### **5-Year Revenue Forecast:**
+
+| Year | New Clients | Total Active Clients | Setup Fees | Recurring Revenue | **Total Revenue** |
+|------|-------------|----------------------|------------|-------------------|-------------------|
+| 1 | 10 | 10 | £8,950 | £3,641 | **£12,591** |
+| 2 | 10 | 19 (90% retention) | £8,950 | £15,147 | **£24,097** |
+| 3 | 10 | 27 | £8,950 | £25,839 | **£34,789** |
+| 4 | 5 (slowing down) | 29 | £4,475 | £32,076 | **£36,551** |
+| 5 | 5 | 31 | £4,475 | £36,204 | **£40,679** |
+
+**By Year 5:** You're making £40k/year with 31 active clients, most of it recurring revenue.
+
+**If this becomes your full-time job and you ramp to 20 clients/year:**
+- Year 3: £60k+ revenue
+- Year 5: £80k+ revenue
+
+---
+
+## 5. SUPPORT MODEL - Scalable Automation
+
+### **Support Hours Budget (Your 5-Hour Limit)**
+
+**Per-Client Monthly Average (after automation is built):**
+- Starter: 20 minutes/month
+- Professional: 40 minutes/month
+
+**10 clients (2 Starter, 8 Professional):**
+- 2 × 20 min = 40 min
+- 8 × 40 min = 320 min (5.3 hours)
+- **Total: 6 hours/month**
+
+Slightly over your 5-hour target, but achievable with good automation.
+
+---
+
+### **Automation Checklist (Build in Months 1-3)**
+
+**Month 1: Core Documentation**
+
+1. **Video Tutorials (record these first):**
+   - "Welcome to Your Booking Dashboard" (3 min)
+   - "Adding Your First Service" (5 min)
+   - "Setting Your Working Hours" (4 min)
+   - "Managing Bookings & Cancellations" (6 min)
+   - "Viewing Reports & Customer Data" (4 min)
+   - **Time investment:** 8 hours to record + edit
+   - **Upload to:** Unlisted YouTube playlist + embed in dashboard
+
+2. **Written Quick-Start Guide (PDF):**
+   - 10-page guide with screenshots
+   - Step-by-step for first 48 hours
+   - **Time investment:** 6 hours
+
+3. **In-Dashboard Tooltips:**
+   - Add "?" icons next to every button/field
+   - Click to see 1-2 sentence explanation
+   - **Time investment:** 10 hours (built into plugin development)
+
+**Month 2: Automated Onboarding**
+
+4. **Email Sequence (set up in Mailchimp/ConvertKit - free tier):**
+   - **Day 0 (immediately):** "Welcome! Here's how to get started" + first video
+   - **Day 2:** "Have you added your services yet? Watch this 5-min tutorial"
+   - **Day 5:** "Ready to test your first booking? Here's how"
+   - **Day 10:** "Tips for reducing no-shows with automated reminders"
+   - **Day 30:** "You've been live for a month! Here's how to read your reports"
+   - **Time investment:** 4 hours to write, test, and schedule
+
+5. **30-Minute Onboarding Call (scheduled automatically):**
+   - Use Calendly (free) to let clients self-schedule
+   - Call happens within 7 days of launch
+   - Walk through: Adding service, testing booking, viewing calendar
+   - Record call, send them the recording after
+   - **Time investment:** 30 min per client (8 clients = 4 hours/month in Month 7-12)
+
+**Month 3: Self-Service Support**
+
+6. **FAQ Page (on your service website):**
+   - 20-25 most common questions
+   - Link to relevant videos
+   - **Time investment:** 6 hours
+
+7. **Support Email Templates:**
+   - Pre-written responses for common questions:
+     - "How do I change my logo?" → [link to video]
+     - "How do I refund a customer?" → [link to guide]
+     - "Why isn't my Google Calendar syncing?" → [troubleshooting steps]
+   - **Time investment:** 3 hours
+
+**Total Automation Time Investment: 37 hours** (Months 1-3, before you get clients)
+
+---
+
+### **When Support Time Exceeds 5 Hours/Month:**
+
+**15+ clients:** Hire part-time VA (£300-400/month)
+
+**VA handles:**
+- First-line email support (responds with links to tutorials)
+- Schedules onboarding calls (you still do the calls)
+- Updates documentation based on common questions
+
+**You handle:**
+- Complex technical issues
+- Onboarding calls (30 min each)
+- New client builds
+
+**Cost:** £350/month (covered by 4 clients' monthly fees)
+
+---
+
+## 6. TIMELINE TO FIRST CLIENT (6 Months)
+
+### **Month 1: Foundation - Plugin Development Begins**
+
+**Week 1-2: Core features**
+- Basic booking flow (service selection, calendar, checkout)
+- Database structure
+- Payment integration (Stripe test mode)
+
+**Week 3-4: Dashboard**
+- Business owner dashboard (view bookings, basic reports)
+- Staff dashboard (own bookings, block time)
+- Customer booking page (frontend)
+
+**Time commitment:** 40-60 hours (evenings/weekends)
+
+---
+
+### **Month 2: Feature Completion**
+
+**Week 1-2:**
+- Email notifications (confirmation, reminder, cancellation)
+- Google Calendar 1-way sync
+- Cancellation/rescheduling via magic links
+
+**Week 3-4:**
+- Co-branding settings (logo upload, color picker)
+- SMS reminders (Twilio integration)
+- WordPress admin configuration UI
+
+**Time commitment:** 40-60 hours
+
+---
+
+### **Month 3: Polish + Documentation**
+
+**Week 1-2:**
+- Bug fixes, mobile responsiveness
+- GDPR compliance (consent checkboxes, data export)
+- WCAG accessibility (keyboard navigation, screen reader)
+
+**Week 3-4:**
+- **Record tutorial videos** (5 videos, 8 hours)
+- **Write quick-start guide** (6 hours)
+- **Set up email automation** (4 hours)
+
+**Time commitment:** 40 hours
+
+---
+
+### **Month 4: Demo Sites + Marketing Assets**
+
+**Week 1-2: Build demo websites**
+- "Glow Beauty Salon" demo (complete with fake bookings, services)
+- "Active Body Physio" demo
+- Make them look realistic, publish live
+
+**Week 3-4: Create your service website**
+- 5-page site: Home, Pricing, How It Works, Portfolio, Contact
+- Include comparison table (you vs. competitors)
+- Add testimonials (even if hypothetical initially)
+
+**Time commitment:** 30-40 hours
+
+---
+
+### **Month 5: Soft Launch - Pilot Client Outreach**
+
+**Goal: Get 1-2 pilot clients**
+
+**Week 1:** 
+- Finalize pricing page
+- Prepare pitch deck/email
+- Make list of 20 potential pilot clients (friends, family, local businesses)
+
+**Week 2-3:**
+- Reach out to 20 prospects
+- Offer: **"£495 setup + £79/month for 3 months, then £99/month"** (Professional tier)
+- Requirement: Testimonial + case study
+
+**Week 4:**
+- Follow up with interested leads
+- Schedule intro calls
+- Close 1-2 pilot clients
+
+**Time commitment:** 10-15 hours (mostly evenings)
+
+---
+
+### **Month 6: First Client Builds**
+
+**Week 1-2: Build first client's website**
+- Discovery call (1 hour): Learn their business, branding, services
+- Website design + setup (20-25 hours)
+- Configure booking plugin (3-4 hours)
+- Test bookings, payments
+
+**Week 3:**
+- Client review + revisions (5-10 hours)
+- Staff onboarding call (30 min)
+- Launch!
+
+**Week 4:**
+- Support first client (2-3 hours)
+- Start second client build (if you closed 2)
+
+**Time commitment:** 30-40 hours for first client
+
+---
+
+### **Month 6 End State:**
+✅ 1-2 live clients
+✅ Testimonials collected
+✅ Case study in progress
+✅ Real-world testing complete
+✅ Ready to scale to 10 clients over next 6 months
+
+---
+
+## 7. 6-Month Action Plan (Weekly Breakdown)
+
+### **Months 1-3: Build Phase (No client outreach yet)**
+
+| Week | Focus Area | Tasks | Hours |
+|------|------------|-------|-------|
+| **1-2** | Plugin core | Booking flow, database, Stripe integration | 20 |
+| **3-4** | Dashboards | Business owner, staff, customer interfaces | 20 |
+| **5-6** | Notifications | Email templates, reminder system | 15 |
+| **7-8** | Integrations | Google Calendar sync, SMS (Twilio) | 15 |
+| **9-10** | Polish | Bug fixes, mobile responsive, accessibility | 20 |
+| **11-12** | Documentation | Videos (8hrs), guides (6hrs), email automation (4hrs) | 18 |
+
+**Total: 108 hours over 12 weeks** (9 hours/week avg)
+
+---
+
+### **Month 4: Marketing Assets**
+
+| Week | Focus Area | Tasks | Hours |
+|------|------------|-------|-------|
+| **13-14** | Demo sites | Build 2 complete demo websites | 20 |
+| **15-16** | Service website | 5-page site, pricing, portfolio | 15 |
+
+**Total: 35 hours over 4 weeks** (8-9 hours/week)
+
+---
+
+### **Month 5: Pilot Client Outreach**
+
+| Week | Focus Area | Tasks | Hours |
+|------|------------|-------|-------|
+| **17** | Prep | Finalize pitch, list prospects | 5 |
+| **18-19** | Outreach | Contact 20 prospects, emails + LinkedIn | 8 |
+| **20** | Follow-up | Calls with interested leads, close 1-2 | 5 |
+
+**Total: 18 hours over 4 weeks** (4-5 hours/week)
+
+---
+
+### **Month 6: First Client Build**
+
+| Week | Focus Area | Tasks | Hours |
+|------|------------|-------|-------|
+| **21-22** | Build | Discovery, design, plugin setup | 25 |
+| **23** | Launch | Revisions, testing, onboarding call | 10 |
+| **24** | Support | Answer questions, refine process | 3 |
+
+**Total: 38 hours over 4 weeks** (9-10 hours/week)
+
+---
+
+**6-Month Total Time Investment: 199 hours** (~8 hours/week on average)
+
+**Realistic for a side project?** Yes, if you can commit:
+- 2 hours on 3 weeknights (6 hours/week)
+- 4-6 hours on weekends
+
+---
+
+## 8. UPDATED VALUE PROPOSITION
+
+### **Your Elevator Pitch (30 seconds):**
+
+*"I build booking websites for UK service businesses—salons, therapists, coaches. For £995 setup and £99/month, you get a complete professional website with online booking built in. Your clients book 24/7, you save 10 hours/week on phone calls, and unlike Fresha or Calendly, your branding is everywhere—not theirs. No WordPress training needed. Cancel anytime. It's the website you need with the booking system you want, for less than you'd pay for booking software alone."*
+
+---
+
+### **Why Clients Choose You (vs. Alternatives):**
+
+**vs. Fresha/SaaS Platforms:**
+- ❌ **Them:** £20/month + 20% commission on new clients = hidden costs
+- ✅ **You:** £99/month, no commissions, no hidden fees
+- ❌ **Them:** Their branding on booking pages, external redirect
+- ✅ **You:** Client's branding everywhere, seamless experience on their domain
+- ❌ **Them:** Platform lock-in, can't export easily
+- ✅ **You:** Month-to-month, data handover anytime
+
+**vs. DIY Plugins (Bookly, Amelia):**
+- ❌ **Them:** Client needs to build website themselves + learn WordPress
+- ✅ **You:** Complete website built for them
+- ❌ **Them:** Client needs WordPress access (risky for non-technical)
+- ✅ **You:** Separate dashboard, no WordPress training needed
+- ❌ **Them:** Add-on costs pile up (Bookly Pro + SMS + packages = £200+/year)
+- ✅ **You:** All-inclusive pricing, no surprise add-ons
 
 **vs. Other Web Developers:**
-- ✅ **You:** Specialized in service business booking websites (not generic)
-- ✅ **You:** Industry-specific features (salons, physios, coaches, photographers)
-- ✅ **You:** White-label dashboard = premium feel
-- ✅ **You:** Ongoing support included = clients don't need another vendor
-
-### **Your Positioning Statement:**
-
-*"I build complete booking-enabled websites for UK service businesses—salons, therapists, coaches, and creative professionals. Unlike DIY plugins or expensive monthly platforms, my clients get a professional website with a custom-branded booking system for a one-time fee, plus affordable ongoing hosting and support. No WordPress training needed. No monthly platform fees. Just a beautiful website that takes bookings 24/7 and saves business owners hours every week."*
+- ❌ **Them:** Generic websites, booking is an afterthought
+- ✅ **You:** Specialized in booking websites, understand service businesses
+- ❌ **Them:** One-time build, then client is on their own
+- ✅ **You:** Ongoing support included, always available
+- ❌ **Them:** £3,000-5,000 one-time, then £500+ for booking plugin setup
+- ✅ **You:** £995 + £99/month (cheaper long-term if they stay 2+ years)
 
 ---
 
-## 5. GO-TO-MARKET STRATEGY
+## 9. RISKS & MITIGATION
 
-Since you're **not currently looking for clients**, here's a roadmap for when you're ready:
+### **Risk 1: Client cancels after 2-3 months (before you've recouped time investment)**
 
-### **Phase 1: Foundation (Before You Launch)**
+**Mitigation:**
+- Setup fee (£995) covers your ~25 hours of initial build (£40/hour effective rate)
+- Even if they cancel Month 2, you've made £995 + £99 = £1,094 for 25 hours = £43.76/hour (fair)
+- Focus on retention: Great onboarding, responsive support, automated value (reminders, reports)
 
-**Months 1-2: Build Your Own Assets**
-- ✅ Create demo website for each persona (salon, physio, coach, photographer)
-- ✅ Record 3-5 tutorial videos for knowledge base
-- ✅ Build service website showcasing your packages
-- ✅ Write case study template (even before you have clients—use hypothetical examples)
-
-**Cost:** Your time only (40-60 hours total)
+**Target retention:** 90% annually (industry standard for good SaaS products)
 
 ---
 
-### **Phase 2: Pilot Clients (First 3-5 Clients)**
+### **Risk 2: Support takes longer than 5 hours/month per client**
 
-**Months 3-4: Discounted Launch Offer**
-- Offer **£1,000 discount** on Professional package (£3,995 instead of £4,995)
-- Target: Friends, family, or local businesses you know
-- Requirement: Agree to be a case study + testimonial
-- Focus: One vertical first (e.g., start with salons, then expand)
+**Mitigation:**
+- Build automation FIRST (Months 1-3, before clients)
+- Set clear boundaries: Email support only (Starter), 24hr response time
+- Monthly office hours for group Q&A (scales to many clients)
+- Hire VA at 15 clients (£350/month, covered by recurring revenue)
 
-**Why this works:**
-- Builds portfolio with real businesses
-- Tests your system with real users
-- Gets testimonials for future marketing
-- You're learning and refining as you go
+**Fallback:** If support is unmanageable, switch to longer contracts (6-month minimum) in Year 2
 
 ---
 
-### **Phase 3: Local Marketing (Ongoing)**
+### **Risk 3: Clients expect features you don't have (packages, recurring appointments, multi-location)**
 
-**Target: London/Merton SMBs**
+**Mitigation:**
+- Be crystal clear on website/sales materials: "Phase 1 features include..."
+- Show roadmap: "Package bookings coming Q3 2026" (builds excitement)
+- Offer workarounds: "You can create multiple individual bookings for your 6-week program"
+- Custom development quote: "We can build that custom feature for £500-1,000"
 
-**Strategy 1: Hyperlocal SEO**
-- Create location-specific pages: "Booking Websites for Salons in Merton", "Therapist Websites London"
-- Google Business Profile optimized for "web developer booking systems Merton"
-- **Cost:** £0 (time investment: 10 hours)
-
-**Strategy 2: Partner with Industry Associations**
-- UK Hair & Beauty Federation, Complementary and Natural Healthcare Council (CNHC), British Association of Sport and Exercise Sciences (BASES)
-- Offer member discount (5-10%)
-- **Cost:** Membership fees (£100-300/year) + referral commission (10%)
-
-**Strategy 3: LinkedIn Outreach**
-- Target job titles: "Salon Owner", "Clinic Manager", "Head Coach", "Studio Owner" in London
-- Send personalized messages highlighting cost savings (not spammy!)
-- **Cost:** LinkedIn Premium (£25/month optional), your time (3-5 hours/week)
-
-**Strategy 4: Before/After Case Studies**
-- "How [Salon Name] Went from Paper Bookings to 24/7 Online Scheduling"
-- Show: Old process (phone calls, no-shows) → New process (automated, fewer no-shows, time saved)
-- Share on LinkedIn, your website, local Facebook groups
-- **Cost:** £0
-
-**Strategy 5: Referral Program**
-- Existing clients get **£500 off** next year's hosting (or £250 cash) for each referral that becomes a client
-- Word-of-mouth is powerful in local SMB communities
-- **Cost:** £500 per referral (worth it for £4,995 sale + recurring revenue)
+**Opportunity:** Clients who need advanced features = higher-paying custom projects
 
 ---
 
-### **Phase 4: Scale (Year 2+)**
+### **Risk 4: Price is still too high for some prospects**
 
-Once you have 10-15 clients and testimonials:
+**Mitigation:**
+- Emphasize cost savings: "You're already paying £50-100/month for Fresha. We're £99/month AND you get a website."
+- Offer payment plan for setup fee: "£500 deposit + £500 after 30 days"
+- Target higher-value clients first (established businesses with 3-5 staff, not brand-new solos)
 
-- **Paid Ads:** Google Ads targeting "booking website for salons London" (Budget: £300-500/month)
-- **Content Marketing:** Blog posts, YouTube videos ("How to Choose Booking Software for Your Salon")
-- **Webinars:** Free 30-min session "5 Ways to Reduce No-Shows with Online Booking"
-- **Partnerships:** Accountants, business coaches who serve your target clients (reciprocal referrals)
-
----
-
-## Key Decision Points for You
-
-### **Question 1: Do you want to focus on NEW websites or ADD booking to existing sites?**
-
-**Option A:** Only build complete websites (as outlined above)
-- Pro: Higher value per client (£3k-8k), easier to differentiate
-- Con: Longer sales cycle, need design/branding skills
-
-**Option B:** Also offer "Booking Plugin Retrofit" to existing websites
-- Service: Install booking plugin on their current WordPress site
-- Price: £1,495 one-time + £49/month (Essential) or £89/month (Professional)
-- Pro: Faster sales (they already have a site), lower barrier to entry
-- Con: Lower upfront revenue, may inherit messy existing websites
-
-**Recommendation:** Start with Option A (new websites), add Option B in Year 2 once you have cash flow.
+**Fallback:** Create an even cheaper "Micro" tier in Year 2 if needed (£395 setup + £59/month, 1 staff, 3 services)
 
 ---
 
-### **Question 2: How much support do YOU want to provide long-term?**
+## 10. SUCCESS METRICS - How You'll Know It's Working
 
-If you want **maximum automation, minimum hand-holding:**
-- Focus on Essential + Professional tiers only (no Enterprise)
-- Build exceptional self-service resources (knowledge base, videos)
-- Charge premium for training calls (£150/hour) - discourages frivolous requests
-- Hire part-time VA by client #15 (£200-300/month for 10-15 hours support work)
+### **Month 6 (End of Setup Phase):**
+✅ Plugin built and tested
+✅ 2 demo websites live
+✅ Service website launched
+✅ 1-2 pilot clients signed
 
-If you're okay being **more hands-on for premium pricing:**
-- Offer Enterprise tier with premium support
-- Position yourself as "Website & Business Consultant" (not just developer)
-- Charge £149-199/month for ongoing support
-- Limit to 20 total clients to maintain quality
+### **Month 12 (End of Year 1):**
+✅ 8-10 paying clients
+✅ £10,000-12,000 revenue (setup fees + recurring)
+✅ 2-3 testimonials + case studies
+✅ Support time under 10 hours/month total (not 5 yet, but manageable)
+✅ 90% client retention (max 1 cancellation)
 
-**Recommendation for you:** Start with Essential + Professional only. Test demand for Enterprise in Year 2.
+### **Month 24 (End of Year 2):**
+✅ 18-20 total clients
+✅ £20,000-24,000 revenue (mostly recurring now)
+✅ Support scaled (VA hired, or automation reduced per-client time)
+✅ Consistent lead flow (1-2 new clients/month from referrals + local marketing)
 
----
-
-### **Question 3: Should you offer payment plans?**
-
-Some clients can't afford £3k-8k upfront.
-
-**Option:** 
-- **50% deposit to start** (£2,497 for Professional tier)
-- **50% upon launch** (£2,498)
-- OR **Monthly payment plan:** £995 deposit + £350/month × 12 months = £5,195 total (£200 premium for financing)
-
-**Pros:** Lowers barrier to entry, attracts more clients
-**Cons:** Cash flow management, risk of non-payment
-
-**Recommendation:** Start with deposit + balance due on launch. Add payment plans in Year 2 if needed.
+### **Month 36 (End of Year 3):**
+✅ 27-30 total clients
+✅ £30,000-35,000 revenue
+✅ This is now a proper side business (or transition to full-time if desired)
+✅ Roadmap for Phase 2 features (packages, recurring appointments)
 
 ---
 
-## Summary: Your Recommended Business Model
+## Final Summary Table
 
-| Element | Your Model |
-|---------|------------|
-| **Primary Revenue** | £4,995 one-time website build (Professional tier) |
-| **Recurring Revenue** | £89/month hosting + support |
-| **Year 1 Target** | 10 websites = £49,950 + £5,340 (6mo avg recurring) = **£55,290** |
-| **Year 3 Target** | 10 new + 20 existing = £49,950 + £21,360 = **£71,310** |
-| **Support Model** | Automated (knowledge base, videos, onboarding), <5 hrs/month per client |
-| **Main USP** | Complete booking website with white-label dashboard, cheaper than subscriptions long-term |
-| **Go-to-Market** | Local SEO, partnerships, case studies, referrals |
-| **Scalability** | Add VA at 15 clients, consider Enterprise tier Year 2+ |
+| Element | Your Decision |
+|---------|---------------|
+| **Pricing Tiers** | 2 tiers: Starter (£495 + £79/mo), Professional (£995 + £99/mo) |
+| **Contract** | Month-to-month, cancel anytime with 30 days notice |
+| **Cancellation** | Client gets website code + data export, booking stops |
+| **Branding** | Professional tier: Co-branded dashboards, client-only branding for customers |
+| **Support** | Email (Starter 48hr, Professional 24hr), 30-min onboarding call, knowledge base |
+| **Timeline** | 6 months to first client, 12 months to 10 clients |
+| **Year 1 Revenue** | £12,000-16,000 (10 clients) |
+| **Year 3 Revenue** | £30,000-35,000 (27-30 clients) |
+| **Time Investment** | 8-10 hrs/week for 6 months, then 10-15 hrs/week ongoing |
+
+---
