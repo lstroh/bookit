@@ -1020,6 +1020,371 @@ Currency: GBP (£) - Fixed for Phase 1
 - API secret keys
 - Customer billing addresses (unless needed for refunds)
 
+
+### 3.11 Temporary Slot Reservation (Race Condition Prevention)
+
+**Requirement:** Prevent double-booking race conditions during checkout by implementing temporary slot holds.
+
+**Problem Statement:**
+When a customer reaches Step 4 (payment), another customer can book the same time slot before payment completes. This results in: (1) First customer pays successfully, (2) Booking creation fails due to database UNIQUE constraint, (3) Orphaned payment requiring manual refund.
+
+**Solution: 10-Minute Temporary Hold**
+
+#### Implementation Details
+
+**1. When Customer Reaches Step 4 (Payment Page):**
+```php
+// Create temporary hold
+$hold_id = create_temp_hold([
+    'staff_id' => $booking_data['staff_id'],
+    'booking_date' => $booking_data['date'],
+    'start_time' => $booking_data['start_time'],
+    'expires_at' => date('Y-m-d H:i:s', strtotime('+10 minutes')),
+    'session_id' => session_id(),
+    'customer_email' => $customer_data['email']
+]);
+
+// Store hold_id in session for later cleanup
+$_SESSION['temp_hold_id'] = $hold_id;
+```
+
+**2. Availability Checking (Modified):**
+```php
+function is_time_slot_available($staff_id, $date, $time) {
+    // Check confirmed bookings
+    $has_booking = check_confirmed_bookings($staff_id, $date, $time);
+    
+    // Check active temp holds (not expired)
+    $has_hold = check_active_temp_holds($staff_id, $date, $time);
+    
+    return !$has_booking && !$has_hold;
+}
+```
+
+**3. Hold Release Triggers:**
+- ✅ **Automatic:** Cron job every 2 minutes deletes expired holds
+- ✅ **On success:** Delete hold after booking creation succeeds
+- ✅ **On cancel:** Delete hold if customer clicks "Back" or "Cancel"
+- ✅ **On exit:** Delete hold if customer closes browser (via session cleanup)
+
+**4. Visual Indicators:**
+
+**For current customer (holding the slot):**
+```
+⏱️ Your time slot is reserved for 9:32
+Complete payment to confirm your booking.
+```
+
+**For other customers (viewing same slot):**
+```
+⚠️ This time is being held by another customer
+Please select a different time or check back in a few minutes.
+```
+
+**5. Edge Cases:**
+
+| Scenario | Handling |
+|----------|----------|
+| Customer refreshes payment page | Extend hold by 10 minutes (max 30 min total) |
+| Hold expires during payment | Allow payment to complete, then check availability:<br>• If still available → Create booking<br>• If taken → Immediate refund + "slot taken" error |
+| Customer opens multiple tabs | Use same hold (keyed by session_id) |
+| Cron job fails to run | Database TTL as backup (add expires_at check in queries) |
+
+**6. Database Schema Addition:**
+```sql
+CREATE TABLE wp_bookings_temp_holds (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    staff_id BIGINT UNSIGNED NOT NULL,
+    booking_date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    expires_at DATETIME NOT NULL,
+    session_id VARCHAR(255) NOT NULL,
+    customer_email VARCHAR(255) NOT NULL,
+    created_at DATETIME NOT NULL,
+    
+    -- Prevent duplicate holds on same slot
+    UNIQUE KEY unique_slot (staff_id, booking_date, start_time),
+    
+    -- Performance indexes
+    INDEX idx_expires (expires_at),
+    INDEX idx_session (session_id),
+    
+    -- Foreign key
+    FOREIGN KEY (staff_id) REFERENCES wp_bookings_staff(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+**7. Cron Job Implementation:**
+```php
+// Runs every 2 minutes via WordPress Action Scheduler
+add_action('booking_cleanup_expired_holds', function() {
+    global $wpdb;
+    
+    $deleted = $wpdb->query("
+        DELETE FROM {$wpdb->prefix}bookings_temp_holds
+        WHERE expires_at < NOW()
+    ");
+    
+    if ($deleted > 0) {
+        error_log("Cleaned up {$deleted} expired temp holds");
+    }
+});
+
+// Schedule on plugin activation
+if (!wp_next_scheduled('booking_cleanup_expired_holds')) {
+    wp_schedule_event(time(), 'two_minutes', 'booking_cleanup_expired_holds');
+}
+```
+
+**Performance Impact:**
+- Additional database query on availability check: ~5-10ms
+- Cron job execution: <100ms (processes ~50-100 holds max)
+- Negligible impact on overall booking flow
+
+**Estimated Implementation:** 8-12 hours
+
+### 3.12 Abandoned Checkout Recovery Mechanism
+
+**Problem Statement:**
+Customer completes Stripe payment but closes browser before confirmation page loads. Webhook successfully receives `checkout.session.completed`, but booking creation fails because:
+- PHP session expired
+- Session data not accessible from webhook handler
+- Customer navigated away before redirect
+
+**Result:** Orphaned payment (customer charged, no booking created) requiring manual reconciliation.
+
+**Solution: Automated Recovery System**
+
+#### Implementation Architecture
+
+**1. Store Booking Data in Stripe Metadata (Redundancy)**
+
+When creating Checkout Session, store ALL booking data in metadata:
+```php
+$session = \Stripe\Checkout\Session::create([
+    'mode' => 'payment',
+    'line_items' => [...],
+    'metadata' => [
+        // Essential booking data (redundant to session storage)
+        'service_id' => $booking_data['service_id'],
+        'service_name' => $booking_data['service_name'],
+        'staff_id' => $booking_data['staff_id'],
+        'staff_name' => $booking_data['staff_name'],
+        'booking_date' => $booking_data['date'], // 2026-05-15
+        'booking_start_time' => $booking_data['start_time'], // 14:00
+        'booking_end_time' => $booking_data['end_time'], // 14:45
+        'customer_first_name' => $customer_data['first_name'],
+        'customer_last_name' => $customer_data['last_name'],
+        'customer_phone' => $customer_data['phone'],
+        'customer_special_requests' => $customer_data['special_requests'] ?? '',
+        'marketing_consent' => $customer_data['marketing_consent'] ? '1' : '0',
+        'deposit_amount' => $booking_data['deposit_amount'],
+        'total_price' => $booking_data['total_price'],
+        'php_session_id' => session_id(), // For linking back if session exists
+    ],
+    'success_url' => '...',
+    'cancel_url' => '...'
+]);
+```
+
+**2. Webhook Handler with Recovery Queue**
+```php
+function handle_stripe_webhook($event) {
+    if ($event->type === 'checkout.session.completed') {
+        $session = $event->data->object;
+        
+        // Attempt immediate booking creation from PHP session
+        $booking_id = create_booking_from_session($session->metadata['php_session_id']);
+        
+        if ($booking_id) {
+            // Success - session still available
+            send_confirmation_email($booking_id);
+            return ['success' => true];
+        }
+        
+        // Session expired/unavailable - Add to recovery queue
+        add_to_recovery_queue([
+            'stripe_payment_intent_id' => $session->payment_intent,
+            'stripe_session_id' => $session->id,
+            'amount_paid' => $session->amount_total / 100, // Convert pence to pounds
+            'customer_email' => $session->customer_details->email,
+            'booking_metadata' => json_encode($session->metadata),
+            'created_at' => date('Y-m-d H:i:s')
+        ]);
+        
+        return ['success' => true, 'queued_for_recovery' => true];
+    }
+}
+```
+
+**3. Recovery Cron Job (Every 5 Minutes)**
+```php
+add_action('booking_recover_abandoned_checkouts', function() {
+    global $wpdb;
+    
+    // Find payments in recovery queue (older than 5 minutes, not yet recovered)
+    $orphaned = $wpdb->get_results("
+        SELECT * FROM {$wpdb->prefix}bookings_payment_recovery
+        WHERE recovery_status = 'pending'
+        AND created_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+        AND recovery_attempted_at IS NULL
+        OR (recovery_status = 'failed' AND recovery_attempted_at < DATE_SUB(NOW(), INTERVAL 1 HOUR))
+        LIMIT 10
+    ");
+    
+    foreach ($orphaned as $payment) {
+        // Mark as attempting
+        $wpdb->update(
+            "{$wpdb->prefix}bookings_payment_recovery",
+            ['recovery_attempted_at' => current_time('mysql')],
+            ['id' => $payment->id]
+        );
+        
+        // Extract booking data from stored metadata
+        $booking_data = json_decode($payment->booking_metadata, true);
+        
+        // Verify slot still available
+        $is_available = is_time_slot_available(
+            $booking_data['staff_id'],
+            $booking_data['booking_date'],
+            $booking_data['booking_start_time']
+        );
+        
+        if (!$is_available) {
+            // Slot taken - needs manual intervention
+            $wpdb->update(
+                "{$wpdb->prefix}bookings_payment_recovery",
+                ['recovery_status' => 'failed', 'failure_reason' => 'Slot no longer available'],
+                ['id' => $payment->id]
+            );
+            
+            // Alert Business Owner
+            send_recovery_failure_alert($payment);
+            continue;
+        }
+        
+        // Create booking from metadata
+        $booking_id = create_booking_from_metadata($booking_data, $payment);
+        
+        if ($booking_id) {
+            // Success
+            $wpdb->update(
+                "{$wpdb->prefix}bookings_payment_recovery",
+                ['recovery_status' => 'recovered', 'booking_id' => $booking_id],
+                ['id' => $payment->id]
+            );
+            
+            // Send delayed confirmation
+            send_confirmation_email($booking_id, $is_delayed = true);
+            
+            // Sync to Google Calendar
+            sync_to_google_calendar($booking_id);
+            
+            error_log("Successfully recovered abandoned booking: payment={$payment->stripe_payment_intent_id}, booking={$booking_id}");
+        } else {
+            // Failed
+            $wpdb->update(
+                "{$wpdb->prefix}bookings_payment_recovery",
+                ['recovery_status' => 'failed', 'failure_reason' => 'Booking creation error'],
+                ['id' => $payment->id]
+            );
+        }
+    }
+});
+
+// Schedule every 5 minutes
+if (!wp_next_scheduled('booking_recover_abandoned_checkouts')) {
+    wp_schedule_event(time(), 'five_minutes', 'booking_recover_abandoned_checkouts');
+}
+```
+
+**4. Database Schema**
+```sql
+CREATE TABLE wp_bookings_payment_recovery (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    stripe_payment_intent_id VARCHAR(255) UNIQUE NOT NULL,
+    stripe_session_id VARCHAR(255) NOT NULL,
+    amount_paid DECIMAL(10,2) NOT NULL,
+    customer_email VARCHAR(255) NOT NULL,
+    booking_metadata TEXT NOT NULL, -- JSON with all booking details
+    recovery_attempted_at DATETIME NULL,
+    recovery_status ENUM('pending', 'recovered', 'failed', 'manual_refund') DEFAULT 'pending',
+    failure_reason VARCHAR(500) NULL,
+    booking_id BIGINT UNSIGNED NULL, -- Populated on successful recovery
+    created_at DATETIME NOT NULL,
+    recovered_at DATETIME NULL,
+    
+    INDEX idx_status (recovery_status),
+    INDEX idx_created (created_at),
+    INDEX idx_payment_intent (stripe_payment_intent_id),
+    
+    FOREIGN KEY (booking_id) REFERENCES wp_bookings(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+**5. Business Owner Dashboard Alert**
+
+Add widget to Business Owner dashboard:
+```
+⚠️ Payment Recovery Status
+
+✅ 3 payments auto-recovered today
+⚠️ 1 payment needs manual review (slot unavailable)
+
+[View Details]
+```
+
+**6. Manual Review Interface**
+
+For failed recoveries, provide Business Owner interface:
+```
+Failed Payment Recovery
+
+Payment: pi_abc123xyz
+Amount: £25.00
+Customer: sarah@example.com
+Original Time: 15 May 2026, 2:00 PM with Emma Thompson
+Status: Slot no longer available
+
+Actions:
+[ ] Manually create booking (different time)
+[ ] Issue full refund
+[ ] Contact customer (opens email with pre-filled template)
+```
+
+**7. Email Template for Delayed Confirmations**
+```
+Subject: Your Booking is Confirmed - [Business Name]
+
+Hi [Customer Name],
+
+Great news! Your booking has been confirmed.
+
+[Booking Details]
+
+Note: We apologize for the slight delay in this confirmation. Your payment was successful, and your appointment has been secured.
+
+[View/Manage Booking]
+```
+
+**Edge Cases Handled:**
+
+| Scenario | Recovery Action |
+|----------|----------------|
+| Slot still available | Create booking, send delayed confirmation |
+| Slot taken by someone else | Mark as failed, alert Business Owner for manual refund |
+| Staff no longer available | Mark as failed, suggest alternative staff |
+| Service deleted | Mark as failed, full refund required |
+| Customer email bounces | Alert Business Owner, attempt phone contact |
+| Multiple recovery attempts | Retry hourly up to 24 hours, then manual review |
+
+**Performance & Reliability:**
+- Recovery queue processing: ~100-200ms per payment
+- Maximum 10 recoveries per cron run (prevents timeout)
+- Failed recoveries retry hourly for 24 hours
+- After 24 hours, automatic alert to Business Owner
+
+**Estimated Implementation:** 12-16 hours
 ---
 
 ## 4. PAYPAL PAYMENT INTEGRATION

@@ -1757,6 +1757,56 @@ Customer ID,First Name,Last Name,Email,Phone,Member Since,Total Bookings,Total S
 - If customer has no bookings → Include in export but with "0 bookings" value
 - If exporting for GDPR portability → Include note: "This export satisfies GDPR Art. 20 (Right to Data Portability)"
 
+
+### User Story 6.6: Business Owner Facilitates Customer Email Change
+
+**As a** Business Owner  
+**I want to** change a customer's email address securely  
+**So that** customers with email typos can receive booking confirmations
+
+**Acceptance Criteria:**
+
+**Given** Customer reports email typo or wants to change email  
+**When** Business Owner navigates to customer profile  
+**Then** I see "Change Email" button next to current email
+
+**And when** I click "Change Email"  
+**Then** I see form:
+- Current email: sarah@old-email.com (read-only)
+- New email: [________] (input field with validation)
+- Reason: [dropdown: Typo / Customer request / Other]
+- [Cancel] [Send Verification]
+
+**And when** I submit new email  
+**Then**:
+1. Verification email sent to NEW address
+2. Email contains: "Click to confirm email change for your booking account"
+3. Link expires in 24 hours
+4. Customer clicks link → Email updated in database
+5. Confirmation sent to BOTH old and new emails
+6. All future booking communications use new email
+
+**Security:**
+- Magic link token: cryptographically random (32 bytes)
+- Link includes: booking system domain verification
+- Old email receives notification: "Email change requested. Contact us if not you."
+
+**Edge Cases:**
+- If new email already exists in system → Error: "Email already registered"
+- If verification not completed in 24 hours → Request expires, must re-request
+- If customer books again before verification → Use old email
+- Change is logged in audit trail
+
+**Database Changes:**
+```sql
+-- Add to wp_bookings_customers:
+ALTER TABLE wp_bookings_customers 
+ADD COLUMN pending_email_change VARCHAR(255) DEFAULT NULL,
+ADD COLUMN email_change_token VARCHAR(255) DEFAULT NULL,
+ADD COLUMN email_change_expires DATETIME DEFAULT NULL;
+```
+
+**Estimated Implementation:** 6-8 hours
 ---
 
 ## ADDITIONAL REQUIREMENTS
