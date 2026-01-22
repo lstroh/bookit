@@ -856,6 +856,7 @@ Custom pricing
 | **R-010** | Stripe/PayPal account setup delays for clients | MEDIUM | LOW | Create account setup guide, offer to walk through process, test account verification flow | Support |
 | **R-011** | Race conditions more frequent than expected | LOW | HIGH | Daily monitoring report, automatic refunds working, can add temp holds in v1.1 if needed | Dev |
 | **R-012** | Transactional email service costs higher than projected | LOW | LOW | Budget £35/month per client (high end), evaluate cheaper alternatives (SES vs. SendGrid) | Business |
+| **R-013** | UK legal compliance gaps delay launch | MEDIUM | MEDIUM | 30-43 hours allocated Sprint 6 for Privacy Policy, T&Cs, Accessibility Statement | PM/Legal |
 
 ### Overall Risk Assessment: **MEDIUM - MANAGEABLE**
 
@@ -1653,14 +1654,16 @@ VALIDATION (Phase 4 - Final Analysis)
 ├─ Phase1_Scope_Final.md → Executive summary
 ├─ Pricing_Model_Recommendation.md → Business decision
 └─ Development_Sequence_Plan.md → Implementation roadmap
+├─ Risk_Register_v1_0.md → Risk management (10 risks identified)
+└─ UK_Compliance_Checklist_v1_0.md → Legal compliance verification
 ```
 
 ---
 
 ## Total Documentation Summary
 
-**Total Documents:** 22 comprehensive files  
-**Total Pages:** ~500 pages  
+**Total Documents:** 23 comprehensive files  
+**Total Pages:** ~520 pages  
 **Total Requirements:** 130+ (50+ functional, 40+ non-functional, 40+ integration/admin)  
 **Prioritized:** 100 requirements (78 MUST, 22 SHOULD included, 18 COULD deferred, 34 WON'T Phase 2)
 
@@ -1671,6 +1674,7 @@ VALIDATION (Phase 4 - Final Analysis)
 - Integrations: 4 external services (Stripe, PayPal, Google Calendar, Email)
 - Competitors Analyzed: 6 (3 WordPress plugins, 3 SaaS platforms)
 - Gaps Identified: 25 (5 critical resolved immediately)
+- Compliance Requirements: 89 assessed (91% covered, 7 gaps identified)
 
 ---
 

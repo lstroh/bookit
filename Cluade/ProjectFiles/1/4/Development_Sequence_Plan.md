@@ -5,13 +5,22 @@
 **Date:** January 22, 2026  
 **Status:** DRAFT - Ready for Sprint Planning  
 **Total Timeline:** 20-22 weeks (5-5.5 months)  
-**Estimated Effort:** 750-900 hours
+**Estimated Effort:** 786-936 hours (including 36h legal compliance)
 
 ---
 
 ## EXECUTIVE SUMMARY
 
 This document outlines the recommended development sequence for the WordPress Booking Plugin Phase 1 MVP. The plan is organized into 6 sprints plus a foundation sprint (Sprint 0), following an iterative approach that delivers value incrementally.
+
+### Compliance Update (January 23, 2026)
+
+**Legal compliance work added:** 36 hours across Sprint 4-6 based on UK_Compliance_Checklist_v1_0.md findings. This includes:
+- Sprint 4: 14-day cooling-off waiver checkbox (3h)
+- Sprint 5: Optional email verification + accessibility statement (11h)
+- Sprint 6: Privacy Policy, Terms & Conditions, DPA verification (22h)
+
+**Total effort increased:** 1,005h → 1,041h (+36h, +3.6%)
 
 ### Timeline Overview
 
@@ -373,10 +382,11 @@ This document outlines the recommended development sequence for the WordPress Bo
 | Revenue reports by date range | SHOULD | 16h | SHOULD-008 |
 | Customer database list | SHOULD | 12h | SHOULD-011 |
 | Customer CSV export | SHOULD | 6h | SHOULD-014 |
+| 14-day cooling-off waiver checkbox | MUST | 3h | REQ-LEGAL-003 |
 
-**Week 15 Subtotal:** 76 hours
+**Week 15 Subtotal:** 79 hours
 
-### Sprint 4 Total: 256 hours
+### Sprint 4 Total: 259 hours
 
 ### Exit Criteria
 
@@ -440,10 +450,12 @@ This document outlines the recommended development sequence for the WordPress Bo
 | Focus indicator review | MUST | 4h | MUST-107 |
 | Color contrast verification | MUST | 6h | MUST-104 |
 | Screen reader testing (basic) | SHOULD | 8h | SHOULD-025 |
+| Email change verification workflow | SHOULD | 7h | REQ-LEGAL-007 |
+| Accessibility Statement creation | SHOULD | 4h | REQ-LEGAL-005 |
 
-**Week 18 Subtotal:** 42 hours
+**Week 18 Subtotal:** 53 hours
 
-### Sprint 5 Total: 128 hours
+### Sprint 5 Total: 139 hours
 
 ### Exit Criteria
 
@@ -482,6 +494,18 @@ This document outlines the recommended development sequence for the WordPress Bo
 | Load testing (50 concurrent users) | MUST | 8h | - |
 
 **Week 19 Subtotal:** 70 hours
+#### Legal Compliance (Week 20)
+
+| Task | Priority | Hours | Reference |
+|------|----------|-------|-----------|
+| Privacy Policy template creation | MUST | 10h | REQ-LEGAL-001 |
+| Terms & Conditions template creation | MUST | 7h | REQ-LEGAL-002 |
+| Data Processing Agreements verification | MUST | 3h | REQ-LEGAL-004 |
+| ICO Registration guidance document | SHOULD | 2h | REQ-LEGAL-006 |
+| Legal review (external - optional) | SHOULD | - | £500-1,500 |
+
+**Week 20 Legal Compliance Subtotal:** 22 hours
+
 
 #### Documentation & Launch (Week 20)
 
@@ -495,9 +519,10 @@ This document outlines the recommended development sequence for the WordPress Bo
 | First client training | MUST | 4h | - |
 | Bug fixes from testing | MUST | 16h | - |
 
-**Week 20 Subtotal:** 70 hours
+**Week 20 Documentation Subtotal:** 70 hours
+**Week 20 Total (Legal + Documentation):** 92 hours
 
-### Sprint 6 Total: 140 hours
+### Sprint 6 Total: 162 hours
 
 ### Exit Criteria
 
@@ -507,6 +532,10 @@ This document outlines the recommended development sequence for the WordPress Bo
 - [ ] Documentation complete
 - [ ] First client site deployed
 - [ ] First client trained
+- [ ] Privacy Policy published and linked
+- [ ] Terms & Conditions published and linked
+- [ ] 14-day waiver checkbox implemented and tested
+- [ ] All third-party DPAs verified
 
 ### Launch Milestone
 
@@ -543,7 +572,7 @@ This document outlines the recommended development sequence for the WordPress Bo
 | Sprint 4: Dashboard | 12-15 | 256h |
 | Sprint 5: Integration | 16-18 | 128h |
 | Sprint 6: Launch | 19-20 | 140h |
-| **TOTAL** | **20 weeks** | **1,005h** |
+| **TOTAL** | **20 weeks** | **1,041h** |
 
 ### Effort by Category
 
