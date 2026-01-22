@@ -1615,8 +1615,10 @@ Custom pricing
 | **Phase1_Scope_Final.md** | Scope summary | Executive summary, success criteria, competitive positioning |
 | **Pricing_Model_Recommendation.md** | Business decision | £995+£99/mo vs £495+£1,188/yr, revenue projections |
 | **Development_Sequence_Plan.md** | Implementation plan | 6 sprints, 20-22 weeks, dependencies, milestones |
+| **Risk_Register_v1_0.md** | Risk management | 10 risks identified, mitigation strategies, monitoring schedule |
+| **UK_Compliance_Checklist_v1_0.md** | Legal compliance | 89 requirements assessed, 91% coverage, 7 gaps with remediation plan |
 
-**Phase 4 Total:** 6 documents, ~100 pages
+**Phase 4 Total:** 7 documents, ~115 pages
 
 ---
 
@@ -1657,7 +1659,7 @@ VALIDATION (Phase 4 - Final Analysis)
 
 ## Total Documentation Summary
 
-**Total Documents:** 21 comprehensive files  
+**Total Documents:** 22 comprehensive files  
 **Total Pages:** ~500 pages  
 **Total Requirements:** 130+ (50+ functional, 40+ non-functional, 40+ integration/admin)  
 **Prioritized:** 100 requirements (78 MUST, 22 SHOULD included, 18 COULD deferred, 34 WON'T Phase 2)
