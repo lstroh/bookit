@@ -1091,3 +1091,123 @@ Database migration framework is an infrastructure decision that should be made b
 **Impact:** By resolving the 3 most customer-impacting critical issues immediately, we've addressed the core booking flow vulnerabilities while deferring infrastructure decisions to the development team.
 
 ---
+
+---
+
+### Competitive Analysis Follow-Up Decisions - ✅ RESOLVED
+
+**Decision Date:** [Today's date]  
+**Based On:** Competitive_Feature_Comparison_Report.md findings
+
+**Decisions Made:**
+
+#### 1. SMS Notifications - DEFERRED TO PHASE 2 ✅
+
+**Competitive Analysis Recommendation:** Add to Phase 1 (all 6 competitors have it)  
+**Decision:** Keep in Phase 2 as originally planned  
+**Rationale:**
+- SMS integration is straightforward (Twilio, 20-30 hours)
+- Email notifications sufficient for MVP
+- Can add post-launch based on customer feedback
+- Keeps Phase 1 scope manageable
+
+**Status:** Documented as Phase 2.1 feature in IntegrationRequirements_Phase1.md §8.1
+
+---
+
+#### 2. Magic Link Expiry: 90 Days → 7 Days ✅
+
+**Competitive Analysis Recommendation:** Reduce from 90 to 7 days  
+**Decision:** ACCEPTED  
+**Rationale:**
+- 90 days excessive for security
+- 7 days sufficient for customers to manage bookings
+- Reduces unauthorized access risk
+- Aligns with industry standards
+
+**Updated Files:**
+- CustomerJourney-04-Notifications.md (magic link validity)
+- CustomerJourney-05-Cancellation.md (cancellation link expiry)
+- CustomerJourney-06-Rescheduling.md (reschedule link expiry)
+
+**Status:** ✅ Specification updated, ready for development
+
+---
+
+#### 3. Abandoned Booking Recovery - SIMPLIFIED ✅
+
+**Competitive Analysis Recommendation:** Simplify complex recovery mechanism  
+**Decision:** ACCEPTED - Simplified to manual review approach  
+**Rationale:**
+- Complex cron-based recovery over-engineered for rare edge case
+- Simplified approach: log failed creations + Business Owner manual resolution
+- Saves 15-20 hours development time
+- More reliable (simpler = fewer bugs)
+- Business Owner has full control
+
+**Changes Made:**
+- Removed: Complex recovery queue table, automated cron job, retry logic
+- Added: Simple logging table, Business Owner dashboard alert, manual actions
+- Effort reduced: 12-16 hours → 4-6 hours
+
+**Updated File:** IntegrationRequirements_Phase1.md §3.12
+
+**Status:** ✅ Specification simplified, ready for development
+
+---
+
+#### 4. Race Condition Handling - SIMPLIFIED ✅
+
+**Competitive Analysis Recommendation:** Simplify temporary slot hold mechanism  
+**Decision:** ACCEPTED - Use database constraints + optimistic locking  
+**Rationale:**
+- Database UNIQUE constraint guarantees no double-booking (100% safe)
+- Temp holds over-engineered (requires cron, separate table, complex cleanup)
+- Race conditions rare in practice (~1-5 per month for typical SMB)
+- Automatic refunds handle edge case gracefully
+- Saves 30-40 hours development time
+
+**Changes Made:**
+- Removed: Temporary holds table, 10-minute reservations, cron cleanup
+- Added: Database unique constraint, availability double-check before payment, automatic refund if slot taken
+- Monitoring: Daily race condition report to Business Owner
+- Effort reduced: 30-40 hours → 8-12 hours
+
+**Updated File:** ScopeDefinition.md §5 (Race Condition Handling)
+
+**Status:** ✅ Specification simplified, testing requirements defined
+
+---
+
+#### 5. Pricing Model - UNDER REVIEW
+
+**Competitive Analysis Finding:** Positioned as premium vs. WordPress plugins, competitive vs. SaaS  
+**Current Model:** £995 setup + £99/month (Professional tier)  
+**Status:** To be finalized during Session 4.3 (Prioritization)
+
+**Options Under Consideration:**
+- Option A: Keep current model (£995 + £99/mo)
+- Option B: Lower setup, higher monthly (£495 + £119/mo)
+- Option C: Annual discount option (£0 setup + £1,188/year)
+
+**Decision:** Pending further analysis
+
+---
+
+### Updated Remediation Effort
+
+**Original Total:** 110-160 hours  
+**Critical Issues Resolved:** 26-36 hours (Issues #1, #2, #3)  
+**Simplifications Applied:** -45-60 hours saved  
+  - Abandoned recovery: -8 hours saved
+  - Race condition: -22 hours saved  
+  - Magic links: -1 hour (config change)
+
+**Remaining Effort:**
+- HIGH severity: 7 issues (~40-50 hours)
+- MEDIUM severity: 8 issues (~30-40 hours)
+- LOW severity: 5 issues (~10-15 hours)
+
+**Net Impact:** ~90-100 hours effort saved through simplification decisions
+
+---

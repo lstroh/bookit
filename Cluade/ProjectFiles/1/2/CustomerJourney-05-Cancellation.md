@@ -12,9 +12,9 @@ https://yoursite.com/booking/cancel/{booking_id}?token={magic_link_token}
 
 - Generated when booking created: `bin2hex(random_bytes(32))` (64 characters)
 - Stored in: `wp_bookings_appointments.magic_link_token`
-- Valid for: 90 days (longer than typical booking window)
+- Valid for: 7 days (longer than typical booking window)
 - One-time use: No (same link works for reschedule too)
-
+**Security Consideration:** Magic links expire after 7 days for security. This is a reasonable timeframe for customers to manage their bookings while minimizing risk of unauthorized access if links are shared or leaked.
 ---
 
 ### **5.7.1: Cancellation Page - Step 1 (Confirmation)**
@@ -313,7 +313,7 @@ https://yoursite.com/booking/reschedule/{booking_id}?token={magic_link_token}
 ```
 
 **Same token as cancellation** (magic_link_token is multi-purpose)
-
+**Security Consideration:** Magic links expire after 7 days for security. This is a reasonable timeframe for customers to manage their bookings while minimizing risk of unauthorized access if links are shared or leaked.
 ---
 
 ### **5.8.1: Rescheduling Page - Step 1 (Current Booking)**

@@ -476,8 +476,8 @@ ADD COLUMN email_failed BOOLEAN DEFAULT 0 AFTER reminder_sent_at;
 ---
 
 ### **Magic Link Expired/Invalid**
-
-**Problem:** Customer clicks cancel/reschedule link after 90 days
+**Security Consideration:** Magic links expire after 7 days for security. This is a reasonable timeframe for customers to manage their bookings while minimizing risk of unauthorized access if links are shared or leaked.
+**Problem:** Customer clicks cancel/reschedule link after 7 days
 
 **Handling:**
 
@@ -592,6 +592,6 @@ ADD COLUMN email_failed BOOLEAN DEFAULT 0 AFTER reminder_sent_at;
 - UK phone numbers only
 - Global same-day lead time (configurable)
 - Email templates with variable system
-- Magic links (90-day validity)
-
+- Magic links (7-day validity)
+**Security Consideration:** Magic links expire after 7 days for security. This is a reasonable timeframe for customers to manage their bookings while minimizing risk of unauthorized access if links are shared or leaked.
 ---

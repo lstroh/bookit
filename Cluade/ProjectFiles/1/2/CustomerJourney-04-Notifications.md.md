@@ -597,5 +597,5 @@ ALTER TABLE wp_bookings_appointments
 ADD COLUMN reminder_sent BOOLEAN DEFAULT 0 AFTER magic_link_token,
 ADD COLUMN reminder_sent_at DATETIME DEFAULT NULL AFTER reminder_sent;
 ```
-
+**Security Consideration:** Magic links expire after 7 days for security. This is a reasonable timeframe for customers to manage their bookings while minimizing risk of unauthorized access if links are shared or leaked.
 ---
