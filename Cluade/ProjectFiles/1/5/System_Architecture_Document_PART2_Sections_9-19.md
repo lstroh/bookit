@@ -91,12 +91,12 @@ Each staff member connects their own Google account. Benefits:
  * @param int $staff_id
  * @return string Authorization URL
  */
-function booking_initiate_google_oauth($staff_id) {
+function bookit_initiate_google_oauth($staff_id) {
     $client = new Google_Client();
     $client->setAuthConfig([
-        'client_id' => get_option('booking_google_client_id'),
-        'client_secret' => get_option('booking_google_client_secret'),
-        'redirect_uris' => [admin_url('admin-ajax.php?action=booking_google_callback')]
+        'client_id' => get_option('bookit_google_client_id'),
+        'client_secret' => get_option('bookit_google_client_secret'),
+        'redirect_uris' => [admin_url('admin-ajax.php?action=bookit_google_callback')]
     ]);
     
     $client->addScope(Google_Service_Calendar::CALENDAR_EVENTS);
@@ -114,7 +114,7 @@ function booking_initiate_google_oauth($staff_id) {
 /**
  * OAuth callback handler
  */
-add_action('wp_ajax_booking_google_callback', function() {
+add_action('wp_ajax_bookit_google_callback', function() {
     $code = sanitize_text_field($_GET['code']);
     $state = sanitize_text_field($_GET['state']);
     
@@ -134,7 +134,7 @@ add_action('wp_ajax_booking_google_callback', function() {
         wp_die('OAuth failed');
     }
     
-    booking_store_google_tokens($staff_id, $token);
+    bookit_store_google_tokens($staff_id, $token);
     
     wp_redirect(admin_url('admin.php?page=booking-staff-settings&oauth_success=1'));
     exit;
@@ -157,16 +157,16 @@ ADD COLUMN google_token_expires_at DATETIME NULL;
 
 ### Encryption Strategy
 **Algorithm:** AES-256-GCM (authenticated encryption)  
-**Key Storage:** `BOOKING_ENCRYPTION_KEY` constant in wp-config.php
+**Key Storage:** `bookit_ENCRYPTION_KEY` constant in wp-config.php
 
 ```php
 /**
  * Store encrypted tokens
  */
-function booking_store_google_tokens($staff_id, $token) {
+function bookit_store_google_tokens($staff_id, $token) {
     global $wpdb;
     
-    $encrypted = booking_encrypt_sensitive_data(json_encode([
+    $encrypted = bookit_encrypt_sensitive_data(json_encode([
         'access_token' => $token['access_token'],
         'refresh_token' => $token['refresh_token'],
         'created_at' => time()
@@ -187,8 +187,8 @@ function booking_store_google_tokens($staff_id, $token) {
 /**
  * Encrypt with AES-256-GCM
  */
-function booking_encrypt_sensitive_data($data) {
-    $key = base64_decode(BOOKING_ENCRYPTION_KEY); // 32 bytes
+function bookit_encrypt_sensitive_data($data) {
+    $key = base64_decode(bookit_ENCRYPTION_KEY); // 32 bytes
     $iv = random_bytes(12); // 12 bytes for GCM
     
     $ciphertext = openssl_encrypt(
@@ -238,7 +238,7 @@ php -r "echo base64_encode(random_bytes(32));"
 /**
  * Create Google Calendar event on booking confirmation
  */
-function booking_create_google_calendar_event($booking_id) {
+function bookit_create_google_calendar_event($booking_id) {
     global $wpdb;
     
     $booking = $wpdb->get_row($wpdb->prepare("
@@ -256,7 +256,7 @@ function booking_create_google_calendar_event($booking_id) {
     }
     
     try {
-        $access_token = booking_get_google_access_token($booking->staff_id);
+        $access_token = bookit_get_google_access_token($booking->staff_id);
         
         $client = new Google_Client();
         $client->setAccessToken($access_token);
@@ -287,11 +287,11 @@ function booking_create_google_calendar_event($booking_id) {
             ['id' => $booking_id]
         );
         
-        booking_log('INFO', 'Calendar event created', ['booking_id' => $booking_id]);
+        bookit_log('INFO', 'Calendar event created', ['booking_id' => $booking_id]);
         return $created->getId();
         
     } catch (Exception $e) {
-        booking_log('ERROR', 'Calendar sync failed', [
+        bookit_log('ERROR', 'Calendar sync failed', [
             'booking_id' => $booking_id,
             'error' => $e->getMessage()
         ]);
@@ -302,7 +302,7 @@ function booking_create_google_calendar_event($booking_id) {
 /**
  * Token refresh logic
  */
-function booking_get_google_access_token($staff_id) {
+function bookit_get_google_access_token($staff_id) {
     global $wpdb;
     
     $staff = $wpdb->get_row($wpdb->prepare("
@@ -311,7 +311,7 @@ function booking_get_google_access_token($staff_id) {
         WHERE id = %d
     ", $staff_id));
     
-    $token_data = json_decode(booking_decrypt_sensitive_data($staff->google_calendar_token), true);
+    $token_data = json_decode(bookit_decrypt_sensitive_data($staff->google_calendar_token), true);
     
     // Check if expired
     if (strtotime($staff->google_token_expires_at) < time() + 60) {
@@ -322,7 +322,7 @@ function booking_get_google_access_token($staff_id) {
         $new_token = $client->fetchAccessTokenWithRefreshToken($token_data['refresh_token']);
         
         // Update database
-        booking_store_google_tokens($staff_id, $new_token);
+        bookit_store_google_tokens($staff_id, $new_token);
         
         return $new_token['access_token'];
     }
@@ -349,11 +349,11 @@ function booking_get_google_access_token($staff_id) {
 ### Retry Queue
 
 ```php
-function booking_queue_calendar_sync_retry($booking_id) {
+function bookit_queue_calendar_sync_retry($booking_id) {
     $retry_count = get_post_meta($booking_id, '_calendar_sync_retry_count', true) ?: 0;
     
     if ($retry_count >= 3) {
-        booking_log('ERROR', 'Sync abandoned after 3 retries', ['booking_id' => $booking_id]);
+        bookit_log('ERROR', 'Sync abandoned after 3 retries', ['booking_id' => $booking_id]);
         return;
     }
     
@@ -361,7 +361,7 @@ function booking_queue_calendar_sync_retry($booking_id) {
     
     wp_schedule_single_event(
         time() + 3600, // 1 hour
-        'booking_retry_calendar_sync',
+        'bookit_retry_calendar_sync',
         [$booking_id]
     );
 }
@@ -376,7 +376,7 @@ Google Calendar supports push notifications when events change:
 
 ```php
 // Phase 2: Subscribe to calendar changes
-function booking_subscribe_to_calendar_changes($staff_id) {
+function bookit_subscribe_to_calendar_changes($staff_id) {
     $service = new Google_Service_Calendar(/* ... */);
     
     $channel = new Google_Service_Calendar_Channel([
@@ -441,11 +441,11 @@ Multiple security layers protect customer data:
 ### Dashboard Login Implementation
 
 ```php
-function booking_authenticate_dashboard_user($email, $password) {
+function bookit_authenticate_dashboard_user($email, $password) {
     global $wpdb;
     
     // Rate limit check (5 attempts per 15 min)
-    if (booking_is_rate_limited($_SERVER['REMOTE_ADDR'], 'dashboard_login')) {
+    if (bookit_is_rate_limited($_SERVER['REMOTE_ADDR'], 'dashboard_login')) {
         return new WP_Error('rate_limited', 'Too many attempts. Try again in 15 minutes.');
     }
     
@@ -456,7 +456,7 @@ function booking_authenticate_dashboard_user($email, $password) {
     ", sanitize_email($email)));
     
     if (!$staff || !password_verify($password, $staff->password_hash)) {
-        booking_increment_failed_attempts($_SERVER['REMOTE_ADDR'], 'dashboard_login');
+        bookit_increment_failed_attempts($_SERVER['REMOTE_ADDR'], 'dashboard_login');
         return new WP_Error('invalid', 'Invalid email or password');
     }
     
@@ -469,7 +469,7 @@ function booking_authenticate_dashboard_user($email, $password) {
     $_SESSION['login_time'] = time();
     $_SESSION['last_activity'] = time();
     
-    booking_clear_failed_attempts($_SERVER['REMOTE_ADDR'], 'dashboard_login');
+    bookit_clear_failed_attempts($_SERVER['REMOTE_ADDR'], 'dashboard_login');
     
     return $staff;
 }
@@ -482,7 +482,7 @@ function booking_authenticate_dashboard_user($email, $password) {
 - **One-time use:** Token deleted after use
 
 ```php
-function booking_generate_magic_link($booking_id) {
+function bookit_generate_magic_link($booking_id) {
     $token = bin2hex(random_bytes(32)); // 64 hex chars
     $token_hash = hash('sha256', $token); // Store hashed
     
@@ -513,7 +513,7 @@ ini_set('session.gc_maxlifetime', 28800);  // 8 hours
 ### Session Validation
 
 ```php
-function booking_validate_dashboard_session() {
+function bookit_validate_dashboard_session() {
     if (!isset($_SESSION['dashboard_user_id'])) {
         return false;
     }
@@ -586,8 +586,8 @@ echo '<img src="' . esc_url($url) . '" alt="' . esc_attr($alt) . '">';
 **Nonce verification:**
 
 ```php
-add_action('wp_ajax_booking_create', function() {
-    check_ajax_referer('booking_create_nonce', 'nonce');
+add_action('wp_ajax_bookit_create', function() {
+    check_ajax_referer('bookit_create_nonce', 'nonce');
     
     $service_id = absint($_POST['service_id']);
     // ... sanitize all inputs
@@ -646,14 +646,14 @@ try {
 ### Implementation
 
 ```php
-function booking_is_rate_limited($ip, $action) {
+function bookit_is_rate_limited($ip, $action) {
     $limits = [
         'dashboard_login' => ['max' => 5, 'window' => 900],   // 15 min
         'magic_link' => ['max' => 5, 'window' => 900],
         'booking_create' => ['max' => 10, 'window' => 3600],  // 1 hour
     ];
     
-    $option_name = 'booking_rate_limit_' . $action . '_' . md5($ip);
+    $option_name = 'bookit_rate_limit_' . $action . '_' . md5($ip);
     $attempts = get_option($option_name, []);
     
     // Remove old attempts
@@ -1154,7 +1154,7 @@ function cleanup_old_bookings() {
           AND deleted_at < DATE_SUB(NOW(), INTERVAL 7 YEAR)
     ");
 }
-add_action('booking_monthly_cleanup', 'cleanup_old_bookings');
+add_action('bookit_monthly_cleanup', 'cleanup_old_bookings');
 ```
 
 **Reference:** TechnicalRequirements.md §7.8
@@ -1363,17 +1363,17 @@ if (daysDiff < 14) {
 ### Activation Hook
 ```php
 // Main plugin file
-register_activation_hook(__FILE__, 'booking_plugin_activate');
+register_activation_hook(__FILE__, 'bookit_plugin_activate');
 
-function booking_plugin_activate() {
+function bookit_plugin_activate() {
     // Create database tables
-    require_once BOOKING_PLUGIN_DIR . 'includes/class-database-setup.php';
-    Booking_Database_Setup::create_tables();
+    require_once BOOKIT_PLUGIN_DIR . 'includes/class-database-setup.php';
+    bookit_Database_Setup::create_tables();
     
     // Default settings
-    add_option('booking_plugin_version', BOOKING_VERSION);
-    add_option('booking_timezone', 'Europe/London');
-    add_option('booking_currency', 'GBP');
+    add_option('bookit_plugin_version', BOOKIT_VERSION);
+    add_option('bookit_timezone', 'Europe/London');
+    add_option('bookit_currency', 'GBP');
     
     flush_rewrite_rules();
 }
@@ -1386,26 +1386,26 @@ function booking_plugin_activate() {
 ### Development (wp-config.php)
 ```php
 define('WP_DEBUG', true);
-define('BOOKING_ENV', 'development');
-define('BOOKING_STRIPE_MODE', 'test');
-define('BOOKING_STRIPE_TEST_KEY', 'sk_test_...');
+define('BOOKIT_ENV', 'development');
+define('BOOKIT_STRIPE_MODE', 'test');
+define('BOOKIT_STRIPE_TEST_KEY', 'sk_test_...');
 ```
 
 ### Staging
 ```php
 define('WP_DEBUG', false);
-define('BOOKING_ENV', 'staging');
-define('BOOKING_STRIPE_MODE', 'test');
-define('BOOKING_EMAIL_SERVICE', 'log'); // Don't send real emails
+define('BOOKIT_ENV', 'staging');
+define('BOOKIT_STRIPE_MODE', 'test');
+define('BOOKIT_EMAIL_SERVICE', 'log'); // Don't send real emails
 ```
 
 ### Production
 ```php
 define('WP_DEBUG', false);
-define('BOOKING_ENV', 'production');
-define('BOOKING_STRIPE_MODE', 'live');
-define('BOOKING_STRIPE_LIVE_KEY', 'sk_live_...');
-define('BOOKING_ENCRYPTION_KEY', 'base64_encoded_key');
+define('BOOKIT_ENV', 'production');
+define('BOOKIT_STRIPE_MODE', 'live');
+define('BOOKIT_STRIPE_LIVE_KEY', 'sk_live_...');
+define('BOOKIT_ENCRYPTION_KEY', 'base64_encoded_key');
 ```
 
 ---
@@ -1604,7 +1604,7 @@ npm test
 - **Rotation:** Weekly, 4-week retention
 
 ```php
-function booking_log($level, $message, $context = []) {
+function bookit_log($level, $message, $context = []) {
     $log_dir = WP_CONTENT_DIR . '/uploads/bookings/logs/';
     
     if (!file_exists($log_dir)) {
@@ -1623,7 +1623,7 @@ function booking_log($level, $message, $context = []) {
 ### Sentry.io (Optional)
 ```php
 // Real-time error tracking
-if (defined('BOOKING_SENTRY_DSN')) {
+if (defined('BOOKIT_SENTRY_DSN')) {
     \Sentry\captureMessage($message, \Sentry\Severity::error());
 }
 ```
@@ -1652,10 +1652,10 @@ if (defined('BOOKING_SENTRY_DSN')) {
 
 ```php
 // ❌ BAD: Logging sensitive data
-booking_log('INFO', 'Payment', ['card_number' => $_POST['card']]);
+bookit_log('INFO', 'Payment', ['card_number' => $_POST['card']]);
 
 // ✅ GOOD: Logging non-sensitive data
-booking_log('INFO', 'Payment processed', [
+bookit_log('INFO', 'Payment processed', [
     'booking_id' => $booking_id,
     'amount' => $amount,
     'card_last_4' => substr($card_number, -4),
@@ -1700,7 +1700,7 @@ function check_email_delivery_rate() {
         }
     }
 }
-add_action('booking_hourly_checks', 'check_email_delivery_rate');
+add_action('bookit_hourly_checks', 'check_email_delivery_rate');
 ```
 
 ---
@@ -1876,7 +1876,7 @@ CREATE TABLE wp_bookings_sms_log (
 
 ### Implementation Stub
 ```php
-function send_booking_reminder_sms($booking_id) {
+function send_bookit_reminder_sms($booking_id) {
     $twilio = new \Twilio\Rest\Client(
         get_option('twilio_account_sid'),
         get_option('twilio_auth_token')

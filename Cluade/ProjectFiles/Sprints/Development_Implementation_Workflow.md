@@ -829,7 +829,7 @@ Task 6 (Error Logging) ← Independent
 **Example:**
 ```php
 // tests/test-booking-validation.php
-class Test_Booking_Validation extends WP_UnitTestCase {
+class Test_bookit_Validation extends WP_UnitTestCase {
     public function test_rejects_past_dates() {
         $result = validate_booking_date('2024-01-01');
         $this->assertWPError($result);
@@ -1033,7 +1033,7 @@ C:\Projects\booking-plugin\
   │   │   ├── System_Architecture_Document_PART1_Sections_1-8.md
   │   │   └── System_Architecture_Document_PART2_Sections_9-19.md
   │   ├── requirements\
-  │   │   ├── SRS_WordPress_Booking_Plugin_v1_0.md
+  │   │   ├── SRS_WordPress_bookit_Plugin_v1_0.md
   │   │   ├── TechnicalRequirements.md
   │   │   └── [other requirement docs]
   │   ├── sprint-prompts\
@@ -1315,7 +1315,7 @@ Spent >30 minutes stuck? → YES → Ask Sprint Assistant
 **Pattern:**
 ```
 Liron: "Getting error when activating plugin: 
-       Fatal error: Class 'Booking_Database' not found
+       Fatal error: Class 'bookit_Database' not found
        
        Code is in includes/class-database.php
        Main file has: require_once 'includes/class-database.php'

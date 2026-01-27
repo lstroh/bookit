@@ -539,13 +539,13 @@ Critical configuration stored in `wp-config.php` (above web root for security):
 
 ```php
 // Booking Plugin Configuration
-define('BOOKING_STRIPE_SECRET_KEY', 'sk_live_...');
-define('BOOKING_STRIPE_WEBHOOK_SECRET', 'whsec_...');
-define('BOOKING_PAYPAL_CLIENT_ID', 'AYSq3RDGsmBl...');
-define('BOOKING_PAYPAL_CLIENT_SECRET', 'EHKxd91m...');
-define('BOOKING_EMAIL_API_KEY', 'SG.ab12...');
-define('BOOKING_ENCRYPTION_KEY', 'base64:...');  // For encrypting OAuth tokens
-define('BOOKING_JWT_SECRET', 'random-256-bit-key');  // If using JWT for dashboard auth
+define('BOOKIT_BOOKING_STRIPE_SECRET_KEY', 'sk_live_...');
+define('BOOKIT_BOOKING_STRIPE_WEBHOOK_SECRET', 'whsec_...');
+define('BOOKIT_BOOKING_PAYPAL_CLIENT_ID', 'AYSq3RDGsmBl...');
+define('BOOKIT_BOOKING_PAYPAL_CLIENT_SECRET', 'EHKxd91m...');
+define('BOOKIT_BOOKING_EMAIL_API_KEY', 'SG.ab12...');
+define('BOOKIT_BOOKING_ENCRYPTION_KEY', 'base64:...');  // For encrypting OAuth tokens
+define('BOOKIT_BOOKING_JWT_SECRET', 'random-256-bit-key');  // If using JWT for dashboard auth
 ```
 
 **Security Note:** These values NEVER stored in database. Retrieved at runtime only.
@@ -759,14 +759,14 @@ $_SESSION['session_token'] = wp_generate_password(32, false); // CSRF token
 
 ```php
 // Session configuration in plugin activation
-function booking_configure_session() {
+function bookit_configure_session() {
     if (session_status() === PHP_SESSION_NONE) {
         ini_set('session.cookie_httponly', 1);      // Prevent JavaScript access
         ini_set('session.cookie_secure', 1);        // HTTPS only (required)
         ini_set('session.cookie_samesite', 'Lax');  // CSRF protection
         ini_set('session.gc_maxlifetime', 28800);   // 8 hours
         ini_set('session.cookie_lifetime', 28800);  // 8 hours
-        session_name('booking_dashboard_session');  // Custom session name
+        session_name('bookit_dashboard_session');  // Custom session name
         session_start();
     }
 }
@@ -1190,26 +1190,26 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('BOOKING_VERSION', '1.0.0');
-define('BOOKING_PLUGIN_DIR', plugin_dir_path(__FILE__));
-define('BOOKING_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('BOOKING_PLUGIN_BASENAME', plugin_basename(__FILE__));
+define('BOOKIT_VERSION', '1.0.0');
+define('BOOKIT_PLUGIN_DIR', plugin_dir_path(__FILE__));
+define('BOOKIT_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('BOOKIT_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
 // Composer autoload
-require_once BOOKING_PLUGIN_DIR . 'vendor/autoload.php';
+require_once BOOKIT_PLUGIN_DIR . 'vendor/autoload.php';
 
 // Plugin activation hook
-register_activation_hook(__FILE__, ['Booking_System_Activator', 'activate']);
+register_activation_hook(__FILE__, ['bookit_activate', 'activate']);
 
 // Plugin deactivation hook
-register_deactivation_hook(__FILE__, ['Booking_System_Deactivator', 'deactivate']);
+register_deactivation_hook(__FILE__, ['bookit_deactivate', 'deactivate']);
 
 // Initialize plugin
-function run_booking_system() {
-    $plugin = new Booking_System_Plugin();
+function bookit_run() {
+    $plugin = new Bookit_Loader();
     $plugin->run();
 }
-run_booking_system();
+bookit_run();
 ```
 
 ## 4.3 MVC Pattern and Separation of Concerns
@@ -1219,7 +1219,7 @@ run_booking_system();
 **Example:** `includes/models/class-booking.php`
 
 ```php
-class Booking_Model {
+class BOOKIT_Model {
     private $table_name;
     private $wpdb;
     
@@ -1371,7 +1371,7 @@ class Availability_Controller {
         }
         
         // Get existing bookings
-        $booking = new Booking_Model();
+        $booking = new BOOKIT_Model();
         $existing_bookings = $booking->get_by_staff_and_date($staff_id, $date);
         
         // Generate all possible time slots
@@ -1508,7 +1508,7 @@ class Bookings_REST_API extends WP_REST_Controller {
         ];
         
         // Get bookings from model
-        $booking_model = new Booking_Model();
+        $booking_model = new BOOKIT_Model();
         $bookings = $booking_model->list($filters);
         $total = $booking_model->count($filters);
         
@@ -1564,26 +1564,26 @@ class Bookings_REST_API extends WP_REST_Controller {
 
 ```php
 // After booking created
-do_action('booking_system_booking_created', $booking_id, $booking_data);
+do_action('bookit_system_booking_created', $booking_id, $booking_data);
 
 // After payment completed
-do_action('booking_system_payment_completed', $booking_id, $payment_data);
+do_action('bookit_system_payment_completed', $booking_id, $payment_data);
 
 // Before booking cancelled
-do_action('booking_system_before_booking_cancelled', $booking_id);
+do_action('bookit_system_before_booking_cancelled', $booking_id);
 
 // After email sent
-do_action('booking_system_email_sent', $email_type, $recipient, $success);
+do_action('bookit_system_email_sent', $email_type, $recipient, $success);
 
 // Before availability calculation
-do_action('booking_system_before_availability_check', $staff_id, $date);
+do_action('bookit_system_before_availability_check', $staff_id, $date);
 ```
 
 **Usage:** Developers (or future add-ons) can hook into these actions for custom functionality:
 
 ```php
 // Example: Send SMS notification when booking created
-add_action('booking_system_booking_created', function($booking_id, $booking_data) {
+add_action('bookit_system_booking_created', function($booking_id, $booking_data) {
     $sms_service = new SMS_Service();
     $sms_service->send_booking_confirmation($booking_data['customer_phone'], $booking_id);
 }, 10, 2);
@@ -1595,34 +1595,34 @@ add_action('booking_system_booking_created', function($booking_id, $booking_data
 
 ```php
 // Modify available time slots before returning
-$slots = apply_filters('booking_system_available_slots', $slots, $staff_id, $date);
+$slots = apply_filters('bookit_system_available_slots', $slots, $staff_id, $date);
 
 // Modify email template content
-$email_content = apply_filters('booking_system_email_content', $content, $email_type, $booking_id);
+$email_content = apply_filters('bookit_system_email_content', $content, $email_type, $booking_id);
 
 // Modify booking creation data before insert
-$booking_data = apply_filters('booking_system_before_booking_insert', $booking_data);
+$booking_data = apply_filters('bookit_system_before_booking_insert', $booking_data);
 
 // Modify refund amount calculation
-$refund_amount = apply_filters('booking_system_refund_amount', $amount, $booking_id, $cancellation_time);
+$refund_amount = apply_filters('bookit_system_refund_amount', $amount, $Bookit_id, $cancellation_time);
 ```
 
 ### Core WordPress Hooks Used
 
 ```php
 // Plugin initialization
-add_action('plugins_loaded', ['Booking_System_Plugin', 'init']);
+add_action('plugins_loaded', ['Bookit_System_Plugin', 'init']);
 
 // Enqueue scripts and styles
-add_action('wp_enqueue_scripts', ['Booking_Public', 'enqueue_scripts']);
-add_action('admin_enqueue_scripts', ['Booking_Admin', 'enqueue_scripts']);
+add_action('wp_enqueue_scripts', ['Bookit_Public', 'enqueue_scripts']);
+add_action('admin_enqueue_scripts', ['Bookit_Admin', 'enqueue_scripts']);
 
 // Register REST API endpoints
 add_action('rest_api_init', ['Bookings_REST_API', 'register_routes']);
 
 // Scheduled tasks (WP-Cron)
-add_action('booking_system_send_reminders', ['Email_Controller', 'send_24h_reminders']);
-add_action('booking_system_health_check', ['System_Monitor', 'run_health_check']);
+add_action('bookit_system_send_reminders', ['Email_Controller', 'send_24h_reminders']);
+add_action('bookit_system_health_check', ['System_Monitor', 'run_health_check']);
 
 // Prevent dashboard users from accessing wp-admin
 add_action('admin_init', function() {
@@ -1641,7 +1641,7 @@ add_action('admin_init', function() {
 ### Activation Hook (`includes/class-activator.php`)
 
 ```php
-class Booking_System_Activator {
+class Bookit_Activator {
     public static function activate() {
         // Check system requirements
         if (version_compare(PHP_VERSION, '8.0', '<')) {
@@ -1663,12 +1663,12 @@ class Booking_System_Activator {
         self::set_default_settings();
         
         // Schedule cron jobs
-        if (!wp_next_scheduled('booking_system_send_reminders')) {
-            wp_schedule_event(time(), 'daily', 'booking_system_send_reminders');
+        if (!wp_next_scheduled('bookit_system_send_reminders')) {
+            wp_schedule_event(time(), 'daily', 'bookit_system_send_reminders');
         }
         
-        if (!wp_next_scheduled('booking_system_health_check')) {
-            wp_schedule_event(time(), 'daily', 'booking_system_health_check');
+        if (!wp_next_scheduled('bookit_system_health_check')) {
+            wp_schedule_event(time(), 'daily', 'bookit_system_health_check');
         }
         
         // Create log directory
@@ -1688,7 +1688,7 @@ class Booking_System_Activator {
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         
         // Read schema from database/schema.sql
-        $schema = file_get_contents(BOOKING_PLUGIN_DIR . 'database/schema.sql');
+        $schema = file_get_contents(BOOKITPLUGIN_DIR . 'database/schema.sql');
         
         // Execute schema
         dbDelta($schema);
@@ -1717,7 +1717,7 @@ class Booking_System_Activator {
 ### Deactivation Hook (`includes/class-deactivator.php`)
 
 ```php
-class Booking_System_Deactivator {
+class Bookit_Deactivator {
     public static function deactivate() {
         // Clear scheduled cron jobs
         wp_clear_scheduled_hook('booking_system_send_reminders');
@@ -1791,43 +1791,43 @@ The following constants must be added to `wp-config.php` during installation (do
  */
 
 // Stripe Configuration
-define('BOOKING_STRIPE_PUBLISHABLE_KEY', 'pk_live_...');  // Or pk_test_... for testing
-define('BOOKING_STRIPE_SECRET_KEY', 'sk_live_...');      // Or sk_test_...
-define('BOOKING_STRIPE_WEBHOOK_SECRET', 'whsec_...');
+define('BOOKIT_STRIPE_PUBLISHABLE_KEY', 'pk_live_...');  // Or pk_test_... for testing
+define('BOOKIT_STRIPE_SECRET_KEY', 'sk_live_...');      // Or sk_test_...
+define('BOOKIT_STRIPE_WEBHOOK_SECRET', 'whsec_...');
 
 // PayPal Configuration
-define('BOOKING_PAYPAL_CLIENT_ID', 'AYSq3RDGsmBl...');
-define('BOOKING_PAYPAL_CLIENT_SECRET', 'EHKxd91m...');
-define('BOOKING_PAYPAL_MODE', 'live');  // Or 'sandbox' for testing
+define('BOOKIT_PAYPAL_CLIENT_ID', 'AYSq3RDGsmBl...');
+define('BOOKIT_PAYPAL_CLIENT_SECRET', 'EHKxd91m...');
+define('BOOKIT_PAYPAL_MODE', 'live');  // Or 'sandbox' for testing
 
 // Email Service Configuration (Choose ONE)
 // Option A: SendGrid
-define('BOOKING_EMAIL_PROVIDER', 'sendgrid');
-define('BOOKING_SENDGRID_API_KEY', 'SG.ab12cd34...');
+define('BOOKIT_EMAIL_PROVIDER', 'sendgrid');
+define('BOOKIT_SENDGRID_API_KEY', 'SG.ab12cd34...');
 
 // Option B: Mailgun
-// define('BOOKING_EMAIL_PROVIDER', 'mailgun');
-// define('BOOKING_MAILGUN_API_KEY', 'key-abc123...');
-// define('BOOKING_MAILGUN_DOMAIN', 'mg.yourdomain.com');
+// define('BOOKIT_EMAIL_PROVIDER', 'mailgun');
+// define('BOOKIT_MAILGUN_API_KEY', 'key-abc123...');
+// define('BOOKIT_MAILGUN_DOMAIN', 'mg.yourdomain.com');
 
 // Option C: AWS SES
-// define('BOOKING_EMAIL_PROVIDER', 'ses');
-// define('BOOKING_AWS_ACCESS_KEY', 'AKIAIOSFODNN7EXAMPLE');
-// define('BOOKING_AWS_SECRET_KEY', 'wJalrXUtn...');
-// define('BOOKING_AWS_REGION', 'eu-west-2');
+// define('BOOKIT_EMAIL_PROVIDER', 'ses');
+// define('BOOKIT_AWS_ACCESS_KEY', 'AKIAIOSFODNN7EXAMPLE');
+// define('BOOKIT_AWS_SECRET_KEY', 'wJalrXUtn...');
+// define('BOOKIT_AWS_REGION', 'eu-west-2');
 
 // Encryption Key (Generate using: base64_encode(random_bytes(32)))
-define('BOOKING_ENCRYPTION_KEY', 'base64:abc123def456...');
+define('BOOKIT_ENCRYPTION_KEY', 'base64:abc123def456...');
 
 // JWT Secret (if using JWT for dashboard auth - Phase 2)
-// define('BOOKING_JWT_SECRET', 'random-256-bit-key-here');
+// define('BOOKIT_JWT_SECRET', 'random-256-bit-key-here');
 
 // Google Calendar API (OAuth credentials from Google Cloud Console)
-define('BOOKING_GOOGLE_CLIENT_ID', '123456789-abc123.apps.googleusercontent.com');
-define('BOOKING_GOOGLE_CLIENT_SECRET', 'GOCSPX-abc123...');
+define('BOOKIT_GOOGLE_CLIENT_ID', '123456789-abc123.apps.googleusercontent.com');
+define('BOOKIT_GOOGLE_CLIENT_SECRET', 'GOCSPX-abc123...');
 
 // Debug Mode (set to false in production)
-define('BOOKING_DEBUG', false);
+define('BOOKIT_DEBUG', false);
 ```
 
 **Security Note:** Never commit wp-config.php to version control. Use environment variables or separate config files for different environments.
@@ -2224,7 +2224,7 @@ INSERT INTO wp_bookings_settings (setting_key, setting_value, setting_type) VALU
 **Encrypted Settings:**
 - API keys, OAuth tokens stored with `setting_type = 'encrypted'`
 - `setting_value` contains AES-256-GCM encrypted data
-- Decrypted at runtime using `BOOKING_ENCRYPTION_KEY` from wp-config.php
+- Decrypted at runtime using `BOOKIT_ENCRYPTION_KEY` from wp-config.php
 
 ## 5.3 Entity Relationship Diagram
 
@@ -2626,13 +2626,13 @@ function booking_migrate_1_1_0() {
 **Migration Runner:**
 ```php
 // Run during plugin activation or update
-function booking_run_migrations() {
-    $current_version = get_option('booking_system_db_version', '0.0.0');
-    $plugin_version = BOOKING_VERSION; // From main plugin file constant
+function bookit_run_migrations() {
+    $current_version = get_option('bookit_system_db_version', '0.0.0');
+    $plugin_version = BOOKIT_VERSION; // From main plugin file constant
     
     if (version_compare($current_version, $plugin_version, '<')) {
         // Get all migration files
-        $migrations = glob(BOOKING_PLUGIN_DIR . 'database/migrations/*.php');
+        $migrations = glob(BOOKIT_PLUGIN_DIR . 'database/migrations/*.php');
         
         foreach ($migrations as $migration_file) {
             // Extract version from filename (e.g., "1.1.0" from "1.1.0-add-categories.php")
@@ -2644,7 +2644,7 @@ function booking_run_migrations() {
                 version_compare($migration_version, $plugin_version, '<=')) {
                 
                 require_once $migration_file;
-                $function_name = 'booking_migrate_' . str_replace('.', '_', $migration_version);
+                $function_name = 'BOOKIT_migrate_' . str_replace('.', '_', $migration_version);
                 
                 if (function_exists($function_name)) {
                     $function_name();
