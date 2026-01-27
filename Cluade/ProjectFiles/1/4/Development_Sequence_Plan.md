@@ -87,6 +87,257 @@ This document outlines the recommended development sequence for the WordPress Bo
 - [ ] Basic authentication working for dashboard access
 - [ ] Coding standards documented
 
+
+---
+
+### Sprint 0: Actual Implementation Notes
+
+**Status:** ✅ COMPLETE  
+**Completion Date:** January 27, 2026  
+**Actual Hours:** 44 / 52 estimated (85% completion)  
+
+---
+
+#### Environment Setup Details
+
+**Development Environment:**
+- **Primary:** Local by Flywheel
+  - Visual WordPress management
+  - Database access via Adminer
+  - Used for: Day-to-day development, manual browser testing
+  
+- **Testing:** wp-env (Docker-based)
+  - Version: 10.37.0
+  - Configuration: `.wp-env.json` in plugin root
+  - WordPress: 6.4
+  - PHP: 8.2
+  - Ports: 8888 (development), 8889 (tests)
+  - Used for: PHPUnit automated tests
+
+**Version Control:**
+- Git repository initialized
+- Branching strategy: main, develop, feature branches
+- Commit workflow: Systematic commits with descriptive messages
+
+---
+
+#### wp-env Integration Details
+
+**Installation Method:**
+```bash
+npm install -g @wordpress/env
+```
+
+**Configuration File (.wp-env.json):**
+```json
+{
+  "core": "WordPress/WordPress#6.4",
+  "phpVersion": "8.2",
+  "plugins": [ "." ],
+  "port": 8888,
+  "testsPort": 8889,
+  "config": {
+    "WP_DEBUG": true,
+    "WP_DEBUG_LOG": true,
+    "SCRIPT_DEBUG": true,
+    "WP_ENVIRONMENT_TYPE": "local"
+  },
+  "mappings": {
+    "wp-content/plugins/booking-system": "."
+  }
+}
+```
+
+**npm Scripts Added (package.json):**
+```json
+{
+  "scripts": {
+    "wp-env:start": "wp-env start",
+    "wp-env:stop": "wp-env stop",
+    "wp-env:restart": "wp-env destroy && wp-env start",
+    "wp-env:destroy": "wp-env destroy",
+    "test": "wp-env run tests-cli --env-cwd=wp-content/plugins/booking-system vendor/bin/phpunit"
+  }
+}
+```
+
+**Common Commands Used:**
+```bash
+# Start wp-env environment
+npm run wp-env:start
+
+# Stop wp-env environment
+npm run wp-env:stop
+
+# Restart (fresh environment)
+npm run wp-env:restart
+
+# Destroy environment completely
+npm run wp-env:destroy
+
+# Run PHPUnit tests
+npm test
+```
+
+---
+
+#### Usage Pattern
+
+**When to Use Local by Flywheel:**
+- Writing PHP code
+- Creating/modifying WordPress templates
+- Manual browser testing
+- Database inspections (via Adminer)
+- Visual WordPress admin tasks
+
+**When to Use wp-env:**
+- Running PHPUnit unit tests
+- Integration testing (automated)
+- Verifying code doesn't break existing tests
+- Pre-commit test verification
+
+**Typical Workflow:**
+1. Code feature in Local by Flywheel
+2. Test manually in browser (Local environment)
+3. Switch to wp-env for automated PHPUnit tests
+4. Fix any failing tests
+5. Commit when all tests pass
+
+---
+
+#### Benefits Realized
+
+**Isolation:**
+- ✅ Test database completely separate from development database
+- ✅ No test data pollution in development environment
+- ✅ Can destroy/rebuild test environment without affecting dev work
+
+**Reproducibility:**
+- ✅ Same WordPress/PHP versions across team members
+- ✅ Configuration in `.wp-env.json` ensures consistency
+- ✅ Easy onboarding for new developers
+
+**CI/CD Ready:**
+- ✅ wp-env can run in GitHub Actions (future)
+- ✅ Same environment locally and in CI pipeline
+- ✅ No "works on my machine" issues
+
+**Speed:**
+- ✅ Fast environment reset (destroy + start)
+- ✅ PHPUnit tests run quickly in isolated container
+- ✅ No need to manually configure PHPUnit
+
+---
+
+#### Challenges Encountered & Solutions
+
+**Challenge 1: Database Tables Not Creating on Activation**
+- **Issue:** Tables weren't created when plugin activated
+- **Cause:** Database connection issues in wp-env
+- **Solution:** Used `dbDelta()` with proper SQL formatting
+- **Time Lost:** ~2 hours
+- **Lesson:** Always verify table creation with `SHOW TABLES;`
+
+**Challenge 2: Log Files Inside Web Root (Security)**
+- **Issue:** Initial log location was inside plugin directory
+- **Cause:** Default implementation used plugin directory
+- **Solution:** Moved logs to `/wp-content/uploads/booking-system-logs/` with `.htaccess` protection
+- **Time Lost:** ~3 hours
+- **Lesson:** Security considerations should be addressed immediately, not deferred
+
+**Challenge 3: wp-env Learning Curve**
+- **Issue:** First time using wp-env, unfamiliar commands
+- **Cause:** New tool for developer
+- **Solution:** Created npm scripts for common tasks
+- **Time Lost:** ~2 hours (setup + learning)
+- **Lesson:** npm scripts make wp-env much easier to use
+
+---
+
+#### Sprint 0 Lessons Learned
+
+**What Went Well:**
+1. ✅ Hybrid approach (Local + wp-env) provides best of both worlds
+2. ✅ npm scripts make wp-env commands memorable and easy
+3. ✅ Systematic Git commits maintained clear history
+4. ✅ PHPUnit infrastructure working perfectly
+5. ✅ Database schema created successfully with proper indexes
+
+**What Could Be Improved:**
+1. ⚠️ Should have created .wp-env.json earlier (avoided some trial/error)
+2. ⚠️ Security considerations (log location) should be first priority
+3. ⚠️ More time needed for wp-env familiarization (underestimated)
+
+**Recommendations for Sprint 1+:**
+1. 📋 Always run `npm test` before committing
+2. 📋 Use `npm run wp-env:restart` when tests behave unexpectedly
+3. 📋 Keep wp-env environment separate (don't modify files inside it)
+4. 📋 Commit `.wp-env.json` to repo for team consistency
+5. 📋 Document any wp-env issues encountered for future reference
+
+---
+
+#### Time Breakdown (Actual)
+
+| Task | Estimated | Actual | Notes |
+|------|-----------|--------|-------|
+| Plugin boilerplate | 8h | 6h | Faster due to templates |
+| Database schema | 10h | 12h | Table creation debugging |
+| Authentication framework | 8h | 8h | As expected |
+| Admin menu structure | 4h | 3h | Simple implementation |
+| Error logging | 4h | 6h | Security location change |
+| wp-env setup | - | 5h | Not originally estimated |
+| PHPUnit configuration | 6h | 4h | wp-env simplified this |
+| **TOTAL** | 40h | 44h | **+10% variance** |
+
+**Analysis:** 
+- wp-env setup added 5 hours (not originally estimated)
+- PHPUnit setup saved 2 hours (wp-env includes it)
+- Security improvements added 2 hours (good investment)
+- Overall: 85% estimation accuracy (very good)
+
+---
+
+#### Sprint 0 Exit Criteria - Verification
+
+- [x] **Plugin activates without errors** - ✅ Verified in both Local and wp-env
+- [x] **Database tables created with indexes** - ✅ All 10 tables created successfully
+- [x] **Authentication framework operational** - ✅ Session handling, nonce verification working
+- [x] **Admin menu structure in place** - ✅ Basic menu structure complete
+- [x] **Error logging configured** - ✅ Logs to `/wp-content/uploads/booking-system-logs/`
+- [x] **Development environment complete** - ✅ Local by Flywheel + wp-env hybrid setup
+- [x] **Unit testing infrastructure operational** - ✅ PHPUnit tests run via `npm test`
+
+**Overall Sprint 0 Status:** ✅ **COMPLETE - READY FOR SPRINT 1**
+
+---
+
+#### Files Changed/Created in Sprint 0
+
+**Core Plugin Files:**
+- `booking-system.php` (main plugin file)
+- `includes/class-booking-system-activator.php` (database setup)
+- `includes/class-booking-system-logger.php` (error logging)
+- `admin/class-booking-system-admin.php` (admin menu)
+- `tests/bootstrap.php` (PHPUnit bootstrap)
+- `tests/test-booking-system.php` (initial tests)
+
+**Configuration Files:**
+- `.wp-env.json` (wp-env configuration)
+- `package.json` (npm scripts)
+- `composer.json` (PHP dependencies)
+- `phpunit.xml` (PHPUnit configuration)
+- `.gitignore` (version control exclusions)
+
+**Documentation Files:**
+- `README.md` (plugin documentation)
+- `CHANGELOG.md` (version history)
+
+**Total Files:** 14 new files created
+
+**Lines of Code:** ~1,200 lines (including tests and documentation)
+
+---
 ---
 
 ## SPRINT 1: CORE BOOKING FLOW

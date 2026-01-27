@@ -1422,6 +1422,176 @@ define('BOOKING_ENCRYPTION_KEY', 'base64_encoded_key');
 
 **Rollback:** Deactivate plugin if critical issues
 
+## 15.5 Development Environment Requirements
+
+### Recommended Approach: Hybrid Setup (Local by Flywheel + wp-env)
+
+**Why Hybrid?**
+- **Local by Flywheel:** Visual development environment for day-to-day coding
+- **wp-env:** Docker-based isolated environment for PHPUnit testing
+- **Benefits:** Best of both worlds - ease of use + reproducible testing
+
+---
+
+### Option 1: Local by Flywheel + wp-env (RECOMMENDED - Project is using this)
+
+**Local by Flywheel (Primary Development):**
+- Visual WordPress management interface
+- Easy database access via built-in Adminer
+- Site management and SSL certificates
+- Location: `C:\Local Sites\[site-name]\`
+
+**wp-env (Testing Environment):**
+- Docker-based WordPress + MySQL containers
+- Isolated testing environment (separate from dev database)
+- PHPUnit tests run in wp-env container
+- CI/CD-ready (matches production-like environment)
+- Installed via: `npm install -g @wordpress/env`
+- Version: 10.37.0 (as of Sprint 0)
+
+**Configuration (.wp-env.json in plugin directory):**
+```json
+{
+  "core": "WordPress/WordPress#6.4",
+  "phpVersion": "8.2",
+  "plugins": [ "." ],
+  "port": 8888,
+  "testsPort": 8889,
+  "config": {
+    "WP_DEBUG": true,
+    "WP_DEBUG_LOG": true,
+    "SCRIPT_DEBUG": true,
+    "WP_ENVIRONMENT_TYPE": "local"
+  },
+  "mappings": {
+    "wp-content/plugins/booking-system": "."
+  }
+}
+```
+
+**Typical Development Workflow:**
+1. Code changes in Local by Flywheel environment
+2. Manual browser testing in Local (http://booking-plugin.local)
+3. Run PHPUnit tests in wp-env: `npm test`
+4. Commit when all tests pass
+
+**wp-env Access:**
+- Main site: http://localhost:8888
+- Test site: http://localhost:8889
+- Admin: http://localhost:8888/wp-admin (admin/password)
+
+---
+
+### Option 2: Local by Flywheel Only
+
+**Use Case:** Developers who prefer simpler setup without Docker
+
+**Setup:**
+- Install PHPUnit directly in Local site
+- Configure PHPUnit bootstrap file
+- Run tests against Local's database
+
+**Cons:**
+- Tests affect development database
+- Not CI/CD-ready
+- Requires manual PHPUnit configuration
+
+---
+
+### Option 3: Full Docker Compose Setup
+
+**Use Case:** Advanced users comfortable with Docker
+
+**Setup:**
+- Custom docker-compose.yml with WordPress + MySQL + PHPUnit
+- More control over environment configuration
+- Requires Docker knowledge
+
+**Cons:**
+- More complex initial setup
+- Requires Docker Compose knowledge
+- Overkill for solo developers
+
+---
+
+### Environment Requirements (All Options)
+
+**Minimum Requirements:**
+- PHP 8.0+ (8.2 recommended)
+- MySQL 5.7+ or MariaDB 10.3+
+- WordPress 6.4+
+- Composer (for PHP dependencies)
+- Node.js 18+ and npm (for wp-env if using hybrid approach)
+- Docker Desktop (for wp-env if using hybrid approach)
+
+**Testing Environment Benefits (wp-env):**
+- Isolated WordPress instance prevents test data pollution
+- Consistent environment across team members
+- Matches CI/CD configuration (GitHub Actions can use wp-env)
+- Easy reset: `npm run wp-env:destroy` + `npm run wp-env:start`
+
+---
+
+### wp-env Installation Guide
+
+**Step 1: Install Node.js and npm**
+- Download from https://nodejs.org/ (LTS version)
+- Verify: `node --version` (should be 18+)
+- Verify: `npm --version`
+
+**Step 2: Install Docker Desktop**
+- Download from https://www.docker.com/products/docker-desktop
+- Start Docker Desktop (must be running for wp-env)
+
+**Step 3: Install wp-env globally**
+```bash
+npm install -g @wordpress/env
+```
+
+**Step 4: Verify installation**
+```bash
+wp-env --version
+# Output: 10.37.0 (or newer)
+```
+
+**Step 5: Create .wp-env.json in plugin directory**
+(See configuration example above)
+
+**Step 6: Add npm scripts to package.json**
+```json
+{
+  "scripts": {
+    "wp-env:start": "wp-env start",
+    "wp-env:stop": "wp-env stop",
+    "wp-env:restart": "wp-env destroy && wp-env start",
+    "wp-env:destroy": "wp-env destroy",
+    "test": "wp-env run tests-cli --env-cwd=wp-content/plugins/booking-system vendor/bin/phpunit"
+  }
+}
+```
+
+**Step 7: Start wp-env and run tests**
+```bash
+npm run wp-env:start
+npm test
+```
+
+---
+
+### Development Environment Comparison
+
+| Feature | Local by Flywheel | wp-env | Docker Compose |
+|---------|-------------------|--------|----------------|
+| **Ease of Setup** | âœ… Very Easy | ✔️ Easy | ❌ Complex |
+| **Visual Interface** | âœ… Yes | ❌ No (CLI only) | ❌ No |
+| **Database Access** | âœ… Built-in Adminer | ✔️ Via CLI | ✔️ Via tools |
+| **PHPUnit Testing** | ✔️ Manual setup | âœ… Built-in | âœ… Customizable |
+| **Isolated Testing** | ❌ Same database | âœ… Separate | âœ… Separate |
+| **CI/CD Ready** | ❌ No | âœ… Yes | âœ… Yes |
+| **Resource Usage** | Medium | Medium | High |
+| **Best For** | Daily development | Automated tests | Advanced users |
+
+**Project Decision:** Hybrid approach (Local + wp-env) for best balance of usability and testing capability.
 ---
 
 # SECTION 16: ERROR HANDLING & LOGGING

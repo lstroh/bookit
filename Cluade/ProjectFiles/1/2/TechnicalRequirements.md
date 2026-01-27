@@ -2022,6 +2022,215 @@ if ($payment_failed) {
 
 ---
 
+### NFR-9.5: Development Environment Requirements
+
+#### Minimum System Requirements
+
+**PHP:**
+- Version: 8.0 or higher (8.2 recommended)
+- Extensions: mysqli, json, curl, openssl, mbstring
+- Memory limit: 256MB minimum (512MB recommended)
+
+**Database:**
+- MySQL 5.7+ OR MariaDB 10.3+
+- InnoDB storage engine
+- utf8mb4 character set support
+
+**WordPress:**
+- Version: 6.0 or higher (6.4 recommended)
+- Multisite: Not required (single-site installations)
+
+**Composer:**
+- For PHP dependency management
+- Version: 2.0 or higher
+
+**Node.js and npm:**
+- Node.js 18+ (LTS version recommended)
+- npm 9+ (comes with Node.js)
+- Required for: wp-env, build tools, package management
+
+**Docker Desktop:**
+- Required for wp-env testing environment
+- Version: Latest stable release
+- Platform: Windows 10/11, macOS, Linux
+
+---
+
+#### Supported Development Environments
+
+**Recommended: Local by Flywheel + wp-env (Hybrid)**
+- Local by Flywheel for daily development (visual interface)
+- wp-env for automated PHPUnit testing (Docker-based)
+- Prevents test data from polluting development database
+- CI/CD-ready testing environment
+
+**Alternative Option 1: Local by Flywheel Only**
+- Suitable for development and manual testing
+- Requires manual PHPUnit configuration
+- Tests run against development database (not isolated)
+
+**Alternative Option 2: Docker Compose**
+- Full Docker setup (WordPress + MySQL + PHPUnit)
+- More complex initial setup
+- Suitable for advanced users familiar with Docker
+
+**Alternative Option 3: XAMPP/MAMP**
+- Traditional local server stack
+- Requires manual WordPress installation
+- Requires manual PHPUnit setup
+- Not recommended (more setup overhead)
+
+---
+
+#### Testing Environment (wp-env)
+
+**Purpose:**
+- Provides isolated WordPress + MySQL environment for PHPUnit tests
+- Prevents test data from affecting development database
+- Ensures reproducible test results
+- Matches CI/CD environment configuration
+
+**Installation:**
+```bash
+npm install -g @wordpress/env
+```
+
+**Configuration (.wp-env.json):**
+- Located in plugin root directory
+- Defines WordPress version, PHP version, ports
+- Maps plugin files into container
+- Sets environment variables (WP_DEBUG, etc.)
+
+**Usage:**
+```bash
+npm run wp-env:start    # Start environment
+npm test                # Run PHPUnit tests
+npm run wp-env:stop     # Stop environment
+npm run wp-env:destroy  # Remove environment completely
+```
+
+**Access:**
+- Development site: http://localhost:8888
+- Test site: http://localhost:8889
+- Admin credentials: admin / password
+
+**Benefits:**
+- ✅ Isolated testing (no database pollution)
+- ✅ Fast environment reset (destroy + start)
+- ✅ Matches GitHub Actions CI/CD environment
+- ✅ Team consistency (same config via .wp-env.json)
+- ✅ No manual PHPUnit configuration needed
+
+---
+
+#### Version Control Requirements
+
+**Git:**
+- Version: 2.30 or higher
+- Repository: GitHub (recommended) or GitLab
+
+**Git Workflow:**
+- Branching model: main, develop, feature branches
+- Commit messages: Conventional Commits format
+- Code review: Pull requests required before merge
+
+**Files to .gitignore:**
+- `/vendor/` (Composer dependencies)
+- `/node_modules/` (npm dependencies)
+- `.wp-env.json` (may contain local paths - use example file)
+- `/logs/` (error logs outside web root)
+- WordPress core files (if using wp-env)
+
+---
+
+#### IDE/Editor Requirements
+
+**Recommended: Cursor IDE or VS Code**
+- PHP syntax highlighting and linting
+- Git integration
+- WordPress snippets/extensions
+- PHPUnit integration
+
+**Required Extensions/Plugins:**
+- PHP Intelephense (code completion)
+- PHP CS Fixer (code formatting)
+- WordPress Hooks (snippet support)
+- GitLens (Git visualization)
+
+---
+
+#### Quality Assurance Tools
+
+**Unit Testing:**
+- PHPUnit 9.5+ (installed via Composer)
+- Target: 80% code coverage
+- Run via: `npm test` (in wp-env environment)
+
+**Code Quality:**
+- WordPress Coding Standards (PHPCS)
+- PHP_CodeSniffer for linting
+- PHPStan for static analysis (optional)
+
+**API Testing:**
+- Postman or Insomnia
+- Collection export for team sharing
+- Automated tests via Newman (optional)
+
+**Accessibility Testing:**
+- aXe DevTools browser extension
+- NVDA screen reader (Windows)
+- VoiceOver (macOS)
+- Lighthouse (Chrome DevTools)
+
+**Performance Testing:**
+- Google Lighthouse (target: ≥90 performance score)
+- GTmetrix for page speed analysis
+- Query Monitor (WordPress plugin) for database query analysis
+
+---
+
+#### Hosting Requirements (Production)
+
+**PHP:**
+- Version: 8.0+ (8.2 recommended)
+- Memory: 256MB minimum (512MB recommended)
+- Execution time: 60 seconds minimum
+
+**Database:**
+- MySQL 5.7+ OR MariaDB 10.3+
+- 500MB storage minimum (1GB recommended)
+
+**SSL/TLS:**
+- HTTPS certificate required (Let's Encrypt acceptable)
+- TLS 1.2 or higher
+
+**Recommended Hosts:**
+- SiteGround (UK-based, good support)
+- Kinsta (premium managed WordPress)
+- WP Engine (enterprise-grade)
+
+---
+
+#### CI/CD Environment (Future)
+
+**GitHub Actions (Phase 2 consideration):**
+- wp-env can run in GitHub Actions
+- Automated PHPUnit tests on push/PR
+- Example workflow:
+```yaml
+  - name: Set up wp-env
+    run: npm install -g @wordpress/env
+  - name: Start wp-env
+    run: npm run wp-env:start
+  - name: Run tests
+    run: npm test
+```
+
+**Benefits:**
+- Automated testing on every commit
+- Prevents broken code from merging
+- Same environment as local development
+
 ## ACCEPTANCE SIGN-OFF
 
 **Phase 2.4 Technical Requirements - READY FOR REVIEW**
