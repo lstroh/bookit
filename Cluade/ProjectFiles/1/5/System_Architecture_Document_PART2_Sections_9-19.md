@@ -445,7 +445,7 @@ function bookit_authenticate_dashboard_user($email, $password) {
     global $wpdb;
     
     // Rate limit check (5 attempts per 15 min)
-    if (bookit_is_rate_limited($_SERVER['REMOTE_ADDR'], 'dashboard_login')) {
+    if (bookit_is_rate_limited($_SERVER['REMOTE_ADDR'], 'bookit_dashboard_login')) {
         return new WP_Error('rate_limited', 'Too many attempts. Try again in 15 minutes.');
     }
     
@@ -456,7 +456,7 @@ function bookit_authenticate_dashboard_user($email, $password) {
     ", sanitize_email($email)));
     
     if (!$staff || !password_verify($password, $staff->password_hash)) {
-        bookit_increment_failed_attempts($_SERVER['REMOTE_ADDR'], 'dashboard_login');
+        bookit_increment_failed_attempts($_SERVER['REMOTE_ADDR'], 'bookit_dashboard_login');
         return new WP_Error('invalid', 'Invalid email or password');
     }
     
@@ -464,12 +464,12 @@ function bookit_authenticate_dashboard_user($email, $password) {
     session_start();
     session_regenerate_id(true);
     
-    $_SESSION['dashboard_user_id'] = $staff->id;
-    $_SESSION['dashboard_user_role'] = $staff->role;
+    $_SESSION['bookit_dashboard_user_id'] = $staff->id;
+    $_SESSION['bookit_dashboard_user_role'] = $staff->role;
     $_SESSION['login_time'] = time();
     $_SESSION['last_activity'] = time();
     
-    bookit_clear_failed_attempts($_SERVER['REMOTE_ADDR'], 'dashboard_login');
+    bookit_clear_failed_attempts($_SERVER['REMOTE_ADDR'], 'bookit_dashboard_login');
     
     return $staff;
 }
@@ -514,7 +514,7 @@ ini_set('session.gc_maxlifetime', 28800);  // 8 hours
 
 ```php
 function bookit_validate_dashboard_session() {
-    if (!isset($_SESSION['dashboard_user_id'])) {
+    if (!isset($_SESSION['bookit_dashboard_user_id'])) {
         return false;
     }
     
@@ -648,7 +648,7 @@ try {
 ```php
 function bookit_is_rate_limited($ip, $action) {
     $limits = [
-        'dashboard_login' => ['max' => 5, 'window' => 900],   // 15 min
+        'bookit_dashboard_login' => ['max' => 5, 'window' => 900],   // 15 min
         'magic_link' => ['max' => 5, 'window' => 900],
         'booking_create' => ['max' => 10, 'window' => 3600],  // 1 hour
     ];

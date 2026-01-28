@@ -300,7 +300,7 @@ The WordPress Booking Plugin consists of five primary components that work toget
 
 #### 3. WordPress Plugin Core (Business Logic)
 **Technology:** PHP 8.0+ following WordPress Coding Standards  
-**Location:** `/wp-content/plugins/booking-system/`  
+**Location:** `/wp-content/plugins/bookit-booking-system/`  
 **Purpose:** Central business logic, database operations, external integrations
 
 **Key Responsibilities:**
@@ -367,7 +367,7 @@ STEP 3: DATE/TIME SELECTION
 ┌─────────────────────────────────────────────────────────────────┐
 │ Customer browses calendar, clicks date                          │
 │   ↓                                                             │
-│ JavaScript AJAX → /wp-json/booking/v1/availability              │
+│ JavaScript AJAX → /wp-json/bookit/v1/availability              │
 │   ↓                                                             │
 │ Availability Algorithm:                                         │
 │   1. Get staff working hours for selected date                  │
@@ -410,7 +410,7 @@ PAYMENT PROCESSING (ASYNC)
 │ Customer completes payment on Stripe/PayPal                     │
 │   ↓                                                             │
 │ Payment gateway sends webhook to WordPress                      │
-│  • Endpoint: /wp-json/booking/v1/webhook/stripe (or paypal)     │
+│  • Endpoint: /wp-json/bookit/v1/webhook/stripe (or paypal)     │
 │   ↓                                                             │
 │ Verify webhook signature (HMAC-SHA256)                          │
 │   ↓                                                             │
@@ -514,7 +514,7 @@ CONFIRMATION PAGE
 │  │   /public_html/                                            │ │
 │  │    ├── wp-content/                                         │ │
 │  │    │    ├── plugins/                                       │ │
-│  │    │    │    └── booking-system/   ← PLUGIN CODE HERE     │ │
+│  │    │    │    └── bookit-booking-system/   ← PLUGIN CODE HERE     │ │
 │  │    │    ├── themes/                                        │ │
 │  │    │    └── uploads/                                       │ │
 │  │    │         └── bookings/         ← LOG FILES HERE       │ │
@@ -646,8 +646,8 @@ After evaluating three approaches, we're implementing a **hybrid architecture**:
 <IfModule mod_rewrite.c>
 RewriteEngine On
 RewriteBase /
-RewriteRule ^dashboard/(.*)$ /wp-content/plugins/booking-system/dashboard/$1 [L]
-RewriteRule ^dashboard$ /wp-content/plugins/booking-system/dashboard/index.html [L]
+RewriteRule ^dashboard/(.*)$ /wp-content/plugins/bookit-booking-system/dashboard/$1 [L]
+RewriteRule ^dashboard$ /wp-content/plugins/bookit-booking-system/dashboard/index.html [L]
 </IfModule>
 ```
 
@@ -663,27 +663,27 @@ Dashboard users (Business Owners and Staff) need authentication that is:
 ### Evaluated Approaches
 
 #### Approach A: Completely Separate User Table (REJECTED)
-**Description:** New database table `wp_dashboard_users` with separate bcrypt passwords  
+**Description:** New database table `wp_bookit_dashboard_users` with separate bcrypt passwords  
 **Pros:** Complete separation, no WordPress dependencies  
 **Cons:** Duplicate user management, no SSO with WordPress, more code to maintain  
 **Verdict:** ❌ Unnecessary duplication
 
 #### Approach B: WordPress Users with Custom Role (REJECTED)
-**Description:** Use `wp_users` table, create `booking_admin` and `booking_staff` roles  
+**Description:** Use `wp_users` table, create `bookit_admin` and `bookit_staff` roles  
 **Pros:** Leverages WordPress auth system, single user database  
 **Cons:** Users technically CAN access /wp-admin (even if empty), not true "separation"  
 **Verdict:** ❌ Defeats the purpose of separate dashboard
 
 #### Approach C: Hybrid - WordPress Users + Dashboard-Only Flag (SELECTED ✅)
-**Description:** Use `wp_users` table but add `dashboard_only=1` flag in `wp_usermeta`. Dashboard login endpoint validates this flag and NEVER creates WordPress admin session.
+**Description:** Use `wp_users` table but add `bookit_dashboard_only=1` flag in `wp_usermeta`. Dashboard login endpoint validates this flag and NEVER creates WordPress admin session.
 
 **How It Works:**
 1. Business Owner/Staff user created in `wp_users` table
-2. User meta: `dashboard_only = 1` (prevents WordPress admin access)
-3. Custom role: `booking_admin` (Business Owner) or `booking_staff` (Staff)
-4. Dashboard login endpoint (`/wp-json/booking/v1/auth/login`):
+2. User meta: `bookit_dashboard_only = 1` (prevents WordPress admin access)
+3. Custom role: `bookit_admin` (Business Owner) or `bookit_staff` (Staff)
+4. Dashboard login endpoint (`/wp-json/bookit/v1/auth/login`):
    - Validates username/password using `wp_authenticate()`
-   - Checks `dashboard_only` flag
+   - Checks `bookit_dashboard_only` flag
    - If flag = 1, creates dashboard session (JWT or PHP session)
    - If user tries to access /wp-admin, WordPress hook redirects to dashboard
 
@@ -692,7 +692,7 @@ Dashboard users (Business Owners and Staff) need authentication that is:
 - Leverages WordPress password hashing (bcrypt, well-tested)
 - Dashboard users CANNOT access WordPress admin (enforced by hook)
 - Can add password reset via WordPress functions
-- Future: Can remove `dashboard_only` flag to grant admin access if needed
+- Future: Can remove `bookit_dashboard_only` flag to grant admin access if needed
 
 **Cons:**
 - Slightly more complex than pure separate system
@@ -707,8 +707,8 @@ Dashboard users (Business Owners and Staff) need authentication that is:
 ```php
 // After successful login
 session_start();
-$_SESSION['dashboard_user_id'] = $user_id;
-$_SESSION['dashboard_role'] = 'booking_admin'; // or 'booking_staff'
+$_SESSION['bookit_dashboard_user_id'] = $user_id;
+$_SESSION['bookit_dashboard_role'] = 'bookit_admin'; // or 'bookit_staff'
 $_SESSION['session_token'] = wp_generate_password(32, false); // CSRF token
 ```
 
@@ -784,54 +784,54 @@ function bookit_configure_session() {
 
 ### REST API Endpoints
 
-All dashboard-to-WordPress communication uses custom REST API endpoints in the `booking/v1` namespace:
+All dashboard-to-WordPress communication uses custom REST API endpoints in the `bookit/v1` namespace:
 
 **Authentication Endpoints:**
-- `POST /wp-json/booking/v1/auth/login` - Dashboard login
-- `POST /wp-json/booking/v1/auth/logout` - Dashboard logout
-- `GET /wp-json/booking/v1/auth/me` - Get current user info
+- `POST /wp-json/bookit/v1/auth/login` - Dashboard login
+- `POST /wp-json/bookit/v1/auth/logout` - Dashboard logout
+- `GET /wp-json/bookit/v1/auth/me` - Get current user info
 
 **Booking Endpoints:**
-- `GET /wp-json/booking/v1/bookings` - List bookings (with filters)
-- `GET /wp-json/booking/v1/bookings/{id}` - Get single booking
-- `POST /wp-json/booking/v1/bookings` - Create booking (manual)
-- `PATCH /wp-json/booking/v1/bookings/{id}` - Update booking
-- `DELETE /wp-json/booking/v1/bookings/{id}` - Cancel booking
-- `POST /wp-json/booking/v1/bookings/{id}/complete` - Mark completed
-- `POST /wp-json/booking/v1/bookings/{id}/no-show` - Mark no-show
+- `GET /wp-json/bookit/v1/bookings` - List bookings (with filters)
+- `GET /wp-json/bookit/v1/bookings/{id}` - Get single booking
+- `POST /wp-json/bookit/v1/bookings` - Create booking (manual)
+- `PATCH /wp-json/bookit/v1/bookings/{id}` - Update booking
+- `DELETE /wp-json/bookit/v1/bookings/{id}` - Cancel booking
+- `POST /wp-json/bookit/v1/bookings/{id}/complete` - Mark completed
+- `POST /wp-json/bookit/v1/bookings/{id}/no-show` - Mark no-show
 
 **Staff Endpoints:**
-- `GET /wp-json/booking/v1/staff` - List all staff
-- `POST /wp-json/booking/v1/staff` - Create staff member
-- `PATCH /wp-json/booking/v1/staff/{id}` - Update staff
-- `DELETE /wp-json/booking/v1/staff/{id}` - Delete staff
+- `GET /wp-json/bookit/v1/staff` - List all staff
+- `POST /wp-json/bookit/v1/staff` - Create staff member
+- `PATCH /wp-json/bookit/v1/staff/{id}` - Update staff
+- `DELETE /wp-json/bookit/v1/staff/{id}` - Delete staff
 
 **Service Endpoints:**
-- `GET /wp-json/booking/v1/services` - List all services
-- `POST /wp-json/booking/v1/services` - Create service
-- `PATCH /wp-json/booking/v1/services/{id}` - Update service
-- `DELETE /wp-json/booking/v1/services/{id}` - Delete service
+- `GET /wp-json/bookit/v1/services` - List all services
+- `POST /wp-json/bookit/v1/services` - Create service
+- `PATCH /wp-json/bookit/v1/services/{id}` - Update service
+- `DELETE /wp-json/bookit/v1/services/{id}` - Delete service
 
 **Customer Endpoints:**
-- `GET /wp-json/booking/v1/customers` - List customers (with search)
-- `GET /wp-json/booking/v1/customers/{id}` - Get customer details
-- `GET /wp-json/booking/v1/customers/export` - CSV export
+- `GET /wp-json/bookit/v1/customers` - List customers (with search)
+- `GET /wp-json/bookit/v1/customers/{id}` - Get customer details
+- `GET /wp-json/bookit/v1/customers/export` - CSV export
 
 **Reports Endpoints:**
-- `GET /wp-json/booking/v1/reports/revenue` - Revenue report (date range)
-- `GET /wp-json/booking/v1/reports/staff-performance` - Staff metrics
+- `GET /wp-json/bookit/v1/reports/revenue` - Revenue report (date range)
+- `GET /wp-json/bookit/v1/reports/staff-performance` - Staff metrics
 
 **Settings Endpoints:**
-- `GET /wp-json/booking/v1/settings` - Get all settings
-- `PATCH /wp-json/booking/v1/settings` - Update settings
+- `GET /wp-json/bookit/v1/settings` - Get all settings
+- `PATCH /wp-json/bookit/v1/settings` - Update settings
 
 ### Permission Checks
 
 Every REST API endpoint checks:
-1. **Authentication:** Valid session exists (`$_SESSION['dashboard_user_id']` set)
+1. **Authentication:** Valid session exists (`$_SESSION['bookit_dashboard_user_id']` set)
 2. **Authorization:** User has required role
-   - `booking_admin` = Business Owner (full access)
-   - `booking_staff` = Staff (limited to own bookings)
+   - `bookit_admin` = Business Owner (full access)
+   - `bookit_staff` = Staff (limited to own bookings)
 3. **Nonce Verification:** WordPress nonce included in request headers
 4. **Rate Limiting:** Max 100 requests per minute per user
 
@@ -841,20 +841,20 @@ function check_dashboard_permission($request) {
     session_start();
     
     // Check authentication
-    if (!isset($_SESSION['dashboard_user_id'])) {
+    if (!isset($_SESSION['bookit_dashboard_user_id'])) {
         return new WP_Error('unauthorized', 'Not logged in', ['status' => 401]);
     }
     
     // Check nonce (CSRF protection)
     $nonce = $request->get_header('X-WP-Nonce');
-    if (!wp_verify_nonce($nonce, 'booking_dashboard')) {
+    if (!wp_verify_nonce($nonce, 'bookit_dashboard')) {
         return new WP_Error('invalid_nonce', 'Invalid security token', ['status' => 403]);
     }
     
     // Check authorization
-    $user_id = $_SESSION['dashboard_user_id'];
+    $user_id = $_SESSION['bookit_dashboard_user_id'];
     $user = get_userdata($user_id);
-    if (!in_array('booking_admin', $user->roles) && !in_array('booking_staff', $user->roles)) {
+    if (!in_array('bookit_admin', $user->roles) && !in_array('bookit_staff', $user->roles)) {
         return new WP_Error('forbidden', 'Insufficient permissions', ['status' => 403]);
     }
     
@@ -886,7 +886,7 @@ function check_dashboard_permission($request) {
 
 **Build Output:**
 ```
-/wp-content/plugins/booking-system/dashboard/
+/wp-content/plugins/bookit-booking-system/dashboard/
 ├── index.html                  # Entry point
 ├── assets/
 │   ├── index.js                # Main JS bundle
@@ -966,7 +966,7 @@ INSERT INTO wp_bookings_settings (setting_key, setting_value) VALUES
 // src/config.js
 export default {
   async loadBranding() {
-    const response = await axios.get('/wp-json/booking/v1/settings/branding');
+    const response = await axios.get('/wp-json/bookit/v1/settings/branding');
     return {
       logo: response.data.branding_logo_url,
       primaryColor: response.data.branding_primary_color,
@@ -1024,8 +1024,8 @@ The separate dashboard is successful if:
 Following WordPress Coding Standards and modern PHP best practices:
 
 ```
-/wp-content/plugins/booking-system/
-├── booking-system.php                 # Main plugin file (header, activation/deactivation)
+/wp-content/plugins/bookit-booking-system/
+├── bookit-booking-system.php                 # Main plugin file (header, activation/deactivation)
 ├── uninstall.php                      # Cleanup on plugin deletion
 ├── composer.json                      # PHP dependencies (Stripe SDK, Google API, etc.)
 ├── composer.lock
@@ -1148,8 +1148,8 @@ Following WordPress Coding Standards and modern PHP best practices:
 │   └── .gitkeep
 │
 ├── languages/                         # Internationalization (Phase 2)
-│   ├── booking-system.pot
-│   └── booking-system-en_GB.po
+│   ├── bookit-booking-system.pot
+│   └── bookit-booking-system-en_GB.po
 │
 ├── assets/                            # Shared assets
 │   └── images/
@@ -1165,13 +1165,13 @@ Following WordPress Coding Standards and modern PHP best practices:
 
 ## 4.2 Main Plugin File Structure
 
-**`booking-system.php`** (following WordPress plugin header standards):
+**`bookit-booking-system.php`** (following WordPress plugin header standards):
 
 ```php
 <?php
 /**
  * Plugin Name: Professional Booking System
- * Plugin URI: https://yourcompany.com/booking-system
+ * Plugin URI: https://yourcompany.com/bookit-booking-system
  * Description: Complete booking solution with separate business dashboard for UK service businesses
  * Version: 1.0.0
  * Requires at least: 6.0
@@ -1180,7 +1180,7 @@ Following WordPress Coding Standards and modern PHP best practices:
  * Author URI: https://yourcompany.com
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: booking-system
+ * Text Domain: bookit-booking-system
  * Domain Path: /languages
  */
 
@@ -1423,10 +1423,10 @@ $staff_name = $args['staff_name'];
 ?>
 
 <div class="booking-step booking-step-3">
-    <h2><?php esc_html_e('Select Date & Time', 'booking-system'); ?></h2>
+    <h2><?php esc_html_e('Select Date & Time', 'bookit-booking-system'); ?></h2>
     
     <div class="booking-summary">
-        <p><?php echo esc_html(sprintf(__('Booking %s with %s', 'booking-system'), $args['service_name'], $staff_name)); ?></p>
+        <p><?php echo esc_html(sprintf(__('Booking %s with %s', 'bookit-booking-system'), $args['service_name'], $staff_name)); ?></p>
     </div>
     
     <div class="datetime-picker-container">
@@ -1437,13 +1437,13 @@ $staff_name = $args['staff_name'];
                 class="datepicker" 
                 data-service-id="<?php echo esc_attr($service_id); ?>"
                 data-staff-id="<?php echo esc_attr($staff_id); ?>"
-                placeholder="<?php esc_attr_e('Select a date', 'booking-system'); ?>"
+                placeholder="<?php esc_attr_e('Select a date', 'bookit-booking-system'); ?>"
                 readonly
             />
         </div>
         
         <div class="time-slots-container" style="display:none;">
-            <h3><?php esc_html_e('Available Times', 'booking-system'); ?></h3>
+            <h3><?php esc_html_e('Available Times', 'bookit-booking-system'); ?></h3>
             <div id="time-slots-list" class="time-slots-grid">
                 <!-- Populated via AJAX based on selected date -->
             </div>
@@ -1452,10 +1452,10 @@ $staff_name = $args['staff_name'];
     
     <div class="booking-navigation">
         <button type="button" class="button-secondary" id="back-to-step-2">
-            <?php esc_html_e('← Back to Staff Selection', 'booking-system'); ?>
+            <?php esc_html_e('← Back to Staff Selection', 'bookit-booking-system'); ?>
         </button>
         <button type="button" class="button-primary" id="continue-to-step-4" disabled>
-            <?php esc_html_e('Continue to Payment →', 'booking-system'); ?>
+            <?php esc_html_e('Continue to Payment →', 'bookit-booking-system'); ?>
         </button>
     </div>
 </div>
@@ -1469,29 +1469,29 @@ $staff_name = $args['staff_name'];
 class Bookings_REST_API extends WP_REST_Controller {
     
     public function register_routes() {
-        register_rest_route('booking/v1', '/bookings', [
+        register_rest_route('bookit/v1', '/bookings', [
             [
                 'methods' => WP_REST_Server::READABLE,
                 'callback' => [$this, 'get_bookings'],
-                'permission_callback' => [$this, 'check_dashboard_permission'],
+                'permission_callback' => [$this, 'check_bookit_dashboard_permission'],
             ],
             [
                 'methods' => WP_REST_Server::CREATABLE,
                 'callback' => [$this, 'create_booking'],
-                'permission_callback' => [$this, 'check_dashboard_admin_permission'],
+                'permission_callback' => [$this, 'check_bookit_dashboard_admin_permission'],
             ],
         ]);
         
-        register_rest_route('booking/v1', '/bookings/(?P<id>\d+)', [
+        register_rest_route('bookit/v1', '/bookings/(?P<id>\d+)', [
             [
                 'methods' => WP_REST_Server::EDITABLE,
                 'callback' => [$this, 'update_booking'],
-                'permission_callback' => [$this, 'check_dashboard_permission'],
+                'permission_callback' => [$this, 'check_bookit_dashboard_permission'],
             ],
             [
                 'methods' => WP_REST_Server::DELETABLE,
                 'callback' => [$this, 'cancel_booking'],
-                'permission_callback' => [$this, 'check_dashboard_admin_permission'],
+                'permission_callback' => [$this, 'check_bookit_dashboard_admin_permission'],
             ],
         ]);
     }
@@ -1524,28 +1524,28 @@ class Bookings_REST_API extends WP_REST_Controller {
         session_start();
         
         // Check session authentication
-        if (!isset($_SESSION['dashboard_user_id'])) {
+        if (!isset($_SESSION['bookit_dashboard_user_id'])) {
             return new WP_Error('unauthorized', 'Not logged in', ['status' => 401]);
         }
         
         // Verify nonce (CSRF protection)
         $nonce = $request->get_header('X-WP-Nonce');
-        if (!wp_verify_nonce($nonce, 'booking_dashboard')) {
+        if (!wp_verify_nonce($nonce, 'bookit_dashboard')) {
             return new WP_Error('invalid_nonce', 'Invalid security token', ['status' => 403]);
         }
         
         // Check user has dashboard role
-        $user_id = $_SESSION['dashboard_user_id'];
+        $user_id = $_SESSION['bookit_dashboard_user_id'];
         $user = get_userdata($user_id);
         
-        $allowed_roles = ['booking_admin', 'booking_staff'];
+        $allowed_roles = ['bookit_admin', 'bookit_staff'];
         if (!array_intersect($allowed_roles, $user->roles)) {
             return new WP_Error('forbidden', 'Insufficient permissions', ['status' => 403]);
         }
         
         // Staff can only see their own bookings
-        if (in_array('booking_staff', $user->roles) && !in_array('booking_admin', $user->roles)) {
-            $staff_id = get_user_meta($user_id, 'booking_staff_id', true);
+        if (in_array('bookit_staff', $user->roles) && !in_array('bookit_admin', $user->roles)) {
+            $staff_id = get_user_meta($user_id, 'bookit_staff_id', true);
             if ($request->get_param('staff_id') && $request->get_param('staff_id') != $staff_id) {
                 return new WP_Error('forbidden', 'Can only view own bookings', ['status' => 403]);
             }
@@ -1626,9 +1626,9 @@ add_action('bookit_system_health_check', ['System_Monitor', 'run_health_check'])
 
 // Prevent dashboard users from accessing wp-admin
 add_action('admin_init', function() {
-    if (isset($_SESSION['dashboard_user_id'])) {
-        $user = get_userdata($_SESSION['dashboard_user_id']);
-        if (get_user_meta($user->ID, 'dashboard_only', true) === '1') {
+    if (isset($_SESSION['bookit_dashboard_user_id'])) {
+        $user = get_userdata($_SESSION['bookit_dashboard_user_id']);
+        if (get_user_meta($user->ID, 'bookit_dashboard_only', true) === '1') {
             wp_redirect(site_url('/dashboard/'));
             exit;
         }
@@ -1688,7 +1688,7 @@ class Bookit_Activator {
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         
         // Read schema from database/schema.sql
-        $schema = file_get_contents(BOOKITPLUGIN_DIR . 'database/schema.sql');
+        $schema = file_get_contents(BOOKIT_PLUGIN_DIR . 'database/schema.sql');
         
         // Execute schema
         dbDelta($schema);
@@ -1696,19 +1696,19 @@ class Bookit_Activator {
     
     private static function create_roles() {
         // Business Owner role (full dashboard access)
-        add_role('booking_admin', 'Booking Admin', [
+        add_role('bookit_admin', 'Booking Admin', [
             'read' => true,
-            'booking_manage_all' => true,
-            'booking_manage_staff' => true,
-            'booking_manage_services' => true,
-            'booking_view_reports' => true,
+            'bookit_manage_all' => true,
+            'bookit_manage_staff' => true,
+            'bookit_manage_services' => true,
+            'bookit_view_reports' => true,
         ]);
         
         // Staff role (limited dashboard access)
-        add_role('booking_staff', 'Booking Staff', [
+        add_role('bookit_staff', 'Booking Staff', [
             'read' => true,
-            'booking_view_own' => true,
-            'booking_manage_availability' => true,
+            'bookit_view_own' => true,
+            'bookit_manage_availability' => true,
         ]);
     }
 }
@@ -1720,8 +1720,8 @@ class Bookit_Activator {
 class Bookit_Deactivator {
     public static function deactivate() {
         // Clear scheduled cron jobs
-        wp_clear_scheduled_hook('booking_system_send_reminders');
-        wp_clear_scheduled_hook('booking_system_health_check');
+        wp_clear_scheduled_hook('bookit_system_send_reminders');
+        wp_clear_scheduled_hook('bookit_system_health_check');
         
         // Flush rewrite rules
         flush_rewrite_rules();
@@ -1760,11 +1760,11 @@ foreach ($tables as $table) {
 }
 
 // Delete plugin options
-$wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE 'booking_system_%'");
+$wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE 'bookit_%'");
 
 // Delete custom user roles
-remove_role('booking_admin');
-remove_role('booking_staff');
+remove_role('bookit_admin');
+remove_role('bookit_staff');
 
 // Delete all user meta for dashboard users
 $wpdb->query("DELETE FROM $wpdb->usermeta WHERE meta_key LIKE 'booking_%'");
@@ -1777,7 +1777,7 @@ if (is_dir($log_dir)) {
 }
 
 // Delete transients
-delete_transient('booking_system_cache');
+delete_transient('bookit_system_cache');
 ```
 
 ## 4.6 wp-config.php Configuration Requirements
@@ -2564,7 +2564,7 @@ function cleanup_old_bookings() {
         WHERE b.id IS NULL
     ");
 }
-add_action('booking_system_monthly_cleanup', 'cleanup_old_bookings');
+add_action('bookit_system_monthly_cleanup', 'cleanup_old_bookings');
 ```
 
 ## 5.7 Database Migrations
@@ -2617,7 +2617,7 @@ function booking_migrate_1_1_0() {
     dbDelta($sql);
     
     // Update version in database
-    update_option('booking_system_db_version', '1.1.0');
+    update_option('bookit_system_db_version', '1.1.0');
     
     return true;
 }
