@@ -291,3 +291,18 @@ Complete Pay on Arrival (Task 13), then decide:
 2. Move to Sprint 3 (Business Owner Dashboard)
 3. Move to Sprint 4 (Notifications & Communications)
 
+Update 08/02/26:
+- [x] Task 13: Pay on Arrival (4h → 4h) ✅ Feb 8
+  - Pay on Arrival payment option enabled
+  - Booking created immediately without payment
+  - Status = 'pending_payment' for unpaid bookings
+  - Confirmation page supports booking_id parameter
+  - Email templates show payment due notice
+  - Availability algorithm excludes pending_payment bookings
+  - Error handling displays messages to users
+  - Fixed memory exhaustion from infinite loop
+  - 10 unit tests passing (100%)
+  - Browser tested: Full flow working correctly
+
+**Progress:** 7/16 tasks complete (44%)
+**Hours Spent:** 71/150 (47%)
