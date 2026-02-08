@@ -704,6 +704,14 @@ npm test
 | Email change verification workflow | SHOULD | 7h | REQ-LEGAL-007 |
 | Accessibility Statement creation | SHOULD | 4h | REQ-LEGAL-005 |
 
+**NEW: Hosting Validation**
+- [ ] Create test scenario: 3 staff using dashboard simultaneously
+- [ ] Use browser dev tools to measure page load times
+- [ ] Run `ab -n 50 -c 5` on dashboard URL (concurrent load test)
+- [ ] Document actual query counts vs. projected (3,560/day)
+- [ ] If >5 second load times, investigate optimization or revise hosting strategy
+- [ ] Update Hosting Infrastructure Strategy doc with findings
+
 **Week 18 Subtotal:** 53 hours
 
 ### Sprint 5 Total: 139 hours

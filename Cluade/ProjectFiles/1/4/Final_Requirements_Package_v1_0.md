@@ -1384,6 +1384,14 @@ Custom pricing
 - [ ] Color contrast verification (≥4.5:1 normal text)
 - [ ] Screen reader testing (NVDA or VoiceOver - basic test)
 
+### Hosting Performance Testing
+- [ ] Measure dashboard load time with 1, 3, 5, 7 concurrent staff users
+- [ ] Test booking creation with 10, 20, 50 concurrent customer attempts
+- [ ] Run report generation with simulated data (1000, 5000, 10000 bookings)
+- [ ] Monitor database query counts per page load
+- [ ] Test auto-refresh impact (30-second intervals with 5 staff)
+- [ ] Document actual query counts vs. projections
+
 **Exit Criteria:**
 - Google Calendar sync creates/updates/deletes events correctly
 - Staff can view and manage their schedule
@@ -1414,6 +1422,20 @@ Custom pricing
 - [ ] Edge case testing (payment failures, race conditions, timeouts)
 - [ ] Load testing (50 concurrent users, 200 page viewers)
 - [ ] Penetration testing (basic security scan)
+
+### Load Testing - Dashboard Focused
+- [ ] Simulate 3-staff scenario (Small Business profile)
+  - Expected: <3 second dashboard load
+  - Target: 3,560 queries/day handled smoothly
+- [ ] Simulate 7-staff scenario (Medium Business profile)
+  - Expected: Identify if shared hosting struggles
+  - Target: 18,360 queries/day - watch for slowdowns
+- [ ] Test peak hour scenario (9-10am with all staff active)
+  - Concurrent dashboard loads + customer bookings
+  - Monitor for database timeouts or errors
+- [ ] Document actual vs. projected performance
+- [ ] Create "upgrade to Premium hosting" threshold triggers
+
 
 **Week 20: Documentation & Launch**
 - [ ] User documentation (Business Owner guide)
