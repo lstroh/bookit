@@ -306,3 +306,78 @@ Update 08/02/26:
 
 **Progress:** 7/16 tasks complete (44%)
 **Hours Spent:** 71/150 (47%)
+
+
+
+Update 09/02/26
+git add .
+
+git commit -m "Sprint 3, Task 3: Today's Schedule Widget with Real Data
+
+Implemented dashboard endpoint and Vue component for displaying today's bookings:
+
+Backend API:
+- New REST endpoint: GET /wp-json/bookit/v1/dashboard/bookings/today
+- Role-based filtering (admin sees all, staff sees only theirs)
+- Database query with JOINs across bookings/customers/services/staff tables
+- Mark complete endpoint: POST /dashboard/bookings/{id}/complete
+- Permission checks prevent staff from completing others' bookings
+
+Frontend Dashboard:
+- Updated Dashboard.vue to fetch and display real booking data
+- Status badges with color coding (confirmed/pending/completed/cancelled)
+- 'Starting Soon' indicator for bookings within 15 minutes
+- 'Overdue' indicator for past bookings still not completed
+- Payment status display (paid/partial/pay on arrival)
+- Quick actions: View Details (placeholder) and Mark Complete
+- Loading, error, and empty state handling
+
+Features:
+- 24-hour time format (14:30) for UK standard
+- Special requests displayed in italics
+- Customer and staff names from database JOINs
+- Booking duration and pricing information
+- Real-time status updates after marking complete
+
+API Controller:
+- Class: Bookit_Dashboard_Bookings_API
+- File: includes/api/class-dashboard-bookings-api.php
+- Session-based authentication via Bookit_Auth
+- Proper error handling and validation
+
+Manual Testing Completed:
+- Admin role: verified sees all bookings (5 bookings)
+- Staff role: verified sees only own bookings (2 bookings)
+- Mark complete: verified database updates status and timestamp
+- Status badges: verified correct colors and labels
+- Edge cases: empty state, error state, overdue bookings tested
+
+Database verified: status changes persist, updated_at timestamps correct.
+
+Files: 10h estimated (Task 3 of 11)
+Refs: MUST-075 (Today's Schedule View), MUST-087 (Role-Based Filtering)"
+```
+
+---
+
+## 📊 SPRINT 3 PROGRESS UPDATE
+
+After committing:
+```
+Sprint 3 Progress: 2/11 tasks complete
+
+✅ Task 1: Vue 3 Setup & Dashboard Foundation (14h) - COMPLETE
+✅ Task 3: Today's Schedule Widget (10h) - COMPLETE
+⏭️ Task 4: Bookings List View (12h) - NEXT
+□  Task 5: Manual Booking Creation (12h)
+□  Task 6: Edit Booking Modal (10h)
+□  Task 7: Services CRUD Interface (10h)
+□  Task 8: Service Categories Management (6h)
+□  Task 9: Staff CRUD Interface (10h)
+□  Task 10: Staff Working Hours Configuration (12h)
+□  Task 11: Settings Pages (10h)
+□  Task 12: Dashboard Polish & Mobile (10h)
+
+Hours Completed: 24 / 104
+Tasks Completed: 2 / 11 (18%)
+Current Velocity: On track! 🎯
