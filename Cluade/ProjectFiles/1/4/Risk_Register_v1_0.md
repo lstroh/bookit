@@ -49,6 +49,8 @@ This Risk Register identifies and documents **10 significant risks** to the succ
 2. **R-003: Email Deliverability Failures** - Risk Score: 7/9 🔴
 3. **R-006: First Client Timeline Pressure** - Risk Score: 7/9 🔴
 4. **R-008: Magic Link Security Vulnerabilities** - Risk Score: 7/9 🔴
+| **R-014** | Hosting performance assumptions incorrect | MEDIUM | HIGH | Week 18-19 load testing validates assumptions before first client launch | Dev/Ops |
+| **R-015** | Client outgrows Regular hosting faster than expected | LOW | MEDIUM | Monthly performance monitoring, proactive upgrade recommendations | Support |
 
 ### Risk Distribution by Category
 
