@@ -550,7 +550,39 @@ Contact:
 Email: [______]
 Phone: [______]
 ```
+**Added Scope (no time change - items fit within existing estimate):**
 
+### My Profile Page
+- Staff can view and edit their own profile information
+- Change own password (requires current password verification)
+- Update name, email, phone, bio, title
+- Update profile photo
+- Email notification preferences
+- Cannot change own role (security)
+
+### Email Configuration
+- SMTP settings for transactional emails
+  - Host, port, username, password
+  - Encryption type (TLS/SSL)
+  - From name and email address
+- Test email functionality (send test email)
+- Email delivery status monitoring
+
+### Email Templates Management
+- Customize transactional email templates:
+  - Booking confirmation
+  - Booking reminder
+  - Cancellation notification
+  - Password reset (admin-initiated)
+- Template variables/placeholders
+- Preview email templates
+- Reset to default templates
+
+**Why These Additions:**
+- Natural fit with settings/preferences
+- Email system needs configuration before Phase 2 password reset
+- Staff profile management is settings-related
+- No additional time needed (fits existing 10h estimate)
 ---
 
 ### TASK 12: Dashboard Polish & Mobile Responsiveness (8h)

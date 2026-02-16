@@ -1336,6 +1336,127 @@ CREATE TABLE wp_booking_settings (
 | **WordPress Admin** | Developer/agency who installs and configures the plugin for clients |
 | **wpdb** | WordPress database abstraction class used for all database operations |
 
+**Priority: Medium**
+**Estimated Effort: 8-12 hours**
+
+### Self-Service Password Reset (Forgot Password)
+
+**User Story:**
+As a staff member who forgot my password, I want to reset it myself without contacting an admin, so I can regain access quickly.
+
+**Features:**
+- "Forgot Password?" link on login page
+- Enter email address form
+- Generate secure reset token (cryptographically random, 32+ chars)
+- Token expiry (1 hour default, configurable)
+- Email with reset link containing token
+- Reset form validates token and allows new password entry
+- Password strength requirements (min 8 chars, optional complexity rules)
+- Token invalidation after use or expiry
+- Rate limiting to prevent abuse
+
+**Technical Requirements:**
+- New database table: `wp_bookings_password_resets`
+  - token (varchar 64, indexed)
+  - email (varchar 255, indexed)
+  - created_at (datetime)
+  - expires_at (datetime)
+  - used_at (datetime, nullable)
+- Token generation using `random_bytes()` or `wp_generate_password()`
+- Secure token validation (timing-safe comparison)
+- Email sending via configured SMTP (requires Task 11 completion)
+
+**Security Considerations:**
+- Tokens are one-time use only
+- Tokens expire after 1 hour
+- Rate limit: 3 reset requests per email per hour
+- No user enumeration (same response for valid/invalid emails)
+- Secure token storage (hashed in database)
+- HTTPS required for reset links
+
+**Dependencies:**
+- Task 11 must be complete (email configuration)
+- Email system must be working
+- SMTP properly configured
+
+**Why Phase 2:**
+- Requires working email system (Task 11)
+- More complex security considerations
+- Not critical for initial launch (admin can reset manually)
+- Professional email templates needed
+- Token management adds complexity
+
+### Professional HTML Email Templates
+
+**Features:**
+- HTML email templates with branding
+- Responsive design (mobile-friendly)
+- Template builder or editor
+- Dynamic content insertion
+- Email preview functionality
+- Plain text fallback
+
+**Templates Needed:**
+- Password reset email (self-service)
+- Booking confirmation (enhanced)
+- Booking reminder (enhanced)
+- Cancellation notification (enhanced)
+- Welcome email (new staff member)
+
+**Dependencies:**
+- Task 11 email configuration
+- CSS inliner for email compatibility
+- Template engine (blade, twig, or custom)
+
+### Session Management Enhancements
+
+**Features:**
+- Remember me functionality
+- Session timeout configuration
+- Active sessions display (see where logged in)
+- Force logout from all devices
+- IP-based security alerts
+
+**Why Phase 2:**
+- Nice-to-have, not essential for launch
+- Requires additional database tables
+- More complex authentication logic
+
+### Two-Factor Authentication (Optional)
+
+**Features:**
+- TOTP-based 2FA (Google Authenticator compatible)
+- Backup codes
+- QR code generation
+- Optional enforcement for admin users
+
+**Why Phase 2:**
+- Advanced security feature
+- Not required for most SMB clients
+- Adds significant complexity
+- Requires mobile app support
+
+## Implementation Priority (Phase 2)
+
+1. **Self-Service Password Reset** (High Priority)
+   - Most requested feature
+   - Expected by users
+   - Professional standard
+   - Estimated: 6-8 hours
+
+2. **Professional Email Templates** (Medium Priority)
+   - Enhances brand experience
+   - Improves communication quality
+   - Estimated: 4-6 hours
+
+3. **Session Management** (Low Priority)
+   - Nice-to-have for larger teams
+   - Estimated: 4-6 hours
+
+4. **Two-Factor Authentication** (Optional)
+   - Only if client requests
+   - Estimated: 8-12 hours
+
 ---
 
 ## DOCUMENT APPROVAL

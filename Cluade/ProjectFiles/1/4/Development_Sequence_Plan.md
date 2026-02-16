@@ -619,6 +619,14 @@ npm test
 | Split shifts support | MUST | 4h | MUST-071 |
 | Staff-specific pricing | MUST | 6h | MUST-072 |
 
+**Task 9: Staff CRUD Interface** ✅ COMPLETE
+- Duration: 10 hours (actual: 10.5 hours)
+- Status: Complete with enhancements
+- Backend: Staff list, create, update, delete, service assignments
+- Frontend: Staff list page, form modal, photo upload, password reset
+- Enhancements: WordPress media library integration, password reset feature, first admin creation
+- Deferred: Self-service password reset (Phase 2), My Profile (Task 11)
+
 **Week 14 Subtotal:** 52 hours
 
 #### Configuration & Reporting (Week 15)
