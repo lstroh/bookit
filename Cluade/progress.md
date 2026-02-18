@@ -480,3 +480,116 @@ Sprint 3 Progress: 7/11 tasks complete
 Hours Completed: 74 / 104 (71%)
 Tasks Completed: 7 / 11 (64%)
 Current Velocity: Over 2/3 complete! Sprint 3 nearly done! 🎉
+
+Update 16/02/26
+**Completed:**
+- Backend API: Staff list, create, update, delete with service assignments
+- Frontend: Staff list page with photo display, service count, working hours status
+- Staff form modal with all profile fields
+- Service assignment with custom pricing per staff member
+- Photo upload via WordPress Media Library
+- **Password Reset Feature:** Admin can reset any staff member's password
+  - Generate secure random passwords
+  - Optional email notification to staff
+  - Minimum 8 character validation
+- **First Admin Creation:** One-time setup page for creating initial admin user (just added)
+
+**Enhancements Added:**
+- WordPress media library integration for staff photos
+- Fallback to colored initials if no photo uploaded
+- Password reset functionality (admin-initiated)
+- Generate secure random passwords
+- Email new password to staff member (optional)
+
+**Deferred to Later Tasks:**
+- Self-service password reset (Phase 2)
+- My Profile page for staff to change own password (Task 11)
+- Email template customization (Task 11)
+
+
+Update 17/02/26
+Sprint 3 Progress: 8/11 tasks complete
+
+✅ Task 1:  Vue 3 Setup (14h) - COMPLETE
+✅ Task 3:  Today's Schedule (10h) - COMPLETE
+✅ Task 4:  Bookings List (12h) - COMPLETE
+✅ Task 5:  Manual Booking (12h) - COMPLETE 🔥
+✅ Task 6:  Edit Booking (10h) - COMPLETE
+✅ Task 7:  Services CRUD (10h) - COMPLETE
+✅ Task 8:  Categories (6h) - COMPLETE
+✅ Task 9:  Staff CRUD (10.5h) - COMPLETE ⭐ JUST FINISHED
+⏭️ Task 10: Working Hours (12h) - NEXT 🔥 COMPLEX
+□  Task 11: Settings Pages (10h)
+□  Task 12: Dashboard Polish (10h)
+
+Hours Completed: 84.5 / 104 (81%)
+Tasks Completed: 8 / 11 (73%)
+Remaining: 3 tasks, ~32 hours
+
+
+update 18/02/26
+Sprint 3 Progress: 9/11 tasks complete
+
+✅ Task 1:  Vue 3 Setup (14h) - COMPLETE
+✅ Task 3:  Today's Schedule (10h) - COMPLETE
+✅ Task 4:  Bookings List (12h) - COMPLETE
+✅ Task 5:  Manual Booking (12h) - COMPLETE
+✅ Task 6:  Edit Booking (10h) - COMPLETE
+✅ Task 7:  Services CRUD (10h) - COMPLETE
+✅ Task 8:  Categories (6h) - COMPLETE
+✅ Task 9: Staff CRUD (10.5h) - COMPLETE
+✅ Task 10: Working Hours (12h) - COMPLETE ⭐ JUST FINISHED
+⏭️ Task 11: Settings Pages (10h) - NEXT
+🆕 Task 11.5: Bulk Working Hours (4-5h) - AFTER TASK 11
+□  Task 12: Dashboard Polish (10h)
+
+Hours Completed: 96.5 / 113.5 (85%)
+Tasks Completed: 9 / 12 (75%)
+
+Update 18/02/26
+Sprint 3 Progress: 9/11 tasks complete
+
+✅ Task 1: Vue 3 Setup & Dashboard Foundation (14h) - COMPLETE
+✅ Task 3: Today's Schedule Widget (10h) - COMPLETE
+✅ Task 4: Bookings List View (12h) - COMPLETE
+✅ Task 5: Manual Booking Creation (12h) - COMPLETE 🔥 COMPLEX
+✅ Task 6: Edit Booking Modal (10h) - COMPLETE
+✅ Task 7: Services CRUD Interface (10h) - COMPLETE
+✅ Task 8: Service Categories Management (6h) - COMPLETE
+✅ Task 9: Staff CRUD Interface (10.5h) - COMPLETE
+✅ Task 10: Staff Working Hours Configuration (12h) - COMPLETE ⭐ JUST FINISHED
+⏭️ Task 11: Settings Pages (10h) - NEXT
+🆕 Task 11.5: Bulk Working Hours (4-5h) - AFTER TASK 11
+□  Task 12: Dashboard Polish & Mobile (10h)
+
+Hours Completed: 96.5 / 113.5 (85%)
+Tasks Completed: 9 / 12 (75%)
+Current Velocity: Exceptional! Nearly complete! 🚀
+
+Task 10 Highlights:
+- Weekly recurring schedules with ISO-8601 day numbering
+- Break time configuration (split shifts)
+- Seasonal schedules (valid_from/valid_until)
+- Date exceptions (override weekly patterns)
+- Comprehensive tooltips for all options
+- No changes to datetime model (perfect integration)
+- All slot generation tests passing
+
+Sprint 3 Progress: 10/12 tasks complete
+
+✅ Task 1:  Vue 3 Setup (14h) - COMPLETE
+✅ Task 3:  Today's Schedule (10h) - COMPLETE
+✅ Task 4:  Bookings List (12h) - COMPLETE
+✅ Task 5:  Manual Booking (12h) - COMPLETE
+✅ Task 6:  Edit Booking (10h) - COMPLETE
+✅ Task 7:  Services CRUD (10h) - COMPLETE
+✅ Task 8:  Categories (6h) - COMPLETE
+✅ Task 9:  Staff CRUD (10.5h) - COMPLETE
+✅ Task 10: Working Hours (12h) - COMPLETE
+✅ Task 11: Settings Pages (10h) - COMPLETE ⭐ JUST FINISHED
+⏭️ Task 11.5: Bulk Working Hours (4-5h) - NEXT
+□  Task 12: Dashboard Polish (10h)
+
+Hours Completed: 106.5 / 113.5 (94%)
+Tasks Completed: 10 / 12 (83%)
+Remaining: ~7 hours

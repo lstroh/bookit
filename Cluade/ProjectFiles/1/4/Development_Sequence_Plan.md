@@ -627,6 +627,15 @@ npm test
 - Enhancements: WordPress media library integration, password reset feature, first admin creation
 - Deferred: Self-service password reset (Phase 2), My Profile (Task 11)
 
+
+**Task 10: Staff Working Hours Configuration** ✅ COMPLETE
+- Duration: 12 hours (actual: 12 hours)
+- Status: Complete with tooltips
+- Backend: Working hours API (weekly schedule + exceptions)
+- Frontend: Working hours page with calendar, tooltips
+- Integration: No changes to datetime model (works perfectly)
+- Deferred: Shift scheduling (Sprint 4/Phase 2)
+
 **Week 14 Subtotal:** 52 hours
 
 #### Configuration & Reporting (Week 15)
