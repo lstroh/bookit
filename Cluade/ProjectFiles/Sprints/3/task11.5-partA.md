@@ -557,36 +557,36 @@ Expected: Empty conflicts array
 ### Test 2: Check Conflicts (With Conflicts)
 ```javascript
 // First add an exception for staff 1 on 2026-03-20
-fetch('/wp-json/bookit/v1/dashboard/staff/1/hours/exceptions', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-WP-Nonce': window.BOOKIT_DASHBOARD.nonce
-  },
-  credentials: 'include',
-  body: JSON.stringify({
-    specific_date: '2026-03-20',
-    is_working: false,
-    notes: 'Existing day off'
-  })
-}).then(r => r.json()).then(() => {
-  // Now check conflicts
-  return fetch('/wp-json/bookit/v1/dashboard/staff/bulk-hours/check-conflicts', {
+    fetch('/wp-json/bookit/v1/dashboard/staff/1/hours/exceptions', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'X-WP-Nonce': window.BOOKIT_DASHBOARD.nonce
+        'Content-Type': 'application/json',
+        'X-WP-Nonce': window.BOOKIT_DASHBOARD.nonce
     },
     credentials: 'include',
     body: JSON.stringify({
-      staff_ids: [1, 3],
-      specific_date: '2026-03-20'
+        specific_date: '2026-03-20',
+        is_working: false,
+        notes: 'Existing day off'
     })
-  })
-}).then(r => r.json()).then(data => {
-  console.log('Conflicts:', data.conflicts)
-  console.log('Staff 1 conflict:', data.conflicts.find(c => c.staff_id === 1))
-})
+    }).then(r => r.json()).then(() => {
+    // Now check conflicts
+    return fetch('/wp-json/bookit/v1/dashboard/staff/bulk-hours/check-conflicts', {
+        method: 'POST',
+        headers: {
+        'Content-Type': 'application/json',
+        'X-WP-Nonce': window.BOOKIT_DASHBOARD.nonce
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+        staff_ids: [1, 3],
+        specific_date: '2026-03-20'
+        })
+    })
+    }).then(r => r.json()).then(data => {
+    console.log('Conflicts:', data.conflicts)
+    console.log('Staff 1 conflict:', data.conflicts.find(c => c.staff_id === 1))
+    })
 ```
 
 Expected: 1 conflict for staff 1, showing existing exception details
