@@ -61,7 +61,7 @@ ngrok config add-authtoken YOUR_AUTH_TOKEN
 Open Local by Flywheel, select your Bookit site, and check what port it's running on. It's usually `80` but sometimes `10003` or similar. You can also find it in the site's SSL settings — if SSL is on, note the HTTPS port.
 
 **Step 4 — Start the tunnel**
-
+http://plugin-test-1.local/
 ```bash
 ngrok http 80
 ```

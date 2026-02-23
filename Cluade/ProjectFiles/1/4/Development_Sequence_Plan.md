@@ -13,6 +13,19 @@
 
 This document outlines the recommended development sequence for the WordPress Booking Plugin Phase 1 MVP. The plan is organized into 6 sprints plus a foundation sprint (Sprint 0), following an iterative approach that delivers value incrementally.
 
+⚠️ REVISION — 23/02/26: Sprint sequence restructured
+The sprint sequence below reflects the original plan as designed. The actual current sequence has been revised based on lessons learned during Sprints 1–3. Key changes:
+
+Sprint 3 (Business Owner Dashboard) was completed before Sprint 2 (Post-Booking/Email) — strategic decision to allow full local development while email requires a live environment
+Original Sprint 4 (Google Calendar) deferred — requires live site for OAuth callbacks; moved to the Live Environment Sprint
+New Sprint 4A: Staff Dashboard Enhancements + Reports & Analytics (~112h) — fully buildable locally
+New Sprint 4B: Performance + Accessibility + Security Hardening (~80h) — fully buildable locally
+New Sprint 5 (Live Environment Sprint): Payments completion, Email notifications, Magic links, Google Calendar, Load testing — all work requiring a live/public URL batched together
+Sprint 6: Launch Preparation — unchanged in scope
+
+The total hours estimate and scope remain broadly the same. The ordering has changed to optimise for parallel local and live work.
+For the current active sprint sequence, refer to progress.md.
+
 ### Compliance Update (January 23, 2026)
 
 **Legal compliance work added:** 36 hours across Sprint 4-6 based on UK_Compliance_Checklist_v1_0.md findings. This includes:
