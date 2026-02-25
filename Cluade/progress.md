@@ -827,3 +827,58 @@ Sprint 4B: ⏭️ Performance + Accessibility + Security Hardening (~80h) — LO
 Sprint 5:  ⏭️ Live Environment Sprint — Payments completion, Email notifications,
                Magic links, Google Calendar OAuth, Load testing — REQUIRES LIVE SITE
 Sprint 6:  ⏭️ Launch Preparation — Legal compliance, documentation, first client (~140h+)
+
+
+Sprint 4A Progress: 1/10 tasks complete
+
+✅ Task 1:  Staff Schedule View + Mark Actions (16h)
+⏭️ Task 2:  Time-Off Blocking (18h)  — NEXT
+□  Task 3:  Staff Earnings Display (6h)
+□  Task 4:  Reports Nav + Overview Dashboard (8h)
+□  Task 5:  Revenue Report (14h)
+□  Task 6:  Booking Analytics (10h)
+□  Task 7:  Staff Performance Report (10h)
+□  Task 8:  Customer Database + GDPR (16h)
+□  Task 9:  PHPUnit Tests (12h)
+□  Task 10: Manual Testing & Polish (4h)
+
+Hours completed: 16 / 112
+
+Update 25/02/26
+Update 25/02/26:
+# Sprint 4A Started — Staff Dashboard Enhancements + Reports & Analytics
+
+## Sprint 4A Progress: 2/10 tasks complete
+
+✅ Task 1: Staff Schedule View + Mark Actions (16h) — COMPLETE
+✅ Task 2: Time-Off Blocking (18h) — COMPLETE
+⏭️ Task 3: Staff Earnings Display (6h) — NEXT
+□  Task 4: Reports Nav + Overview Dashboard (8h)
+□  Task 5: Revenue Report (14h)
+□  Task 6: Booking Analytics (10h)
+□  Task 7: Staff Performance Report (10h)
+□  Task 8: Customer Database + GDPR (16h)
+□  Task 9: PHPUnit Tests (12h)
+□  Task 10: Manual Testing & Polish (4h)
+
+Hours Completed: 34 / 112
+
+## Key Decisions & Fixes This Session
+
+**Status Log (Task 1):**
+- Added `wp_bookings_status_log` table via new migration: `database/migrations/migration-add-status-log.php`
+- Columns: `id, booking_id, old_status, new_status, changed_by_staff_id, changed_at, notes`
+- Bug found during testing: `update_booking()` (PUT endpoint used by Bookings list page) was not logging status changes — only the dedicated `/complete` and `/no-show` endpoints were. Fixed by adding status log INSERT to `update_booking()` as well. All three paths now log correctly.
+
+**Time-Off Blocking (Task 2):**
+- Self-service endpoints added to `class-dashboard-bookings-api.php`:
+  - `GET /dashboard/my-availability`
+  - `POST /dashboard/my-availability`
+  - `DELETE /dashboard/my-availability/{id}`
+- Reason stored in `notes` column using format `reason:{value}|notes:{value}` (no dedicated reason column in schema)
+- Availability algorithm already respected `specific_date` blocks with `is_working = 0` — no fix needed
+- New view: `MyAvailability.vue` at `/my-availability` (all roles)
+
+**Admin Time-Off Visibility — Decision:**
+- Admin view of all staff time-off blocks: deferred. Will add a read-only time-off tab to the staff drill-down in Task 7 (Staff Performance Report).
+- Full approval workflow (pending/approved/declined states + notifications): deferred to Phase 2. See Future_Features_Backlog.md.

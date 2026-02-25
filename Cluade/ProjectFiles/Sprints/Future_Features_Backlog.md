@@ -218,3 +218,47 @@ Before building these features:
 - Not blocking Phase 1 launch
 - Can be delivered incrementally
 - Business value validated before development
+
+
+---
+
+### Feature: Staff Time-Off Approval Workflow (12-15 hours)
+
+**Priority:** Medium  
+**Target:** Phase 2  
+**Status:** Documented, not started  
+**Decision Date:** 25/02/26
+
+**Background:**
+Sprint 4A implemented self-service time-off blocking for staff (`MyAvailability.vue`). Blocks take effect immediately with no admin approval step. The `BusinessOwner-AdminRequirements.md` (User Story 3.5) describes an approval workflow with Pending/Approved/Declined states, but this was out of scope for Phase 1 MVP.
+
+**Partial implementation in Sprint 4A:**
+Admin can view a specific staff member's time-off blocks via the staff drill-down panel in the Staff Performance Report (Task 7). This provides visibility without the full workflow.
+
+**What Phase 2 needs to add:**
+
+1. **Database:** Add `status` column to `wp_bookings_staff_working_hours`:
+```sql
+   ALTER TABLE wp_bookings_staff_working_hours
+   ADD COLUMN approval_status ENUM('approved', 'pending', 'declined') DEFAULT 'approved';
+```
+   Existing rows and all admin-created blocks default to `approved`. Staff self-service blocks created via `POST /dashboard/my-availability` default to `pending`.
+
+2. **Availability algorithm:** Update `get_staff_availability()` in `class-datetime-model.php` to only block slots for rows where `approval_status = 'approved'`. Pending and declined blocks should not affect customer-facing availability.
+
+3. **Admin endpoints:**
+   - `GET /dashboard/staff/time-off-requests` — all pending requests across all staff
+   - `POST /dashboard/staff/time-off-requests/{id}/approve`
+   - `POST /dashboard/staff/time-off-requests/{id}/decline`
+
+4. **Email notifications:**
+   - Staff submits request → email to admin
+   - Admin approves/declines → email to staff
+
+5. **Frontend:**
+   - Admin: "Time-Off Requests" section showing pending items with approve/decline buttons
+   - Staff `MyAvailability.vue`: show approval status badge on each block (Pending / Approved / Declined)
+
+**Key constraint:** Until Phase 2 approval workflow is built, all staff-created blocks are treated as immediately approved (`approval_status = 'approved'` default). No behaviour change needed at launch.
+
+
