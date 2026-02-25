@@ -882,3 +882,46 @@ Hours Completed: 34 / 112
 **Admin Time-Off Visibility — Decision:**
 - Admin view of all staff time-off blocks: deferred. Will add a read-only time-off tab to the staff drill-down in Task 7 (Staff Performance Report).
 - Full approval workflow (pending/approved/declined states + notifications): deferred to Phase 2. See Future_Features_Backlog.md.
+
+
+
+Sprint 4A Progress: 4/10 tasks complete
+
+✅ Task 1:  Staff Schedule View + Mark Actions (16h)
+✅ Task 2:  Time-Off Blocking (18h)
+✅ Task 3:  Staff Earnings Display (6h)
+✅ Task 4:  Reports Nav + Overview Dashboard (8h)
+⏭️ Task 5:  Revenue Report (14h)  — NEXT
+□  Task 6:  Booking Analytics (10h)
+□  Task 7:  Staff Performance Report (10h)
+□  Task 8:  Customer Database + GDPR (16h)
+□  Task 9:  PHPUnit Tests (12h)
+□  Task 10: Manual Testing & Polish (4h)
+
+Hours completed: 48 / 112
+
+
+Sprint 4A Progress: 5/10 tasks complete
+
+✅ Task 1:  Staff Schedule View + Mark Actions (16h)
+✅ Task 2:  Time-Off Blocking (18h)
+✅ Task 3:  Staff Earnings Display (6h)
+✅ Task 4:  Reports Nav + Overview Dashboard (8h)
+✅ Task 5:  Revenue Report (14h)
+⏭️ Task 6:  Booking Analytics (10h)  — NEXT
+□  Task 7:  Staff Performance Report (10h)
+□  Task 8:  Customer Database + GDPR (16h)
+□  Task 9:  PHPUnit Tests (12h)
+□  Task 10: Manual Testing & Polish (4h)
+
+Hours completed: 62 / 112
+
+Sprint 4A Progress: 6/10 tasks complete
+
+✅ Task 1–6 complete
+⏭️ Task 7:  Staff Performance Report (10h)  — NEXT
+□  Task 8:  Customer Database + GDPR (16h)
+□  Task 9:  PHPUnit Tests (12h)
+□  Task 10: Manual Testing & Polish (4h)
+
+Hours completed: 72 / 112
