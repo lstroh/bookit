@@ -26,6 +26,33 @@ Sprint 6: Launch Preparation — unchanged in scope
 The total hours estimate and scope remain broadly the same. The ordering has changed to optimise for parallel local and live work.
 For the current active sprint sequence, refer to progress.md.
 
+
+**⚠️ REVISION — 27/02/26: Sprint sequence restructured + extension plugin architecture adopted**
+
+**Sprint sequence changes:**
+
+All locally-buildable work is now completed before any live site deployment. The original Sprint 4B (Performance + Accessibility + Security) has been pushed back to Sprint 4E. The following new local sprints have been added:
+
+- **Sprint 4B** (~54h): Polish & Infrastructure — extension hook system + API spec, branding, audit logging, migration framework, error system, booking reference format, optimistic locking
+- **Sprint 4C** (~72h): Feature Completeness — team calendar, setup wizard, per-service cancellation policy UI (no Stripe execution), bulk actions, GDPR data portability, tooltips
+- **Sprint 4D** (~80h): Package Bookings — prepaid session bundles, credit balance, redemption tracking (stays in core, gated by settings toggle)
+- **Sprint 4E** (~80h): Security & Quality — WCAG audit, performance optimisation, security hardening, full test coverage
+
+**Sprint 5 (Live Environment) scope additions:**
+- Automatic refund execution via Stripe (policy rules configured in Sprint 4C)
+- Email notifications for extension plugin features (recurring, classes, waitlist)
+
+**Extension plugin architecture:**
+Three features moved out of the core plugin into separate extension plugins, each with its own Claude project:
+- Recurring appointments → **Bookit Recurring**
+- Group bookings & classes → **Bookit Classes**
+- Custom intake forms → **Bookit Forms**
+
+Extension plugins are built after Sprint 4B completes and the Extension Plugin API spec document exists. Package bookings remains in core.
+
+**Total local work remaining after Sprint 4A:** ~286h core + ~160h extensions
+**Refer to `progress.md` for full sprint details.**
+
 ### Compliance Update (January 23, 2026)
 
 **Legal compliance work added:** 36 hours across Sprint 4-6 based on UK_Compliance_Checklist_v1_0.md findings. This includes:

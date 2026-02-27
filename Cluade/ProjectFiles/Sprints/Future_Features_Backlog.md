@@ -3,6 +3,47 @@
 Features identified during development that are deferred to Sprint 4 or Phase 2.
 
 ---
+**⚠️ NOTE — 27/02/26: Features moved from Phase 2 / deferred into Phase 1**
+
+The following features previously documented as Phase 2, deferred, or COULD HAVE have been pulled into Phase 1. Some are in the core plugin; others are in separate extension plugins.
+
+**Moved into core plugin (Phase 1):**
+
+| Feature | Previously | Now |
+|---------|-----------|-----|
+| White-label / co-branded branding | Phase 2 | Core Sprint 4B |
+| Extension hook system + API spec | Not planned | Core Sprint 4B |
+| Optimistic locking on booking edit | COULD-012 deferred | Core Sprint 4B |
+| Comprehensive audit logging | COULD-017 deferred | Core Sprint 4B |
+| Database migration framework | COULD-016 deferred | Core Sprint 4B |
+| Custom booking reference format | COULD-009 deferred | Core Sprint 4B |
+| Centralised error message system | COULD-014 deferred | Core Sprint 4B |
+| Team calendar view | COULD-005 deferred | Core Sprint 4C |
+| Cancellation policy config UI (per-service) | Deferred | Core Sprint 4C |
+| Bulk booking actions | Deferred | Core Sprint 4C |
+| Customer data portability (GDPR Art. 20) | Deferred | Core Sprint 4C |
+| Setup wizard | Missed from Sprint 3 | Core Sprint 4C |
+| Contextual help tooltips | COULD-010 deferred | Core Sprint 4C |
+| Package bookings | Phase 2 Priority 2 | Core Sprint 4D |
+
+**Moved into extension plugins (Phase 1, separate codebases):**
+
+| Feature | Previously | Now |
+|---------|-----------|-----|
+| Recurring appointments | Phase 2 Priority 2 | Bookit Recurring extension |
+| Group bookings & classes | Phase 2 Priority 3 | Bookit Classes extension |
+| Custom intake forms per service | Phase 2 / Deferred | Bookit Forms extension |
+
+**Still deferred to Phase 2 / post-launch:**
+- Automatic refund *execution* via Stripe — Sprint 5 (requires live payment infrastructure)
+- SMS notifications — Phase 2 Priority 1 (Twilio integration)
+- 2-way Google Calendar sync — Phase 2 Priority 2
+- Customer portal (full self-service) — Phase 2 Priority 2
+- PDF report exports — Phase 2
+- Scheduled report emails — Phase 2
+- Email notifications for extension features — Sprint 5 (requires live email delivery)
+
+
 
 ## Sprint 4 / Early Phase 2 Features
 
