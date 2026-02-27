@@ -925,3 +925,83 @@ Sprint 4A Progress: 6/10 tasks complete
 □  Task 10: Manual Testing & Polish (4h)
 
 Hours completed: 72 / 112
+
+Update 26/02/26:
+Sprint 4A Progress: 7/10 tasks complete
+
+✅ Task 1:  Staff Schedule View + Mark Actions (16h)
+✅ Task 2:  Time-Off Blocking (18h)
+✅ Task 3:  Staff Earnings Display (6h)
+✅ Task 4:  Reports Nav + Overview Dashboard (8h)
+✅ Task 5:  Revenue Report (14h)
+✅ Task 6:  Booking Analytics (10h)
+✅ Task 7:  Staff Performance Report (10h)
+⏭️ Task 8:  Customer Database + GDPR (16h)  — NEXT
+□  Task 9:  PHPUnit Tests (12h)
+□  Task 10: Manual Testing & Polish (4h)
+
+Hours completed: 82 / 112
+
+Sprint 4A Progress: 8/10 tasks complete
+
+✅ Task 1:  Staff Schedule View + Mark Actions (16h)
+✅ Task 2:  Time-Off Blocking (18h)
+✅ Task 3:  Staff Earnings Display (6h)
+✅ Task 4:  Reports Nav + Overview Dashboard (8h)
+✅ Task 5:  Revenue Report (14h)
+✅ Task 6:  Booking Analytics (10h)
+✅ Task 7:  Staff Performance Report (10h)
+✅ Task 8:  Customer Database + GDPR (16h)
+⏭️ Task 9:  PHPUnit Tests (12h)  — NEXT
+□  Task 10: Manual Testing & Polish (4h)
+
+Hours completed: 98 / 112
+
+Sprint 4A Progress: 9/10 tasks complete
+
+✅ Task 1:  Staff Schedule View + Mark Actions (16h)
+✅ Task 2:  Time-Off Blocking (18h)
+✅ Task 3:  Staff Earnings Display (6h)
+✅ Task 4:  Reports Nav + Overview Dashboard (8h)
+✅ Task 5:  Revenue Report (14h)
+✅ Task 6:  Booking Analytics (10h)
+✅ Task 7:  Staff Performance Report (10h)
+✅ Task 8:  Customer Database + GDPR (16h)
+✅ Task 9:  PHPUnit Tests (12h)
+⏭️ Task 10: Manual Testing & Polish (4h)  — NEXT
+
+Hours completed: 110 / 112
+
+Update 27/02/26 
+
+Sprint 4A: ✅ Staff Dashboard Enhancements + Reports & Analytics (~115h) — COMPLETE
+
+Sprint 4A Progress: 10/10 tasks complete
+
+✅ Task 1:  Staff Schedule View + Mark Actions (16h)
+✅ Task 2:  Time-Off Blocking (18h)
+✅ Task 3:  Staff Earnings Display (6h)
+✅ Task 4:  Reports Nav + Overview Dashboard (8h)
+✅ Task 5:  Revenue Report (14h)
+✅ Task 6:  Booking Analytics (10h)
+✅ Task 7:  Staff Performance Report (10h)
+✅ Task 8:  Customer Database + GDPR (16h)
+✅ Task 9:  PHPUnit Tests (12h)
+✅ Task 10: Manual Testing & Polish (4h)
+
+Update 27/02/26:
+Sprint 4A complete. Key deliverables:
+- Staff schedule view, time-off blocking, earnings display
+- Reports suite: Overview, Revenue (with CSV export), Booking Analytics,
+  Staff Performance with drill-down, Customer Database with GDPR anonymisation
+- 444 PHPUnit tests passing, zero failures
+- Bug fixes: no_show status consistency, deleted customer booking visibility,
+  CSV double-encoding via rest_pre_serve_request pattern
+- UI additions: collapsible Reports/Settings sidebar sections,
+  DateRangeSelector active state persistence
+
+Key technical decisions made this sprint:
+- CSV export bypasses WP REST JSON encoding via rest_pre_serve_request filter
+- GDPR deletion anonymises customer data, preserves booking records
+  for HMRC 7-year retention
+- Chart type switches Bar/Line based on date range span (≤7 days = Bar)
