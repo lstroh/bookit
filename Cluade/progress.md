@@ -1097,3 +1097,20 @@ Each extension ships its own standalone Vue pages accessible via new dashboard r
 **Claude project naming:**
 - Core: this project
 - `Bookit Recurring`, `Bookit Classes`, `Bookit Forms` — created when ready
+
+
+Update 28/02/26:
+
+Sprint 4B Progress: 0/9 tasks complete
+
+□  Task 1: Extension Hook System — PHP Core Hooks (8h)
+□  Task 2: Extension Plugin API Spec Document (6h)
+□  Task 3: White-Label Branding System (8h)
+□  Task 4: Audit Logging System (8h)
+⏭️ Task 5: Database Migration Framework (6h) — READY TO START
+□  Task 6: Custom Booking Reference Format (4h)
+□  Task 7: Centralised Error Message System (6h)
+□  Task 8: Optimistic Locking on Booking Edit (4h)
+□  Task 9: PHPUnit Tests + Manual Testing (4h)
+
+Estimated: 54h | Actual: 0h
