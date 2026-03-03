@@ -1114,3 +1114,51 @@ Sprint 4B Progress: 0/9 tasks complete
 □  Task 9: PHPUnit Tests + Manual Testing (4h)
 
 Estimated: 54h | Actual: 0h
+
+Update 01/03/26:
+
+Sprint 4B: ✅ Polish & Infrastructure (~54h) — COMPLETE
+
+Sprint 4B Progress: 9/9 tasks complete
+
+✅ Task 1: Extension Hook System (8h)
+✅ Task 2: Extension Plugin API Spec Document (6h)
+✅ Task 3: White-Label Branding System (8h)
+✅ Task 4: Audit Logging System (8h)
+✅ Task 5: Database Migration Framework (6h)
+✅ Task 6: Custom Booking Reference Format (4h)
+✅ Task 7: Centralised Error Message System (6h)
+✅ Task 8: Optimistic Locking on Booking Edit (4h)
+✅ Task 9: PHPUnit Tests + Manual Polish (4h)
+
+Estimated: 54h | Actual: ~54h
+
+Sprint 4B complete. Key deliverables:
+- Extension hook system: action/filter hooks at all key booking lifecycle
+  moments; Extension Plugin API spec document produced
+- White-label branding: logo, primary colour, business name, powered-by
+  toggle; settings persist to DB, apply at runtime via CSS variables
+- Audit logging: read-only admin log of all significant system actions,
+  with date/action filters and pagination
+- Database migration framework: versioned migrations with rollback support;
+  migrations 0001 (booking reference), 0002 (lock version) shipped
+- Custom booking reference: BK[YYMM]-[XXXX] format generated on all
+  booking creation paths (wizard + manual dashboard booking)
+- Centralised error message system: registry of typed error codes (E1001–
+  E9999) with placeholder substitution and consistent HTTP status mapping
+- Optimistic locking: lock_version token on all bookings; concurrent edit
+  conflicts return E2004 with conflict dialog in Vue
+- Test suite: 444 → 485 tests (+41 new), 1529 assertions, 0 failures
+
+Bug fixes made during sprint:
+- Vite build base path fixed (base: './') — chunks were 404ing when served
+  from plugin subdirectory
+- booking_reference NULL on new dashboard bookings — insert_id timing issue
+- PHP key mismatch in load_branding_settings() — was returning snake_case
+  DB keys instead of camelCase keys expected by Vue normalizeBranding()
+- Tailwind dist rebuilt with CSS variable references so runtime colour
+  changes apply correctly
+- Undefined variable in class-datetime-model.php availability filtering
+- Legacy conflict error behaviour restored in class-dashboard-bookings-api.php
+
+Next: Sprint 4C — Feature Completeness (~72h) — LOCAL
