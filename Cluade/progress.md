@@ -1162,3 +1162,49 @@ Bug fixes made during sprint:
 - Legacy conflict error behaviour restored in class-dashboard-bookings-api.php
 
 Next: Sprint 4C — Feature Completeness (~72h) — LOCAL
+
+
+Update 05/03/26:
+
+Sprint 4C: ✅ Feature Completeness (~80h) — COMPLETE
+
+Sprint 4C Progress: 9/9 tasks complete (+ 2 unplanned fixes)
+
+✅ Task 1a: Team Calendar — Day/Week views (8h)
+✅ Task 1b: Team Calendar — Month view + Day/Week/Month toggle (6h)
+✅ Task 2:  Setup Guide — Backend + State (8h)
+✅ Task 3:  Setup Guide — Overlay UI (10h)
+✅ Task 4:  Cancellation Policy Settings UI (6h)
+✅ Task 5:  REQ-LEGAL-003 — 14-day cooling-off waiver (3h)
+✅ Task 6:  Payment Gateway Configuration UI (4h)
+✅ Task 7:  Deposit Settings UI (4h)
+✅ Fix 5A:  Deposit split display at checkout (2h)
+✅ Fix 5B:  Cancellation policy display in wizard + emails (2h)
+✅ Task 8:  PHPUnit coverage check and gap fill (4h)
+✅ Task 9:  Manual testing and polish (4h)
+
+Estimated: ~72h | Actual: ~61h
+
+Key deliverables:
+- Team Calendar: full day/week/month views with staff filter,
+  booking cards, status dots, cross-month week labels
+- Setup Guide: 4-step onboarding overlay with service creation,
+  availability, payment status, go-live summary; collapsible
+  ADMIN sidebar section
+- Cancellation Policy: full settings UI with live preview panel,
+  strict policy warning, policy text shown at checkout and in
+  confirmation emails
+- REQ-LEGAL-003: 14-day cooling-off waiver checkbox with fixed
+  legal wording, session storage, DB columns, waiver_at timestamp
+- Payment Gateway: Stripe/PayPal key storage with sensitive key
+  masking (SAVED pattern), show/hide toggles, Pay on Arrival toggle
+- Deposit Settings: default rules, min/max controls, refund
+  behaviour toggles, live checkout preview card
+- Fix 5A: deposit split (due today / due on arrival) correctly
+  calculated and displayed at booking step 5
+- Fix 5B: cancellation policy text wired to booking wizard step 5
+  and confirmation email
+- Test suite: 485 → 551 tests (+66), 1748 assertions, 0 failures
+- Manual testing: clean pass, no polish fixes required
+
+Next: Sprint 4D — Package Bookings (~80h) — LOCAL
