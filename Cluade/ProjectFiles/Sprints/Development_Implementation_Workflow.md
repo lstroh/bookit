@@ -148,6 +148,14 @@ The development process uses a **dual-chat architecture** to separate strategic 
 - Make architecture decisions (escalate to Project Assistant)
 - Change sprint scope (escalate to Project Assistant)
 - Adjust estimates across sprints (that's Project Assistant)
+- Silently substitute dropped items with different work — always escalate
+
+**Cursor Prompt Quality Rules:**
+- Always use the `cursor-prompt-generator` skill before writing any Cursor prompt
+- Always read existing files via GitHub before designing any implementation
+- Extend existing infrastructure (migration runner, error registry, audit logger)
+  rather than duplicating it
+- Process bulk operations per-record in a loop — never a single mass SQL UPDATE
 
 ## 2.4 Cursor IDE
 
@@ -212,8 +220,12 @@ Project Assistant: [Analyzes impact]
 **How to Start:**
 1. Get sprint prompt from Project Assistant (e.g., `Sprint_0_Implementation_Prompt.md`)
 2. Open NEW Claude chat
-3. Paste entire prompt file
-4. Sprint Assistant initializes and generates task breakdown
+3. Ensure the following are enabled in the sprint chat:
+   - **GitHub connector** — for live codebase reads before any implementation
+   - **Context7 connector** — for current library documentation
+   - **cursor-prompt-generator skill** — for consistent Cursor prompt quality
+4. Paste entire prompt file
+5. Sprint Assistant initializes and generates task breakdown
 
 **Typical Interaction:**
 
@@ -946,6 +958,28 @@ C:\Local Sites\booking-plugin-dev\
   │       └── wp-config.php
   └── logs\
 ```
+## 7.1a Claude Connectors & Skills (Sprint Chats)
+
+The following must be enabled in every sprint implementation chat:
+
+**GitHub Connector**
+- Gives the sprint agent live read access to `lstroh/bookit-imp` (branch: Phase1)
+- Used by the agent to read existing files before writing any implementation
+- Prevents agents from making assumptions about current file contents
+- Critical for tasks that modify existing files
+
+**Context7 Connector**
+- Provides current documentation for external libraries (Vue 3, WordPress REST
+  API, PHPUnit, npm/composer packages)
+- Agent calls it before writing any library-specific implementation guidance
+- Prevents use of outdated API patterns from training data
+
+**cursor-prompt-generator Skill**
+- Enforces consistent Cursor prompt structure across all tasks
+- Encodes project-specific quality rules, infrastructure wiring requirements,
+  and known gotchas
+- Must be installed in the sprint chat — install from the .skill file
+- Agent triggers it automatically when generating any Cursor prompt
 
 ## 7.2 Cursor IDE
 
@@ -1735,6 +1769,59 @@ ALL checkboxes above must be ✅ before task is complete.
 ```
 
 ---
+
+# 12a. SPRINT AGENT DISCIPLINE
+
+Rules learned from sprint execution that all sprint agents must follow.
+These rules are also encoded in the `cursor-prompt-generator` skill.
+
+## Read Before Write
+The sprint agent must read every file it intends to modify before writing
+any implementation guidance. Use the GitHub connector to read current file
+contents. Never describe what you think is in a file — always verify.
+
+**Why:** Sprint 4C agent made assumptions about existing tooltip
+infrastructure that turned out to be wrong, requiring rework.
+
+## Extend, Don't Duplicate
+Before creating any new class, component, or utility, check whether
+existing infrastructure already covers it:
+- New DB tables → `Bookit_Migration_Runner`
+- New error codes → `Bookit_Error_Registry`
+- Significant actions → `Bookit_Audit_Logger`
+- Tooltips → `BookitTooltip.vue`
+- File downloads → `rest_pre_serve_request` pattern
+
+**Why:** Duplicating infrastructure creates maintenance overhead and
+inconsistency.
+
+## Escalate, Don't Substitute
+If a task cannot be completed as specified — due to scope, architecture
+conflict, or time — the agent must escalate to the Project Assistant.
+It must never silently replace a task with different work, even if the
+replacement work is valid and useful.
+
+**Why:** Sprint 4C agent replaced three planned tasks with Payment Gateway
++ Deposit Settings without escalating. The work was useful but the scope
+substitution was undiscovered until sprint review, creating Sprint 4C.5.
+
+## Per-Record Bulk Processing
+Any operation that affects multiple bookings, packages, or records must
+process each record individually in a server-side loop. Never use a
+single mass SQL UPDATE for bulk operations.
+
+**Why:** Per-record processing ensures booking lifecycle hooks
+(e.g. `bookit_after_booking_cancelled`) and audit log entries fire
+correctly for each record. Mass updates bypass all hooks silently.
+
+## Frontend Build Requirement
+After any Vue/JS change, `npm run build` must be run manually in
+Local by Flywheel inside `bookit-booking-system/dashboard/`. Cursor's
+build only affects its own container. The `dist/` directory is
+gitignored and is not committed.
+
+Every Cursor prompt that touches Vue files must include this instruction
+explicitly.
 
 # 13. WORKFLOW EXAMPLES
 

@@ -1208,3 +1208,59 @@ Key deliverables:
 - Manual testing: clean pass, no polish fixes required
 
 Next: Sprint 4D — Package Bookings (~80h) — LOCAL
+
+
+
+Update 08/03/26:
+
+Sprint 4C.5: ✅ Carry-Forward Cleanup (~20h) — COMPLETE
+
+Sprint 4C.5 Progress: 3/3 tasks complete
+
+✅ Task 1: Bulk Booking Actions (~6h)
+✅ Task 2: GDPR Customer Data Portability Export (~8h)
+✅ Task 3: Contextual Help Tooltips (~6h)
+
+Estimated: ~20h | Actual: ~20h
+
+Key deliverables:
+- Bulk booking actions: POST /dashboard/bookings/bulk-action;
+  actions cancel/complete/no_show; each booking processed
+  individually server-side so lifecycle hooks and audit log
+  entries fire per booking; partial success handled gracefully
+  in UI (succeeded/failed arrays with reasons); admin-only,
+  staff role blocked; confirmation dialog before action fires
+- GDPR export: per-customer data portability export (Art. 20)
+  triggered from customer profile; JSON format (structured,
+  machine-readable) and CSV format (zip of separate files per
+  data type); export contents: personal details, full booking
+  history (all statuses), payment records; audit log entries
+  and internal gateway IDs excluded from export; audit log
+  entry written on every export action; no cross-customer data;
+  existing bulk customer CSV export untouched
+- Tooltips: new BookitTooltip.vue global component; Teleport
+  to body prevents clipping in modals and sidebars; keyboard
+  accessible (focus shows, Escape dismisses, hover persistence
+  between trigger and panel); WCAG 2.1 AA (role=tooltip,
+  aria-describedby); consolidated existing StaffHours inline
+  tooltip into new component; tooltips added to: cancellation
+  policy fields, deposit settings, payment gateway fields,
+  branding settings, bookings list status and reference column
+  headers, split shift config, buffer time on service form
+- Test suite: 551 → 571 tests (+20), 1819 assertions, 0 failures
+
+Implementation notes:
+- Bulk action endpoint initially registered at /bookings/bulk-action
+  (missing /dashboard/ prefix); corrected to
+  /dashboard/bookings/bulk-action to align with all other
+  dashboard endpoints and allow useApi composable to work
+  correctly
+- GDPR export: audit log entries and Stripe/PayPal gateway IDs
+  removed from export contents on review — audit log is internal
+  admin activity, not customer-provided data; gateway IDs are
+  internal references not meaningful to the customer
+- Tooltip component created from scratch (no existing tooltip
+  infrastructure found); StaffHours had an inline local
+  implementation which was consolidated into BookitTooltip
+
+Next: Sprint 4D — Package Bookings (~80h) — LOCAL
