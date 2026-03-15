@@ -396,5 +396,11 @@ booking edit modal in the dashboard.
   be sent shortly" placeholder shown
 
 
+packages_enabled gate on /wizard/my-packages endpoint — the customer package lookup endpoint (class-customer-package-lookup-api.php) also lacks a packages_enabled check. Low priority (it only returns packages for a known customer email) but should be consistent with the available-packages endpoint. Sprint 5 or 4F.
+
+
+Discount mode purchase_price not stored at creation — create_customer_package stores null for purchase_price on discount-mode packages. The correct price can only be calculated once the applicable service price is known. Needs to be resolved when the Stripe package purchase flow is built in Sprint 5.
+
+
 
 
