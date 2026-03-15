@@ -1264,3 +1264,125 @@ Implementation notes:
   implementation which was consolidated into BookitTooltip
 
 Next: Sprint 4D — Package Bookings (~80h) — LOCAL
+
+
+**Customer package visibility gap noted:**
+- Customers cannot currently see their own package history or sessions remaining
+- Mitigation: admin can view via Customer Profile → Packages tab
+- Sprint 4E task added: package redemption confirmation email to include sessions remaining
+- Sprint 5 task added: customer-facing "My Packages" portal page (shortcode-based)
+
+Update 14/03/26:
+
+Sprint 4D: ✅ Package Bookings (~80h) — COMPLETE
+
+Sprint 4D Progress: 10/10 tasks complete (Task 5 deferred to live sprint)
+
+✅ Task 1: Database Migrations — Package Tables (~6h)
+✅ Task 2: Package Types API — CRUD (~8h)
+✅ Task 3: Customer Packages API — Purchase & Management (~8h)
+✅ Task 4: Booking Wizard — Package Purchase UI stub (~4h)
+⏸️ Task 5: Stripe Webhook — Package Purchase (DEFERRED to Sprint 5 — requires live environment)
+✅ Task 6: Booking Wizard Step 5 — "Use a Package" Redemption Path (~8h)
+✅ Task 7: Package Redemption — Atomic Dashboard Endpoint (~8h)
+✅ Task 8: Dashboard — Packages Section & Customer Profile Tab (~12h)
+✅ Task 9: Settings Toggle (packages_enabled) + Daily Expiry Cron (~8h)
+✅ Task 10: Package Redemption History — Endpoint + UI (~4h)
+
+Estimated: ~80h | Actual: ~66h (17.5% under estimate)
+
+Key deliverables:
+
+DB schema (4 migrations):
+- wp_bookings_package_types (migration 0005): package definitions,
+  price_mode (fixed/discount), expiry config, applicable_service_ids JSON
+- wp_bookings_customer_packages (migration 0006): per-customer package
+  ownership, sessions_total/remaining, status ENUM, expiry tracking
+- wp_bookings_package_redemptions (migration 0007): immutable audit trail
+  of every session redemption with booking_id, redeemed_by, notes
+- wp_bookings.customer_package_id column (migration 0008): links bookings
+  to the package they were redeemed against
+
+REST API (7 new controllers/endpoints):
+- GET/POST /dashboard/package-types + GET/PATCH/POST/{id}/deactivate
+- GET/POST /dashboard/customer-packages + GET/{id} + POST/{id}/cancel
+- GET /dashboard/customer-packages/{id}/redemptions (history)
+- POST /dashboard/package-redemptions (atomic: START TRANSACTION /
+  SELECT FOR UPDATE / COMMIT / ROLLBACK; double-redemption guard)
+- GET /wizard/available-packages (public, service-filtered)
+- GET /wizard/my-packages (public, customer email lookup)
+- GET /dashboard/bookings extended: customer_id filter + customer_package_id field
+
+Booking wizard Step 5:
+- "Use one of your packages" section: server-rendered, service-filtered,
+  shows customer's active packages with sessions remaining and expiry
+- "Buy a session package" section: shows purchasable packages (Stripe
+  routing deferred to Sprint 5)
+- Three mutually exclusive radio groups: payment methods, buy package,
+  use package — all JS-managed without page reload
+- use_package payment method → process_use_package() in payment processor:
+  validates package, creates booking, decrements sessions_remaining via
+  SQL expression, inserts redemption record, fires audit log
+
+Dashboard — Packages page:
+- Admin-only list view at /packages with status filter, search,
+  pagination, status badges
+- Booking selection modal for session redemption (replaces window.prompt):
+  fetches customer's unlinked bookings, radio selection, focus trap,
+  Teleport modal following BookingModal.vue pattern
+- Expandable History rows per package showing full redemption history
+
+Dashboard — Customer Profile:
+- New Packages tab (lazy-loaded on first click) showing all customer
+  packages with status badges and expandable redemption history per card
+
+Settings:
+- packages_enabled toggle in Settings.vue → saves '0'/'1' via settings API
+- packages_enabled added to settings API allowlist
+
+Cron:
+- Bookit_Package_Expiry: daily at 02:00 AM, per-record loop (not bulk
+  UPDATE), fires customer_package.expired audit log per record,
+  registered in activator/deactivator, init() in loader
+
+Error codes (E5001–E5005):
+- E5001: PACKAGE_NOT_FOUND
+- E5002: PACKAGE_EXHAUSTED
+- E5003: PACKAGE_EXPIRED
+- E5004: PACKAGE_SERVICE_MISMATCH
+- E5005: PACKAGE_INSUFFICIENT_SESSIONS
+
+Test suite: 571 → 686 tests (+115), 0 failures
+
+Key decisions made during Sprint 4D:
+- Stripe package purchase routing deferred to Sprint 5 (live environment);
+  wizard shows buy UI stub, session stored, no Stripe call locally
+- Extension plugin architecture confirmed: packages remain in core
+  (deeply integrated with payment step); group bookings/recurring go
+  to extension plugins
+- window.prompt() replaced with proper booking selection modal after
+  Task 8 implementation — identified as a UX gap before commit
+- Bookings API extended (customer_id filter + customer_package_id field)
+  after Cursor blocked on missing params — pre-patch approach used
+- Per-record cron processing enforced (not bulk UPDATE) to ensure audit
+  log fires per record — sprint rule applied to expiry cron
+- packages_enabled settings API uses string '0'/'1' not boolean cast —
+  consistent with existing settings storage pattern
+- Double-redemption guard via booking_already_redeemed WP_Error +
+  SELECT FOR UPDATE lock — prevents concurrent admin redemptions
+
+Customer package visibility gap:
+- Customers cannot currently see their own package history or sessions
+  remaining from the front end
+- Admin can view via Customer Profile → Packages tab on their behalf
+- Sprint 4E task added: package redemption confirmation email to include
+  sessions remaining count (~1h)
+- Sprint 5 task added: customer-facing [bookit_my_packages] shortcode
+  page showing active packages, sessions remaining, redemption history
+
+Next: Sprint 4E — Security & Quality (~80h) — LOCAL
+- Accessibility audit + fixes (WCAG 2.1 AA)
+- Performance optimisation (JS bundle, queries, lazy loading)
+- Security hardening (OWASP checklist, rate limiting)
+- PHPUnit coverage for Sprint 4B–4D code
+- Package redemption email enhancement (sessions remaining in email)

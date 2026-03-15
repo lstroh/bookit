@@ -303,3 +303,46 @@ Admin can view a specific staff member's time-off blocks via the staff drill-dow
 **Key constraint:** Until Phase 2 approval workflow is built, all staff-created blocks are treated as immediately approved (`approval_status = 'approved'` default). No behaviour change needed at launch.
 
 
+## Package — Customer Visibility
+
+### Task: Package Redemption Email Enhancement (Sprint 4E)
+**Effort:** ~1h
+**Description:** When a booking is created via the `use_package` payment method
+(wizard redemption path), include a "sessions remaining" line in the customer
+confirmation email. Format: "Sessions remaining on your [Package Name] package: X"
+**File to modify:** includes/email/class-email-sender.php — send_customer_confirmation()
+**Trigger:** Check booking payment_method === 'package_redemption', JOIN
+customer_packages to get sessions_remaining, add to email template variables.
+**Acceptance criteria:**
+- Customer receives confirmation email after wizard package redemption
+- Email body includes package name and sessions remaining count
+- Email unaffected for non-package bookings
+
+---
+
+### Task: Customer-Facing "My Packages" Page (Sprint 5 — Live Environment)
+**Effort:** ~8–10h
+**Description:** A WordPress shortcode [bookit_my_packages] that renders a
+customer-facing page showing their active and past packages. Customer identified
+by email from an existing booking session or magic link token.
+**Displays per package:**
+- Package type name
+- Sessions remaining / total
+- Expiry date (or "Never")
+- Status badge (active / exhausted / expired)
+- Redemption history (date, service, staff)
+**Technical notes:**
+- Public PHP template, no Vue required
+- Reuses GET /wizard/my-packages endpoint logic server-side
+- Redemption history fetched via direct DB query (no new endpoint needed)
+- GDPR: only shows data for the authenticated customer session
+**Acceptance criteria:**
+- Shortcode renders correctly on a standard WordPress page
+- Only shows packages belonging to the logged-in/session customer
+- Empty state shown if no packages exist
+- Fully responsive, matches booking wizard CSS conventions
+
+
+
+
+
