@@ -41,12 +41,17 @@ All locally-buildable work is now completed before any live site deployment. The
 **Sprint 5 (Live Environment) scope additions:**
 - Automatic refund execution via Stripe (policy rules configured in Sprint 4C)
 - Email notifications for extension plugin features (recurring, classes, waitlist)
+- Bookit Meetings extension: Zoom + Google Meet OAuth auto-generation
+  (per staff, business-level fallback), WhatsApp link construction
+  from staff phone number, Microsoft Teams support
 
 **Extension plugin architecture:**
 Three features moved out of the core plugin into separate extension plugins, each with its own Claude project:
 - Recurring appointments → **Bookit Recurring**
 - Group bookings & classes → **Bookit Classes**
 - Custom intake forms → **Bookit Forms**
+- Online meeting links → Bookit Meetings (core additions in Sprint 4F;
+  OAuth auto-generation in Sprint 5)
 
 Extension plugins are built after Sprint 4B completes and the Extension Plugin API spec document exists. Package bookings remains in core.
 

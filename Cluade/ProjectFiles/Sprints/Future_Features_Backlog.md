@@ -33,6 +33,8 @@ The following features previously documented as Phase 2, deferred, or COULD HAVE
 | Recurring appointments | Phase 2 Priority 2 | Bookit Recurring extension |
 | Group bookings & classes | Phase 2 Priority 3 | Bookit Classes extension |
 | Custom intake forms per service | Phase 2 / Deferred | Bookit Forms extension |
+| Online meeting links (Zoom, Meet, WhatsApp, Teams, Generic) | Phase 2 | Bookit Meetings extension (Sprint 4F + Sprint 5) |
+
 
 **Still deferred to Phase 2 / post-launch:**
 - Automatic refund *execution* via Stripe — Sprint 5 (requires live payment infrastructure)
@@ -342,6 +344,56 @@ by email from an existing booking session or magic link token.
 - Empty state shown if no packages exist
 - Fully responsive, matches booking wizard CSS conventions
 
+
+## Bookit Meetings Extension — Architecture Decision
+
+**Decision date:** 15 March 2026
+
+**Why extension plugin, not core:**
+- Only relevant for remote/virtual service businesses (coaches,
+  consultants, tutors) — not universal like packages
+- OAuth credential complexity (Zoom + Meet each require separate
+  OAuth app registration, token storage, refresh logic) adds
+  unnecessary weight to core for clients who don't need it
+- Can be deactivated without affecting any booking functionality
+- Meeting link is supplementary data on a booking, not core to
+  the booking creation flow
+
+**Split architecture:**
+Core plugin adds (~8h, Sprint 4F):
+- meeting_type column on wp_bookings_services
+  (values: none / online / in-person)
+- preferred_platform column on wp_bookings_services
+  (values: zoom / google_meet / whatsapp / teams / generic)
+- meeting_link column on wp_bookings
+- Meeting link placeholder in booking confirmation email template
+- Meeting link section on booking confirmation page
+- bookit_meeting_link_generated action hook
+- bookit_confirmation_meeting_section filter hook
+
+Bookit Meetings extension adds (~52h, Sprint 5):
+- Extension registration + dashboard settings page
+- Zoom OAuth: per-staff credentials, business-level fallback,
+  auto-generate unique meeting per booking via Zoom API
+- Google Meet OAuth: per-staff credentials, business-level
+  fallback, auto-generate via Google Calendar API
+- WhatsApp: click-to-chat link (wa.me/{phone}) constructed from
+  staff phone number — no OAuth required
+- Microsoft Teams: manual link entry (OAuth auto-generation
+  deferred to Phase 2 if needed)
+- Generic URL: store and display any meeting URL
+- Hooks into bookit_after_booking_created to generate + store link
+- Admin override: edit meeting link per booking in dashboard
+
+**Per-booking override:** Admin can always manually set or edit
+the meeting link on any booking regardless of platform, via the
+booking edit modal in the dashboard.
+
+**Customer experience:**
+- Meeting link shown on booking confirmation page
+- Meeting link included in confirmation email
+- If no link yet (manual entry pending): "Your meeting link will
+  be sent shortly" placeholder shown
 
 
 

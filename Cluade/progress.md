@@ -826,6 +826,8 @@ Sprint 4A: ⏭️ Staff Dashboard Enhancements + Reports & Analytics (~112h) —
 Sprint 4B: ⏭️ Performance + Accessibility + Security Hardening (~80h) — LOCAL
 Sprint 5:  ⏭️ Live Environment Sprint — Payments completion, Email notifications,
                Magic links, Google Calendar OAuth, Load testing — REQUIRES LIVE SITE
+               - Bookit Meetings extension: Zoom OAuth auto-generation, Google Meet
+  OAuth auto-generation, WhatsApp link construction, Teams support
 Sprint 6:  ⏭️ Launch Preparation — Legal compliance, documentation, first client (~140h+)
 
 
@@ -1029,6 +1031,8 @@ Sprint 6:   □   Launch Preparation                         — MIXED
 Bookit Recurring  — Recurring appointments (~45h)
 Bookit Classes    — Group bookings & classes (~90h)
 Bookit Forms      — Custom intake forms (~25h)
+Bookit Meetings   — Online meeting links (~60h total:
+                    ~8h core additions + ~52h extension)
 ```
 
 **Sprint summaries:**
