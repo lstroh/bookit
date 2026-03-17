@@ -1390,3 +1390,121 @@ Next: Sprint 4E — Security & Quality (~80h) — LOCAL
 - Security hardening (OWASP checklist, rate limiting)
 - PHPUnit coverage for Sprint 4B–4D code
 - Package redemption email enhancement (sessions remaining in email)
+
+
+Update 15/03/26:
+
+Sprint 4E: ✅ Security & Quality (~80h) — COMPLETE
+
+Sprint 4E Progress: 8/8 tasks complete
+
+✅ Task 1: Security Audit & Input Validation (~8h)
+✅ Task 2: Rate Limiting — Public Endpoints (~8h)
+✅ Task 3: PHPUnit Coverage — Sprint 4B Infrastructure (~8h)
+✅ Task 4: PHPUnit Coverage — Sprints 4C & 4C.5 (~6h)
+✅ Task 5: PHPUnit Coverage — Sprint 4D Packages (~6h)
+✅ Task 6: Performance Optimisation (~10h)
+✅ Task 7: WCAG 2.1 AA Accessibility Fixes (~12h)
+✅ Task 8: Package Redemption Email Enhancement (~2h)
+
+Estimated: ~80h | Actual: ~40h (50% under estimate — most coverage
+gaps were already filled during earlier sprints; audit work confirmed
+quality rather than finding major issues)
+
+Key deliverables:
+
+Security hardening:
+- OWASP pass across all Sprint 4D package API files: $wpdb->prepare()
+  verified on all queries; applicable_service_ids validated as JSON
+  array of integers; expires_at validated via DateTime::createFromFormat;
+  sessions_total guarded > 0; price_mode validated against allowed ENUM
+- Booking wizard Step 5 template XSS audit: all variable output already
+  escaped (esc_html, esc_attr, esc_url); confirmed clean
+- Staff photo upload: stored as URL field (no server-side upload handler
+  in scope); documented for future backlog
+- Rate limiter class (Bookit_Rate_Limiter): WordPress Transients API,
+  no new DB tables; key format bookit_rl_{action}_{md5(ip)}
+- Endpoints rate limited: wizard booking creation (10/hr), available-
+  packages (60/hr), my-packages (60/hr), dashboard login (5/15min)
+- Rate limit violations logged to audit log (action: rate_limit_exceeded)
+- E6001 RATE_LIMIT_EXCEEDED registered (HTTP 429)
+- packages_enabled gate added to GET /wizard/available-packages
+  (was missing — returns empty array when disabled)
+
+PHPUnit coverage gaps filled:
+- Sprint 4B: pending migration detection (observable behaviour), NULL
+  object_id storage in audit log; extension registry version
+  incompatibility was already covered
+- Sprint 4C/4C.5: gateway ID exclusion from GDPR export, deposit
+  percentage calculation via Stripe_Checkout::calculate_deposit;
+  audit log on export and per-service cancellation override both
+  confirmed already covered / unimplemented respectively
+- Sprint 4D: deactivation safety (customer packages unaffected when
+  package type deactivated); discount price mode test added then
+  removed (purchase_price not computed at creation — Sprint 5 gap);
+  packages_enabled gate test added to available-packages suite
+
+Performance optimisation:
+- N+1 fix: staff performance report refactored from per-staff query
+  loops to bulk aggregation helpers (get_staff_period_metrics_bulk,
+  get_staff_all_time_totals_bulk); all other list endpoints confirmed
+  clean via audit comments
+- Migration 0009: composite indexes added — idx_status_date on
+  bookings(status, booking_date); idx_staff_date_status on
+  bookings(staff_id, booking_date, status); idx_status_expires on
+  customer_packages(status, expires_at); idempotent up/down
+- Vue Router: all routes already using lazy () => import() syntax
+- Chart.js: already local to report views only, no global import
+
+WCAG 2.1 AA accessibility:
+- Packages.vue: role="alert" on error containers; aria-live="polite"
+  loading regions; aria-expanded + aria-controls + matching panel id
+  on redemption history toggles; existing focus trap on redeem modal
+  confirmed intact
+- CustomerProfile.vue packages tab: same aria-live / role="alert" /
+  aria-expanded pattern applied
+- Settings.vue: packages_enabled toggle wired with aria-labelledby
+  to visible label text
+- booking-step-5-payment.php: package radio group wrapped in fieldset
+  + legend; lang="en-GB" documented as theme/WP scope (not plugin)
+- Status badges: text confirmed alongside colour in all affected views
+
+Package redemption email:
+- generate_customer_email() extended with conditional package block
+- Only fires when customer_package_id present AND payment_method is
+  'package_redemption' or 'use_package'
+- Line 1: "Sessions remaining on your [Package Name] package: X of Y"
+- Line 2 (conditional): "Your package expires on: [formatted date]"
+  using date_i18n + get_option('date_format'); omitted if expires_at null
+- Graceful fallback: if package row not found, standard email sent
+- Non-package booking emails unchanged; staff notifications unaffected
+- pre_wp_mail filter used in tests to capture email content
+
+Test suite: 686 → 706 tests (+20), 0 failures
+
+Regressions: none
+
+Implementation notes:
+- class-bulk-bookings-api.php does not exist; bulk action endpoint
+  lives in class-dashboard-bookings-api.php (bulk_action method)
+- class-bookings-api.php does not exist; bookings list is in
+  class-dashboard-bookings-api.php
+- class-package-redemption-history-api.php does not exist; history
+  endpoint is in class-customer-packages-api.php
+- Dashboard login is not a REST endpoint; rate limiting applied to
+  dashboard/index.php POST handler directly
+- Audit logger signature is log(action, object_type, object_id, context)
+  (4 args, not 5 as initially assumed)
+- Error registry uses user_message/log_message/http_status/category
+  (not 'message')
+- Email method is generate_customer_email() not send_customer_confirmation()
+  directly; the latter delegates to the former
+
+Backlog items added to Future_Features_Backlog.md:
+- packages_enabled gate missing from /wizard/my-packages endpoint
+  (consistent fix for Sprint 5 or 4F)
+- Discount mode purchase_price not stored at creation (Sprint 5)
+
+Next: Sprint 4F — Meetings Extension core hooks (~8h) + Sprint 5
+(Live Environment) — Google Calendar OAuth, Stripe package purchase,
+email delivery, customer My Packages page
