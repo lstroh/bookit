@@ -1,6 +1,6 @@
 # Wimbledon Smart Business — Tools Stack
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Date:** March 2026
 **Status:** Active Reference
 **Purpose:** All tools decided on for running the Wimbledon Smart client delivery operation — what each tool does, what it costs, and which workflow stage it supports.
@@ -23,6 +23,8 @@
 | **BlogVault** | Daily offsite WordPress backups | ~£1–2/site/month | 5 |
 | **Wordfence** | WordPress security scanning | £0 (free tier) | 5 |
 | **Local by Flywheel / WP Staging** | Staging environment for builds and updates | £0 (free) | 3, 5 |
+| **Hostinger Business Cloud** | Live client site hosting — standard tier | ~£1.50/site/month | 4, 5 |
+| **Kinsta Agency** | Live client site hosting — premium tier (upgrade path) | ~£11.20/site/month | 4, 5 |
 | **Google Workspace** | Business email (liron@wimbledonsmart.co.uk) | ~£5/month | All stages |
 
 ---
@@ -134,30 +136,18 @@
 
 **Why this tool:** Preferred over Fathom (the leading alternative) because it requires no bot participant in the call, which keeps discovery calls feeling natural and personal. GDPR-compliant, data stored in Germany, audio deleted after transcription. Works on Mac and Windows across any platform — Zoom, Google Meet, in-person.
 
-**Why not Fathom:** Fathom is technically superior on features and completely free with unlimited recordings, but joins calls as a visible bot participant. This can make prospects self-conscious and disrupts the natural conversation flow on discovery calls — exactly where you need the most authentic interaction.
+**Why not Fathom:** Fathom is technically superior on features and completely free with unlimited recordings, but joins calls as a visible bot participant. This can make prospects self-conscious and disrupts the natural conversation flow on discovery calls.
 
 **Cost:**
-- **Free plan** — 10 meetings/month, 30-minute limit per meeting. Sufficient for your current volume (2–3 discovery calls + a handful of client calls per month).
+- **Free plan** — 10 meetings/month, 30-minute limit per meeting. Sufficient for current volume (2–3 discovery calls + a handful of client calls per month).
 - **Standard plan** — €25/month (~£21), 20 meetings/month, 2-hour limit. Upgrade when active client calls alongside discovery calls push past the free tier.
 
 **When to upgrade:** When you have 5+ active clients running monthly check-ins alongside new discovery calls — probably around Month 9–12.
 
 **Used in:**
-- Stage 1 (Step 1.3) — note-taking on discovery calls. Frees you to focus entirely on listening rather than writing.
-- Stage 4 — note-taking on onboarding calls. Generates a summary you can send to the client as a record of what was covered.
-- Stage 6 — note-taking on quarterly review calls. Summary feeds directly into your post-call actions and Bonsai record.
-
-**Key setup tasks:**
-- Download desktop app (Mac or Windows)
-- Connect to Google Calendar so Jamie knows when calls are starting
-- Set default summary template to "Sales Call" or "Discovery Call"
-- After each call: copy the Jamie summary into the relevant Bonsai record notes field
-
-**How to use it on a discovery call:**
-1. Start Jamie recording before joining Zoom
-2. Run the call normally — no mention of recording needed (Jamie captures your device audio, not the call itself — though best practice is to mention you're taking notes)
-3. After the call ends, Jamie summary arrives within minutes
-4. Review and paste the key fields into your Bonsai call summary template
+- Stage 1 (Step 1.3) — note-taking on discovery calls
+- Stage 4 — note-taking on onboarding calls
+- Stage 6 — note-taking on quarterly review calls
 
 ---
 
@@ -174,7 +164,7 @@
 - Stage 4 — configure client's verified sender domain during launch; activate client onboarding email sequence
 - Stage 5 — monthly check that email delivery is working for all active clients
 
-**Onboarding sequence to set up (fires from launch date):**
+**Onboarding sequence (fires from launch date):**
 
 | Day | Email | Purpose |
 |---|---|---|
@@ -228,7 +218,7 @@
 ---
 
 ### UptimeRobot
-**What it does:** Monitors every live client site every 5 minutes. Sends an email and SMS alert if a site goes down.
+**What it does:** Monitors every live client site every 5 minutes. Sends an email alert if a site goes down.
 
 **Why this tool:** Free for up to 50 monitors with 5-minute checks. Gives you visibility of client site health without any manual checking.
 
@@ -282,6 +272,69 @@
 
 ---
 
+### Hostinger Business Cloud — Standard Hosting Tier
+
+**What it does:** Live hosting for all standard client sites. This is where every built and approved site lives once it goes live.
+
+**Why this tool:** Hostinger Business Cloud hosts up to 300 WordPress sites on a single account at ~£1.50 per site per month. UK-based servers (London), LiteSpeed caching, daily backups included, and free SSL certificates. The per-client cost is low enough that it comfortably fits within your £99/month subscription margin.
+
+**Cost:** £14.99/month for the Business Cloud account — covering up to 300 sites. Per-client cost: approximately £1.50/site/month.
+
+**Suitable for:** Clients with 1–4 concurrent dashboard users and under 50 bookings per day. This covers the vast majority of your target clients — salons, therapists, coaches, photographers with small teams.
+
+**Performance expectations:**
+- Page load time: 1.5–3 seconds
+- Dashboard load: 2–4 seconds
+- Concurrent dashboard users: up to 3–5 comfortably
+- Uptime SLA: 99.9%
+
+**Included features:**
+- Daily backups (14-day retention) — BlogVault still used as a second offsite backup layer
+- Free SSL (Let's Encrypt)
+- LiteSpeed caching
+- Staging environment
+- WordPress CLI access
+
+**Link:** https://www.hostinger.co.uk/wordpress-hosting
+
+**Used in:**
+- Stage 4 — migrate from staging to Hostinger on launch day; point DNS
+- Stage 5 — hosting management, updates, and maintenance
+
+---
+
+### Kinsta Agency — Premium Hosting Tier (Upgrade Path)
+
+**What it does:** Premium hosting for clients who outgrow Hostinger. Isolated container per site on Google Cloud Platform (London), significantly faster performance, and better handling of high concurrent dashboard usage.
+
+**Why this tool:** When a client has 5+ staff using the dashboard simultaneously, or is running paid advertising driving unpredictable traffic spikes, Hostinger shared hosting can slow under the combined load. Kinsta's isolated containers mean one client's activity never affects another site.
+
+**Cost:** ~$280/month for 20 WordPress installs on the Agency plan — approximately £11.20/site/month at current rates.
+
+**When to upgrade a client from Hostinger to Kinsta:**
+
+| Trigger | Detail |
+|---|---|
+| 5+ concurrent dashboard users | Multiple staff simultaneously using the system |
+| 50+ bookings per day consistently | Higher database query load |
+| Running paid ads (Google/Facebook) | Unpredictable traffic spikes |
+| Dashboard consistently slow | Client or staff complaints about load times |
+| WooCommerce shop added | eCommerce requires isolated resources |
+
+**Performance expectations:**
+- Page load time: 0.5–1.5 seconds
+- Dashboard load: under 2 seconds regardless of data volume
+- Concurrent dashboard users: 10+ comfortably
+- Uptime SLA: 99.95%
+
+**Important:** Kinsta does not have a full white-label reseller programme. You manage and pay for hosting directly, passing the cost through in the client's monthly subscription. For most Year 1 clients on Hostinger, this upgrade is unlikely to be needed.
+
+**Link:** https://kinsta.com/agency-partner-program/
+
+**Used in:** Stage 4 and Stage 5 — for clients assessed as needing premium hosting at discovery, or migrated up from Hostinger later.
+
+---
+
 ### Google Workspace
 **What it does:** Business email at your domain (e.g. liron@wimbledonsmart.co.uk). Also provides Google Calendar, Google Drive, and Google Meet as part of the package.
 
@@ -293,6 +346,35 @@
 
 ---
 
+## Hosting Decision at Discovery
+
+During the discovery call (Step 1.3), one question determines which hosting tier is appropriate:
+
+> *"How many staff members will be logging into the dashboard on a daily basis?"*
+
+| Answer | Hosting Tier | Monthly Hosting Cost to You |
+|---|---|---|
+| 1–4 staff | Hostinger (standard) | ~£1.50/site |
+| 5–7 staff | Assess further — likely Kinsta | ~£11.20/site |
+| 8+ staff | Kinsta (premium) | ~£11.20/site |
+| Running paid ads | Kinsta regardless of team size | ~£11.20/site |
+
+For the vast majority of Year 1 clients — local salons, therapists, photographers, coaches — the answer will be 1–4 staff, making Hostinger the right choice and keeping your margin healthy.
+
+Note the hosting decision in Bonsai at the point of creating the project brief. It feeds directly into the hosting setup step at Stage 4.
+
+---
+
+## Client Email Setup — Key Insight
+
+Staff members do not need business email accounts. They log into the booking dashboard using their personal email (e.g. sarah@gmail.com) and receive booking notifications at that personal address. Only the business owner — and a receptionist if there is one — needs a professional business email address.
+
+This means the email setup conversation with a client almost always involves 1–2 accounts, not one per staff member. This keeps costs low and removes a common source of confusion during onboarding.
+
+For clients who want professional email setup, refer to `Infrastructure_Reference.md` for the full options — Microsoft 365, Google Workspace reseller, or free cPanel forwarding with Gmail Send As.
+
+---
+
 ## Tools by Stage — Cross-Reference
 
 | Stage | Tools Used |
@@ -300,8 +382,8 @@
 | **Stage 1 — Pre-Sale** | Wimbledon Smart Plugin (booking), Bonsai (CRM), Google Drive (folder), Zoom (discovery call), Jamie (note-taking), Google Workspace (email) |
 | **Stage 2 — Onboarding** | Bonsai (contract, Invoice 1), Stripe (payment), Google Drive (questionnaire, brief) |
 | **Stage 3 — Build** | Local by Flywheel / WP Staging (staging), Wordfence (security), Bonsai (Invoice 2, status), Google Drive (QA checklist) |
-| **Stage 4 — Launch** | Stripe (Invoice 3, subscription), Brevo (sender domain, onboarding sequence), UptimeRobot (monitoring setup), BlogVault (backups), Wimbledon Smart Plugin (live), Jamie (onboarding call notes), Zoom (onboarding call) |
-| **Stage 5 — Monthly** | UptimeRobot (uptime review), BlogVault (backup check), Wordfence (scan review), Brevo (delivery check), Local by Flywheel / WP Staging (update testing), Stripe (payment monitoring) |
+| **Stage 4 — Launch** | Hostinger or Kinsta (live hosting), Stripe (Invoice 3, subscription), Brevo (sender domain, onboarding sequence), UptimeRobot (monitoring), BlogVault (backups), Wimbledon Smart Plugin (live), Jamie (onboarding call notes), Zoom (onboarding call) |
+| **Stage 5 — Monthly** | UptimeRobot (uptime review), BlogVault (backup check), Wordfence (scan review), Brevo (delivery check), Local by Flywheel / WP Staging (update testing), Stripe (payment monitoring), Hostinger or Kinsta (hosting management) |
 | **Stage 6 — Quarterly** | Zoom (review call), Jamie (note-taking), Bonsai (satisfaction status, upsell tags) |
 
 ---
@@ -313,14 +395,27 @@
 | Bonsai (Starter) | ~£17 |
 | Google Workspace | ~£5 |
 | FreeAgent | ~£19 |
+| Hostinger Business Cloud (account) | ~£15 (covers all standard client sites up to 300) |
 | Jamie (free to start) | £0 → ~£21 at scale |
 | BlogVault (per client site) | ~£1–2 per site |
 | All other tools | £0 |
-| **Total (no clients yet)** | **~£41/month** |
-| **Total (5 active clients)** | **~£66/month** |
-| **Total (10 active clients)** | **~£82/month** |
+| **Total (no clients yet)** | **~£56/month** |
+| **Total (5 active clients on Hostinger)** | **~£71/month** |
+| **Total (10 active clients on Hostinger)** | **~£82/month** |
+
+**Note on Hostinger:** The £14.99/month account fee is fixed regardless of how many sites you host — up to 300. Your per-client cost drops as you add more clients. At 10 clients it is ~£1.50/site; at 3 clients it is ~£5/site. Factor this into early-client margin calculations.
+
+**Note on Kinsta:** If any client requires premium hosting, add ~£11.20/month per site. The £99/month subscription provides enough margin to absorb this without a price change. For exceptional cases with very high traffic or large teams, surface it as a transparent line item.
 
 ---
 
-*Document Version: 1.0 | Created: March 2026*
-*Related documents: Client_Delivery_Workflow.md | Stage1_PreSale_Guide.md | 12_Month_Business_Plan.md*
+## Version History
+
+| Version | Date | Changes |
+|---|---|---|
+| 1.0 | March 2026 | Initial version |
+| 1.1 | March 2026 | Added Hostinger and Kinsta hosting detail, hosting decision framework, client email insight |
+
+---
+
+*Related documents: Client_Delivery_Workflow.md | Stage1_PreSale_Guide.md | Infrastructure_Reference.md | 12_Month_Business_Plan.md*
