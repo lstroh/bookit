@@ -1,137 +1,148 @@
-Good — Sprint 4E is complete, PHPUnit baseline is **706 tests, 0 failures**, and the sprint prompt you've shared is well-formed. Let me load the skill and Context7 docs before generating the Cursor prompts.Now let me get Context7 docs for Vue 3 and WordPress REST API patterns.Good. Now let me check the sprint 4D summary for any important context before generating Task 1.I have everything I need. Let me now generate the four Cursor prompts for Sprint 4F, one task at a time. I'll present Task 1 now and wait for your confirmation before Task 2.
+Let me read the two files that need to be modified before writing any code.Good — I can see the full `booking-confirmed.php` template. Now let me read the full email sender to know exactly where to insert the hook.I have a clear picture of both files. Now generating the Cursor prompt.
 
 ---
 
-# Sprint 4F — Task 1 of 4: Database Migrations
-
 ```
-TASK 1 OF 4: Database Migrations — Meeting fields on services + booking
-Sprint: 4F | Est: ~2h | Plugin root: bookit-booking-system/
+TASK: Core hooks pre-task — meeting section filters + action
+Sprint: Meetings Extension Pre-Task | Est: ~1h
+Plugin root: bookit-booking-system/
 ```
 
 ---
 
 ## READ FIRST — DO NOT WRITE ANY CODE UNTIL YOU HAVE READ THESE FILES
 
-1. `database/migrations/0009-add-performance-indexes.php`
-   — confirm the SHOW COLUMNS idempotency guard pattern and the
-   current highest migration number (0009)
-2. `database/migrations/class-bookit-migration-base.php`
-   — base class all migrations extend; confirm method signatures
-   for up(), down(), and any helpers
-3. `database/schema.sql`
-   — read the full file: confirm the existing migration notes block
-   at the bottom; confirm the current column list for
-   `wp_bookings_services` and `wp_bookings`; confirm the pattern
-   used to document prior migrations at the file bottom
+1. `public/templates/booking-confirmed.php`
+   — read the FULL file: locate exactly where `$booking` is fully
+   populated (after the `if (!$booking)` guard and after the email
+   sending block), where `$retriever->clear_booking_session()` is
+   called, and where the booking details HTML block ends before the
+   footer/action buttons. The action hook fires after emails are sent
+   and session is cleared. The filter renders in the HTML output block.
 
-If any file does not exist or differs from the description above,
-STOP and report back before writing any code.
+2. `includes/email/class-email-sender.php`
+   — read the FULL `generate_customer_email()` method. Locate the
+   closing `</div>` of the `.booking-details` block — specifically
+   find the line after the cancellation policy block and before the
+   `<p>We look forward to seeing you!</p>` line. The filter inserts
+   immediately after the package block and before that closing line.
+
+If either file does not exist or differs significantly from the
+description above, STOP and report back before proceeding.
 
 ---
 
 ## CONTEXT
 
-This task adds database columns needed by the online meetings feature.
-Migration 0010 adds three columns to `wp_bookings_services` (whether
-a service is online, which platform, and an optional default link).
-Migration 0011 adds one column to `wp_bookings` (the per-booking
-meeting URL). Both migrations must be idempotent via SHOW COLUMNS
-guards. schema.sql must be updated to reflect the new columns and to
-record the migration notes, matching the existing documentation
-pattern at the bottom of the file.
+This task adds three WordPress hooks to two existing core files.
+These hooks have no consumers yet — they exist solely so the
+forthcoming Bookit Meetings extension plugin can hook into them
+without modifying core. No columns, no API changes, no UI, no
+new files. The confirmation page and email must render identically
+before and after this change when no extension is hooked in.
 
 ---
 
 ## IMPLEMENTATION REQUIREMENTS
 
-### `database/migrations/0010-add-meeting-fields-to-services.php` — CREATE
+### `public/templates/booking-confirmed.php` — MODIFY
 
-Extend the base migration class. Follow the exact class naming and
-file structure pattern from 0009.
+Read the full file first. Make two targeted additions:
 
-**up() method:**
+**Addition 1 — action hook (fires after emails sent, session cleared)**
 
-Use a SHOW COLUMNS guard (same pattern as 0009) to check each column
-before adding it. Only execute the ALTER TABLE if the columns do not
-already exist. Add all three columns in a single ALTER TABLE:
+After the `$retriever->clear_booking_session()` call and before the
+`$date_formatted` / `$time_formatted` lines, add:
 
-```sql
-ALTER TABLE wp_bookings_services
-  ADD COLUMN meeting_type VARCHAR(20) NOT NULL DEFAULT 'none'
-      COMMENT 'none | online | in_person',
-  ADD COLUMN preferred_platform VARCHAR(20) NULL
-      COMMENT 'zoom | google_meet | whatsapp | teams | generic',
-  ADD COLUMN default_meeting_link VARCHAR(2048) NULL
-      COMMENT 'Optional default meeting link for this service';
+```php
+/**
+ * Fires after the booking confirmation page has loaded and emails
+ * have been sent. Extensions hook here to generate and store a
+ * meeting link for this booking.
+ *
+ * @param int   $booking_id The booking ID.
+ * @param array $booking    The full booking data array.
+ */
+do_action( 'bookit_after_booking_confirmed', $booking['id'], $booking );
 ```
 
-**down() method:**
+**Addition 2 — filter hook (renders in the HTML output block)**
 
-Drop all three columns:
+In the HTML output section, after the existing booking details block
+and before the footer / action buttons (e.g. before the closing
+`</div>` of `bookit-confirmation-page` or before the "Make another
+booking" button — confirm exact position from the file), add:
 
-```sql
-ALTER TABLE wp_bookings_services
-  DROP COLUMN meeting_type,
-  DROP COLUMN preferred_platform,
-  DROP COLUMN default_meeting_link;
+```php
+<?php
+/**
+ * Filter the meeting section HTML on the confirmation page.
+ * Return non-empty HTML from an extension to display a meeting link.
+ * Return empty string (default) to show nothing.
+ *
+ * @param string $html    The meeting section HTML. Default ''.
+ * @param array  $booking The full booking data array.
+ */
+$bookit_meeting_section_html = apply_filters(
+    'bookit_confirmation_meeting_section',
+    '',
+    $booking
+);
+if ( '' !== $bookit_meeting_section_html ) {
+    echo wp_kses_post( $bookit_meeting_section_html );
+}
+?>
 ```
 
-Use a SHOW COLUMNS guard in down() too so it is safe to run even if
-the columns were never added.
+Use a prefixed variable name (`$bookit_meeting_section_html`) to
+avoid any collision with existing variables in the template scope.
 
 ---
 
-### `database/migrations/0011-add-meeting-link-to-bookings.php` — CREATE
+### `includes/email/class-email-sender.php` — MODIFY
 
-Same pattern as 0010. Add one column to `wp_bookings`:
+Read the full `generate_customer_email()` method first. Make one
+targeted addition.
 
-**up() method (SHOW COLUMNS guard):**
+**Addition — filter hook in the email booking details block**
 
-```sql
-ALTER TABLE wp_bookings
-  ADD COLUMN meeting_link VARCHAR(2048) NULL
-      COMMENT 'Meeting URL for online bookings';
+Inside the `generate_customer_email()` method, after the package
+info block and the cancellation policy block, and immediately before
+the `<p><?php esc_html_e( 'We look forward to seeing you!' ... ?></p>`
+line, add:
+
+```php
+<?php
+/**
+ * Filter the meeting section HTML in the customer confirmation email.
+ * Return non-empty HTML from an extension to display a meeting link row.
+ * Return empty string (default) to show nothing.
+ *
+ * @param string $html    The meeting section HTML. Default ''.
+ * @param array  $booking The booking data array passed to this method.
+ */
+$bookit_email_meeting_html = apply_filters(
+    'bookit_email_meeting_section',
+    '',
+    $booking
+);
+if ( '' !== $bookit_email_meeting_html ) {
+    echo wp_kses_post( $bookit_email_meeting_html );
+}
+?>
 ```
 
-**down() method (SHOW COLUMNS guard):**
-
-```sql
-ALTER TABLE wp_bookings
-  DROP COLUMN meeting_link;
-```
-
----
-
-### `database/schema.sql` — MODIFY
-
-Read the full file first. Then make two sets of changes:
-
-1. **Column definitions** — add the new columns to the matching table
-   definitions in the CREATE TABLE blocks:
-   - In `wp_bookings_services`: add `meeting_type`, `preferred_platform`,
-     `default_meeting_link` after the last existing column, before the
-     closing parenthesis/ENGINE line, following the same column
-     definition formatting already used in the file
-   - In `wp_bookings`: add `meeting_link` after `customer_package_id`,
-     following the same formatting
-
-2. **Migration notes block** — at the bottom of the file, append two
-   new migration note entries matching the exact format already used
-   for migrations 0005–0009. Include:
-   - Migration number and file name
-   - Date and sprint reference
-   - Summary of tables/columns changed
+Again use a prefixed variable name to avoid template scope collision.
 
 ---
 
 ## INFRASTRUCTURE REQUIREMENTS
 
-- [ ] Migration 0010 registered with `Bookit_Migration_Runner`
-  (confirm the runner auto-discovers files or requires explicit
-  registration — check how 0009 was registered)
-- [ ] Migration 0011 registered with `Bookit_Migration_Runner`
-  the same way
+- [ ] No new files
+- [ ] No new migrations
+- [ ] No new error codes
+- [ ] No new REST endpoints
+- [ ] No Vue changes, no `npm run build` needed
 
 ---
 
@@ -139,94 +150,67 @@ Read the full file first. Then make two sets of changes:
 
 Baseline: **706 tests, 0 failures** — must not regress.
 
-Write tests in:
-`tests/integration/test-meetings-migration.php`
-
-Before writing the test file, read:
-- An existing integration migration test (e.g. the packages migration
-  test from Sprint 4D) to confirm the test pattern, setUp/tearDown
-  structure, and how migrations are invoked in the test environment
-
-Required test cases:
-
-- `test_migration_0010_up_adds_all_three_columns`
-  Runs up(), then asserts meeting_type, preferred_platform, and
-  default_meeting_link all exist in wp_bookings_services
-
-- `test_migration_0010_down_removes_all_three_columns`
-  Runs up() then down(), asserts all three columns are gone
-
-- `test_migration_0010_up_is_idempotent`
-  Runs up() twice in succession; asserts no exception is thrown and
-  columns exist after the second call
-
-- `test_migration_0011_up_adds_meeting_link_column`
-  Runs up(), asserts meeting_link exists in wp_bookings
-
-- `test_migration_0011_down_removes_meeting_link_column`
-  Runs up() then down(), asserts meeting_link is gone
-
-- `test_migration_0011_up_is_idempotent`
-  Runs up() twice; asserts no exception and column exists
-
-- `test_meeting_type_default_value`
-  After 0010 up(), insert a row into wp_bookings_services without
-  specifying meeting_type; assert the stored value is 'none'
+No new tests are required for this task. Hooks with no registered
+consumers are invisible to the test suite and produce no testable
+output change. The existing `test-payment-success.php` confirmation
+page tests and `test-package-email.php` email tests must continue
+to pass unchanged — verify this by running the full suite after
+implementation.
 
 Run after implementation:
 ```
 cd bookit-booking-system && vendor/bin/phpunit
 ```
-All tests must pass before marking task complete.
+Result must be: **706 tests, 0 failures.**
 
 ---
 
 ## ACCEPTANCE CRITERIA
 
 ### Functional
-- [ ] `wp_bookings_services` has columns: `meeting_type` (VARCHAR 20, NOT NULL DEFAULT 'none'), `preferred_platform` (VARCHAR 20, NULL), `default_meeting_link` (VARCHAR 2048, NULL)
-- [ ] `wp_bookings` has column: `meeting_link` (VARCHAR 2048, NULL)
-- [ ] Running migration 0010 up() twice does not throw an error
-- [ ] Running migration 0011 up() twice does not throw an error
-- [ ] Running migration 0010 down() removes all three columns cleanly
-- [ ] Running migration 0011 down() removes meeting_link cleanly
-- [ ] schema.sql CREATE TABLE blocks reflect new columns
-- [ ] schema.sql migration notes block has entries for 0010 and 0011
+- [ ] `bookit_after_booking_confirmed` action fires on confirmation
+      page load when a valid booking is found
+- [ ] `bookit_confirmation_meeting_section` filter fires on confirmation
+      page; with no consumers returns `''` and nothing extra renders
+- [ ] `bookit_email_meeting_section` filter fires inside
+      `generate_customer_email()`; with no consumers returns `''` and
+      nothing extra appears in the email
+- [ ] Confirmation page HTML output is byte-for-byte identical to
+      pre-change output when no extension hooks are registered
+- [ ] Confirmation email HTML output is identical to pre-change output
+      when no extension hooks are registered
 
 ### Technical
 - [ ] No PHP warnings or notices
-- [ ] Both migrations extend `Bookit_Migration_Base` (or equivalent base class)
-- [ ] SHOW COLUMNS guard pattern matches the approach used in 0009
-- [ ] PHPUnit suite passes (706+ tests, 0 failures)
+- [ ] PHPUnit suite passes (706 tests, 0 failures)
+- [ ] `$bookit_meeting_section_html` and `$bookit_email_meeting_html`
+      variable names used (not generic `$html` or `$output`)
 
 ### Must NOT break
-- [ ] Existing migrations 0001–0009 still run cleanly
-- [ ] Existing wp_bookings_services columns unaffected
-- [ ] Existing wp_bookings columns unaffected
-- [ ] Plugin activate/deactivate cycle completes without error
+- [ ] Existing confirmation page display (booking details, payment
+      summary, cancellation policy, package info block)
+- [ ] Existing confirmation email content
+- [ ] Pay-on-arrival confirmation flow
+- [ ] Stripe/PayPal confirmation flow
+- [ ] Package redemption email block
 
 ---
 
 ## GIT COMMIT MESSAGE
 
 ```
-Sprint 4F, Task 1: Database migrations — meeting fields
+Meetings pre-task: Add core hooks for extension meeting link injection
 
-- Migration 0010: meeting_type, preferred_platform, default_meeting_link on wp_bookings_services
-- Migration 0011: meeting_link on wp_bookings
-- schema.sql updated with new columns and migration notes
-- PHPUnit integration tests: 7 tests covering up/down/idempotency
+- booking-confirmed.php: bookit_after_booking_confirmed action (after session clear)
+- booking-confirmed.php: bookit_confirmation_meeting_section filter (HTML output block)
+- class-email-sender.php: bookit_email_meeting_section filter (inside generate_customer_email)
+- No consumers yet — hooks are silent until Bookit Meetings extension is active
 
-Tests: 713 passing, 0 failures
+Tests: 706 passing, 0 failures
 ```
-*(Adjust test count to actual after run)*
 
 ---
 
-If you encounter an architecture decision not covered above,
-or a conflict with existing code that this prompt does not resolve,
+If you encounter an architecture decision not covered above, or a
+conflict with existing code that this prompt does not resolve,
 STOP and report back before writing any code.
-
----
-
-That's Task 1. Run this in Cursor, report back the PHPUnit count, and I'll generate Task 2 (Services API + ServiceFormModal.vue).

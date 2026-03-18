@@ -1508,3 +1508,106 @@ Backlog items added to Future_Features_Backlog.md:
 Next: Sprint 4F — Meetings Extension core hooks (~8h) + Sprint 5
 (Live Environment) — Google Calendar OAuth, Stripe package purchase,
 email delivery, customer My Packages page
+
+SPRINT 4F: Online Meetings Core Additions — CANCELLED / REDESIGNED
+Date: March 2026
+Original estimate: ~8h
+Outcome: Partially implemented then reverted; scope moved to Bookit Meetings extension plugin
+What was attempted
+Sprint 4F was planned to add online meeting infrastructure to the core
+plugin: DB columns on services and bookings, API field support, a UI
+toggle in ServiceFormModal, confirmation page rendering, and email
+rendering. Tasks 1 and 2 were implemented and committed.
+Architecture review and reversal
+During Task 2 review a fundamental architecture question was raised:
+why does any of this live in the core plugin? After review, the
+decision was made to revert Tasks 1 and 2 and move the entire online
+meetings feature to a dedicated Bookit Meetings extension plugin.
+Rationale:
+
+Meeting link generation, OAuth, platform config, and UI are optional
+features — they belong in an extension, not core
+The core plugin should remain clean and unaware of meeting platforms
+Extension plugins own their own migrations, UI, and business logic
+The only legitimate core responsibility is providing hooks that
+extensions can consume
+
+What was reverted
+
+Migration 0010 (meeting_type, preferred_platform, default_meeting_link
+on wp_bookings_services) — removed
+Migration 0011 (meeting_link on wp_bookings) — removed
+class-dashboard-bookings-api.php: meeting field args, response
+formatting, create/update write logic — removed
+ServiceFormModal.vue: Online Meeting UI section, formData fields,
+payload additions — removed
+tests/unit/test-meetings-service-api.php — removed
+tests/integration/test-meetings-migration.php — removed
+
+Test suite after revert: 706 tests, 0 failures (confirmed back to
+Sprint 4E baseline)
+What was kept: Core hooks pre-task
+The only core plugin changes that survived are three WordPress hooks
+added to two existing files. These have no consumers yet — they are
+silent until the Bookit Meetings extension is installed and active:
+public/templates/booking-confirmed.php:
+
+do_action( 'bookit_after_booking_confirmed', $booking_id, $booking )
+fires after emails are sent and session is cleared
+apply_filters( 'bookit_confirmation_meeting_section', '', $booking )
+renders extension-supplied meeting link HTML in the confirmation page
+output block; empty string default means no visible change
+
+includes/email/class-email-sender.php:
+
+apply_filters( 'bookit_email_meeting_section', '', $booking )
+renders extension-supplied meeting link HTML inside
+generate_customer_email(); empty string default means no change to
+existing email output
+
+Test suite after hooks added: 706 tests, 0 failures (no regression;
+hooks with no consumers are invisible to the test suite)
+Decisions log
+DecisionRationaleRevert Tasks 1 and 2 from coreOnline meeting storage, UI, and logic belong in the extension, not coreKeep DB columns out of coreExtension adds its own migrations on activation, removes them on deactivation — clean lifecycleKeep ServiceFormModal UI out of coreExtension injects its own UI when active; core modal has no meeting fieldsAdd three hooks to coreExtension needs these touchpoints to inject meeting link delivery without modifying core filesHooks only, no columns, no APICore's job is to fire the hooks; extension's job is to consume them
+Implementation notes
+
+booking-confirmed.php: $bookit_meeting_section_html variable name
+used (prefixed to avoid template scope collision)
+class-email-sender.php: $bookit_email_meeting_html variable name
+used (same reason)
+Confirmation page and email output are byte-for-byte identical
+before and after the hook additions when no extension is active
+
+Bookit Meetings extension project
+A full project initialisation document was created:
+Bookit_Meetings_Extension_Project_Init.md
+The extension owns:
+
+Migrations for meeting_type/preferred_platform/default_meeting_link
+on wp_bookings_services and meeting_link on wp_bookings
+Service UI (Online Meeting toggle, platform selector, default link)
+Link generation logic (WhatsApp, Teams, Generic in Phase 1;
+Zoom and Google Meet OAuth in Phase 2)
+Confirmation page and email meeting link injection via core hooks
+Admin per-booking meeting link override endpoint
+Meetings settings dashboard page (OAuth status)
+
+Phase 2 (Zoom/Google Meet OAuth) deferred to live environment sprint.
+Next
+Sprint 5 (Live Environment):
+
+Google Calendar OAuth integration
+Stripe package purchase routing
+Transactional email service setup
+[bookit_my_packages] shortcode customer page (~8-10h)
+
+Bookit Meetings Extension Phase 1 (~24h, separate project):
+
+Plugin scaffold + registration
+DB migrations (services columns + booking column + credentials tables)
+Services API extension + ServiceFormModal UI injection
+Booking link generation on bookit_after_booking_created
+Booking API meeting_link via bookit_booking_response filter
+Admin override endpoint (bookit-meetings/v1 namespace)
+Confirmation page + email injection via core hooks
+Meetings settings dashboard page
