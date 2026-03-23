@@ -29,7 +29,7 @@ This document specifies the integration requirements for the four critical third
 
 | Integration | Priority | Purpose | Complexity |
 |-------------|----------|---------|------------|
-| **Email Services** | CRITICAL | Booking confirmations, reminders | Medium |
+| **Email Services (Brevo)** | CRITICAL | Booking confirmations, reminders, SMS | Medium |
 | **Stripe** | CRITICAL | Primary payment processing | High |
 | **PayPal** | HIGH | Alternative payment method | High |
 | **Google Calendar** | MEDIUM | Staff calendar sync (1-way) | High |
@@ -54,15 +54,26 @@ This document specifies the integration requirements for the four critical third
 - Support burden dealing with "I never got the email"
 
 **Recommended Solution:**
-- **Require transactional email service** (SendGrid, Mailgun, Postmark, AWS SES)
-- Provide easy setup guide during plugin configuration
-- Include cost in client proposals (£10-35/month)
-- Use WordPress wp_mail() as **fallback only** (with warnings)
+- **Primary vendor: Brevo** — covers both transactional email and SMS
+  via a single API key. Free tier: 300 emails/day. Paid from ~£15/month.
+- **Architecture: Provider abstraction layer (driver pattern)** — email
+  and SMS providers implement interfaces. Active vendor is a settings
+  choice, not a code change. Allows mixing vendors (e.g. Brevo email +
+  Twilio SMS) or switching vendors without refactoring.
+- **Included providers at launch:**
+  - Bookit_Brevo_Email_Provider (primary)
+  - Bookit_WP_Mail_Fallback_Provider (graceful degradation, warnings shown)
+  - Bookit_Brevo_SMS_Provider (Sprint 5 activation)
+- **Future providers (drop-in, no core changes):**
+  - Bookit_Twilio_SMS_Provider (Phase 2)
+  - Bookit_Mailgun_Email_Provider / Bookit_Sendgrid_Email_Provider (on demand)
+- Use WordPress wp_mail() as **fallback only** (with prominent admin warning)
+- Include Brevo cost in client proposals (~£0–25/month depending on volume)
 
 **Implementation Strategy:**
 1. Check for transactional service during setup wizard
 2. If none configured → Show prominent warning: "Email deliverability may be poor"
-3. Provide one-click setup guides for SendGrid/Mailgun
+3. Provide Brevo setup guide (API key + domain verification) in plugin settings
 4. Monitor bounce rates and alert if >5%
 
 ---

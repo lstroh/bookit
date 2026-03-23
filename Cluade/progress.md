@@ -1611,3 +1611,106 @@ Booking API meeting_link via bookit_booking_response filter
 Admin override endpoint (bookit-meetings/v1 namespace)
 Confirmation page + email injection via core hooks
 Meetings settings dashboard page
+
+SPRINT 4H: Notification Infrastructure — PLANNED
+Date: TBD (follows Sprint 4G completion)
+Estimate: ~22h
+Status: Not started
+
+Goal
+Build the complete notification architecture in the core plugin: provider
+abstraction layer, email queue, Action Scheduler integration, retry logic,
+rate limiting, and settings UI. No live Brevo account needed — all
+testable locally. Sprint 5 activates it with real credentials.
+
+Architecture decisions
+- Provider pattern (driver abstraction): email provider and SMS provider
+  each implement a contract interface. The dispatcher resolves the active
+  provider from settings at dispatch time, never at construction — so
+  switching vendors takes effect immediately.
+- Brevo is the default/primary vendor for both email and SMS.
+- wp_mail() fallback provider ships in core for clients without API keys.
+- Twilio SMS provider: stub interface only in this sprint; full
+  implementation deferred to Phase 2 SMS sprint.
+- Queue-first: all sends are non-blocking. Booking confirmation fires a
+  DB write + Action Scheduler job; the HTTP response returns immediately.
+- Retry: 3 attempts with exponential back-off (5min → 30min → 2h).
+  Brevo 429 responses re-queue without consuming a retry attempt.
+- Local rate limiter (transient-based) guards against server burst on
+  shared hosting. Default cap: 30 sends/minute, configurable.
+- Reminder cancellation: pending queue items cancelled on booking
+  cancel or reschedule events.
+
+New files (all under includes/notifications/)
+  interfaces/
+    interface-bookit-email-provider.php
+    interface-bookit-sms-provider.php
+  providers/
+    class-bookit-brevo-email-provider.php
+    class-bookit-brevo-sms-provider.php      (stub — no live credentials)
+    class-bookit-wp-mail-fallback-provider.php
+  class-bookit-notification-dispatcher.php
+  class-bookit-email-queue.php
+
+New DB migration
+  Migration 00XX: wp_bookit_email_queue table
+  Columns: id, booking_id, email_type, recipient_email, recipient_name,
+  template_id, params (JSON), status, attempts, scheduled_at, sent_at,
+  last_error, created_at
+
+Tasks
+Task 1 — Interfaces + Provider Scaffold (~3h)
+  - Define Bookit_Email_Provider_Interface (send, is_configured, get_name)
+  - Define Bookit_SMS_Provider_Interface (send, is_configured, get_name)
+  - Implement Bookit_Brevo_Email_Provider (full — uses brevo-php v4)
+  - Implement Bookit_WP_Mail_Fallback_Provider
+  - Implement Bookit_Brevo_SMS_Provider stub (interface satisfied, send()
+    logs and no-ops until Sprint 5 SMS work)
+  - Register providers in plugin bootstrap
+
+Task 2 — Queue Table + Action Scheduler Integration (~6h)
+  - DB migration for wp_bookit_email_queue (idempotent up/down)
+  - Bookit_Email_Queue class: insert, update_status, fetch_pending,
+    cancel_for_booking
+  - bookit_enqueue_email() helper function
+  - Bookit_Notification_Dispatcher: enqueue_email(), enqueue_sms(),
+    process_email_queue_item(), resolve_email_provider(),
+    resolve_sms_provider()
+  - Hook reminder cancellation to bookit_booking_cancelled and
+    bookit_booking_rescheduled actions
+
+Task 3 — Retry, Rate Limiting + 429 Handling (~5h)
+  - Exponential back-off: 3 attempts at 5min / 30min / 2h delays
+  - Brevo 429 handling: re-schedule at +60s, do not increment attempt count
+  - Local rate limiter: transient key per minute, configurable cap
+  - bookit_email_permanently_failed action hook on final failure
+  - Bookit_Notification_Exception custom exception class
+
+Task 4 — Settings Page + Provider Switching (~4h)
+  - Email provider dropdown: Brevo / wp_mail fallback
+  - SMS provider dropdown: None / Brevo (Twilio listed as "coming soon")
+  - Per-provider config fields shown/hidden dynamically
+  - is_configured() status indicator per provider
+  - "Send test email" / "Send test SMS" buttons (bypass queue, fire
+    immediately)
+  - Warning banner in dashboard if no email provider configured
+
+Task 5 — Replace Existing Email Calls + Tests (~4h)
+  - Replace wp_mail() calls in class-email-sender.php with
+    dispatcher enqueue_email() calls
+  - PHPUnit: queue insert, status update, retry scheduling, 429
+    handling, cancellation on reschedule/cancel, provider resolution,
+    fallback behaviour, rate limiter
+  - Confirm no regression on existing test suite
+
+Deferred to Sprint 5 (requires live environment)
+  - Brevo account setup, domain verification, SPF/DKIM configuration
+  - Template creation in Brevo dashboard (one per notification type)
+  - Template ID mapping in plugin settings
+  - SMS queue table + dispatcher SMS path (no live credentials to test)
+  - Brevo delivery webhook receiver
+  - Admin email queue log view (dashboard tab)
+
+Next after Sprint 4H
+  Sprint 5 (Live Environment): Brevo activation, Stripe live, Google
+  Calendar OAuth, My Packages page

@@ -57,6 +57,45 @@ Extension plugins are built after Sprint 4B completes and the Extension Plugin A
 
 **Total local work remaining after Sprint 4A:** ~286h core + ~160h extensions
 **Refer to `progress.md` for full sprint details.**
+⚠️ REVISION — 21/03/26: Sprint 4H added — Notification Infrastructure
+
+Sprint 4H (~22h) inserted between Sprint 4G and Sprint 5.
+
+Rationale:
+Conversations with Brevo's integration documentation and API confirmed
+that transactional email and SMS should be implemented via a provider
+abstraction layer (driver pattern) rather than direct Brevo coupling.
+This allows vendor switching and mixing (e.g. Brevo for email + Twilio
+for SMS) by changing a settings dropdown, not touching code.
+
+All of the infrastructure (interfaces, queue table, Action Scheduler
+wiring, retry logic, dispatcher, settings UI) is buildable locally
+with no live credentials. Sprint 5 activates it with a real Brevo
+account and verified sending domain.
+
+Sprint 4H scope:
+- Bookit_Email_Provider_Interface + Bookit_SMS_Provider_Interface
+- Bookit_Brevo_Email_Provider (primary, uses brevo-php v4 Composer package)
+- Bookit_WP_Mail_Fallback_Provider (graceful degradation)
+- Bookit_Brevo_SMS_Provider stub
+- wp_bookit_email_queue DB table + migration
+- Bookit_Notification_Dispatcher (queue, retry, rate limit, 429 handling)
+- Settings page: independent email + SMS provider selectors
+- Replace existing wp_mail() calls with dispatcher
+- Full PHPUnit coverage
+
+Revised local sprint sequence:
+  Sprint 4G  (active)   — [bookit_my_packages] shortcode + theme overrides
+  Sprint 4H  (new)      — Notification Infrastructure (~22h)
+  Sprint 5              — Live Environment (Brevo activation, Stripe live,
+                          Google Calendar OAuth, My Packages page)
+  Sprint 6              — Launch Preparation
+
+Sprint 5 email scope (now lighter due to 4H):
+  Previously: "Transactional email service setup" (large, undefined)
+  Now: Brevo account activation, domain verification, template creation,
+  template ID configuration, end-to-end send testing, SMS queue +
+  dispatcher SMS path, admin email queue log view
 
 ### Compliance Update (January 23, 2026)
 

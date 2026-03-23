@@ -38,12 +38,34 @@ The following features previously documented as Phase 2, deferred, or COULD HAVE
 
 **Still deferred to Phase 2 / post-launch:**
 - Automatic refund *execution* via Stripe — Sprint 5 (requires live payment infrastructure)
-- SMS notifications — Phase 2 Priority 1 (Twilio integration)
 - 2-way Google Calendar sync — Phase 2 Priority 2
 - Customer portal (full self-service) — Phase 2 Priority 2
 - PDF report exports — Phase 2
 - Scheduled report emails — Phase 2
-- Email notifications for extension features — Sprint 5 (requires live email delivery)
+
+**Pulled into Phase 1 (Sprint 4H — Notification Infrastructure, ~22h):**
+- Email provider abstraction layer (driver pattern): Brevo primary,
+  wp_mail() fallback. Vendor-switchable via settings dropdown.
+- Email queue (wp_bookit_email_queue table) + Action Scheduler integration
+- Retry logic with exponential back-off (3 attempts: 5min → 30min → 2h)
+- Brevo 429 handling + local rate limiter
+- SMS provider abstraction: Brevo SMS stub; provider selector in settings
+- Settings page: independent email and SMS provider dropdowns
+- Replace existing wp_mail() calls with dispatcher
+See progress.md Sprint 4H for full task breakdown.
+
+**Pulled into Sprint 5 (Live Environment, requires live credentials):**
+- Brevo account setup, sending domain verification (SPF/DKIM/DMARC)
+- Brevo template creation + template ID mapping in plugin settings
+- SMS queue table + full dispatcher SMS path
+- Brevo delivery webhook receiver (bounce/spam tracking)
+- Admin email queue log view in dashboard
+- Email notifications for extension features (Meetings, Recurring, Classes)
+
+**SMS vendor — Twilio: still Phase 2**
+- Twilio SMS provider implementation (Bookit_Twilio_SMS_Provider)
+- The interface and provider selector are in place after Sprint 4H;
+  Twilio drops in as a new provider class with no other changes needed
 
 
 
