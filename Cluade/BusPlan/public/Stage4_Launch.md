@@ -1,7 +1,7 @@
 # Stage 4 — Launch
 ## Wimbledon Smart Business — Complete Step-by-Step Operational Guide
 
-**Document Version:** 1.1
+**Document Version:** 1.2
 **Date:** March 2026
 **Status:** Active Reference
 **Applies To:** Every client site going live — Professional Plan
@@ -34,7 +34,7 @@ Do not rush this stage. A clean launch that takes an extra day is far better tha
 | **4.2 Raise Invoice 3** | 50% of setup fee. Site does not go live until paid. |
 | **4.3 Migration and Go-Live** | Move from staging to live hosting, point DNS, SSL |
 | **4.4 Post-Launch Verification** | Confirm everything works on the live domain |
-| **4.5 Set Up Monitoring** | UptimeRobot, BlogVault, Wordfence all activated |
+| **4.5 Set Up Monitoring** | UptimeRobot, BlogVault, Wordfence, WP-Optimize, Broken Link Checker |
 | **4.6 Set Up Subscription** | Stripe recurring at £99/month from launch date |
 | **4.7 Onboarding Call** | 30–45 min Zoom. Recorded. Within 48 hours of launch. |
 | **4.8 Send Handover Pack** | Quick-Start Guide, call recording, support details |
@@ -47,124 +47,74 @@ Do not rush this stage. A clean launch that takes an extra day is far better tha
 
 Complete this checklist **before** you raise Invoice 3 or touch DNS. Everything must pass before the site goes live. Work through each section in order.
 
-### Payments
+**Payments:**
+- [ ] Stripe switched from test mode to live
+- [ ] Test live payment of £1 made and refunded
+- [ ] Stripe webhook URL updated to live domain — test webhook sent and 200 response confirmed
 
-- [ ] Stripe switched from test mode to live — API keys updated in plugin settings
-- [ ] Test live payment of £1 made with a real card and refunded immediately — confirms Stripe live mode is working
-- [ ] PayPal connected in live mode and tested (if client requested PayPal)
-- [ ] Stripe webhook endpoint confirmed as pointing to live domain (not staging URL)
+**Brevo / Email:**
+- [ ] Client sender domain verified in Brevo
+- [ ] Test booking notification sent from client domain — lands in inbox, not spam
+- [ ] All email templates correct (branding, contact details, links)
 
-### Brevo / Email
+**Compliance:**
+- [ ] GDPR consent checkbox present on booking form
+- [ ] Privacy policy accurate (business name, contact details, data retention)
+- [ ] Booking terms and cancellation policy confirmed accurate
+- [ ] Cookie notice present on website
 
-- [ ] Client sender domain verified in Brevo — SPF, DKIM, and verification CNAME records confirmed in DNS
-- [ ] Test booking made → confirmation email received from client's domain (not your domain, not a Brevo address)
-- [ ] Confirmation email lands in inbox — not spam folder (test with Gmail and ideally one other provider)
-- [ ] All email templates checked — correct business name, contact details, logo, and links
-- [ ] Reply-to address in email templates set to client's business email address
-- [ ] Staff notification email confirmed working — assigned staff member receives notification
+**Technical:**
+- [ ] SSL certificate ready for live domain
+- [ ] Google Analytics connected (or confirmed not required)
+- [ ] Google Search Console set up
+- [ ] Google Business Profile linked (if client has one)
+- [ ] Staging backup taken before migration
+- [ ] Domain registrar access confirmed
+- [ ] Favicon uploaded
+- [ ] Open Graph social sharing tags set
 
-### Compliance
-
-- [ ] GDPR consent checkbox present on booking form — customer cannot complete booking without ticking
-- [ ] Privacy Policy is accurate — correct business name, address, email, and data retention period
-- [ ] Booking Terms and Conditions are accurate — correct cancellation policy, deposit forfeiture rules, payment terms
-- [ ] Cookie consent notice present on website — appears on first visit, allows accept/decline
-- [ ] If client processes sensitive data (medical history, health forms): additional GDPR steps confirmed — data processing agreement in place
-
-### Technical
-
-- [ ] SSL certificate ready for live domain — confirmed it will auto-install on DNS switch (Let's Encrypt via Hostinger, or Cloudflare on Kinsta)
-- [ ] Google Analytics connected — GA4 tracking ID installed and verified firing (or confirmed not required by client)
-- [ ] Google Search Console set up — domain verified, sitemap submitted
-- [ ] Google Business Profile linked to website (if client has one)
-- [ ] Staging backup taken and saved to Google Drive before migration
-- [ ] Domain registrar access confirmed — you can point DNS when needed, or client knows how and has instructions
-- [ ] Favicon uploaded and displaying correctly
-- [ ] Open Graph tags set — title, description, and image for social sharing previews
-- [ ] All staging-specific settings removed — search engine indexing re-enabled, staging passwords removed
-
-### Content
-
-- [ ] All placeholder content removed — no [BRACKETS] remaining
-- [ ] All images have descriptive alt text (accessibility and SEO)
-- [ ] Contact details correct throughout — header, footer, contact page, email templates
-- [ ] Business address and phone number correct
-- [ ] All service prices and durations match the signed-off Project Brief exactly
+**Content:**
+- [ ] All placeholder content removed
+- [ ] All images have alt text (accessibility)
+- [ ] Contact details correct throughout (including footer)
 
 ---
 
-## Step 4.2 — Raise Invoice 3 (50%)
+## Step 4.2 — Raise Invoice 3
 
-Send Invoice 3 before DNS is pointed. The site does not go live until this payment is confirmed. No exceptions.
+Raise Invoice 3 (50% of setup fee) and send to the client before DNS is pointed. The site does not go live until this payment is confirmed in Stripe.
 
-| Pricing Option | Setup Fee | Invoice 3 (50%) |
-|---|---|---|
-| Standard monthly | £995 | £497.50 |
-| Standard annual | £995 | £497.50 |
-| Introductory (first 2 clients) | £495 | £247.50 |
+> *"The site is ready to launch. I've raised the final invoice — once that's settled I'll get everything pointed and live, typically within a few hours. [Invoice link]"*
 
-Add a note to the invoice:
-
-> *"Final milestone — site approved and ready to launch. Once payment is confirmed I'll point DNS and have you live within a few hours."*
-
-Payment due immediately — this is the go-live gate. If payment takes more than 24 hours, send a polite nudge:
-
-> *"Just checking Invoice 3 landed okay — everything is ready to launch on my end, just waiting for payment to clear before I point DNS. Let me know if you have any questions."*
-
-Once paid, confirm in Bonsai and move immediately to Step 4.3.
+Do not touch DNS until payment is confirmed. No exceptions.
 
 ---
 
 ## Step 4.3 — Migration and Go-Live
 
-### What Goes Into Hostinger (Standard) or Kinsta (Premium)
+### Primary Route — Hostinger hPanel Publish
 
-Every site gets its own WordPress installation on the hosting account — not a subdirectory, a separate installation with its own database.
+For all new builds on Hostinger:
 
-**On Hostinger:** The preferred route is to use the hPanel native staging Publish button — this pushes the entire staging environment (files + database) to the live domain in one action. Hostinger automatically creates a backup before publishing so you can revert if needed. Only use the manual migration plugin route if the build was done entirely in Local by Flywheel without using Hostinger staging.
+1. Confirm Invoice 3 is paid
+2. Take a manual BlogVault backup of staging — confirm it completes
+3. In hPanel: WordPress → Staging → ⋮ → Publish
+4. After publish completes, clear Hostinger cache: hPanel → WordPress → Cache → Purge Cache
+5. Run Better Search Replace to update any remaining staging URLs to the live domain
+6. Re-save permalink structure: Settings → Permalinks → Save Changes (fixes potential 404s post-migration)
+7. Update Stripe webhook URL to live domain in Stripe Dashboard → Developers → Webhooks
+8. Send a test webhook from Stripe dashboard — confirm 200 response before proceeding
+9. Point DNS to the live hosting — inform the client before making this change
+10. Wait for propagation — confirm SSL padlock is active on the live domain
 
-**On Kinsta:** Use the MyKinsta dashboard to create a new WordPress site. Use the 1-click staging push if available, or migrate manually.
+### Fallback Route — Migration Plugin
 
-### Migration Process — Hostinger hPanel (Primary Route)
+If hPanel Publish is not available (cross-host migration or other reason):
 
-1. In hPanel, go to **WordPress → Staging**
-2. Click **⋮ → Publish** next to the staging environment
-3. Confirm the pop-up — this replaces the live site files and database with the staging copy
-4. Hostinger creates an automatic backup before publishing — confirm BlogVault also has a recent manual backup as a secondary safety net
-5. Proceed to the post-migration steps below
-
-### Migration Process — Manual Plugin (Fallback)
-
-If migrating from Local by Flywheel directly to the live Hostinger environment:
-
-1. **Export from staging** — use **All-in-One WP Migration** to export the site as a `.wpress` package. Specify the live domain as the replacement URL during export so URLs are updated automatically.
-
-2. **Import to live hosting** — install All-in-One WP Migration on the clean live WordPress installation and import the `.wpress` file.
-
-3. **Update all URLs** — run **Better Search Replace** plugin to confirm no staging or `.local` URLs remain in the database. Search for the old domain, replace with the live domain. This step is critical — missed staging URLs break images, links, and plugin callbacks.
-
-4. **Re-save permalink structure** — go to Settings → Permalinks and click Save Changes without making any edits. This regenerates the `.htaccess` file and prevents 404 errors on the live domain. Do this even if nothing looks wrong — it takes 10 seconds and avoids a common post-launch issue.
-
-5. **Update Stripe webhook** — go to Stripe Dashboard → Developers → Webhooks. Confirm the webhook endpoint URL points to the live domain. If it still shows the staging URL, delete the old endpoint and add a new one pointing to `https://[clientdomain]/[plugin-webhook-path]`. Then **send a test webhook from the Stripe dashboard** and confirm it returns a 200 response before proceeding. This 30-second check eliminates the most common cause of booking failures on Day 1.
-
-6. **Update Brevo SMTP** — confirm the plugin SMTP settings are pointing to Brevo with the live sender domain credentials (not staging).
-
-### Pointing DNS
-
-Before touching DNS, confirm you have a rollback plan — the staging site is still intact and can be made live again if something goes wrong.
-
-**Standard DNS change:**
-1. Log into the client's domain registrar (details in Project Brief under Technical)
-2. Update the A record to point to the Hostinger or Kinsta IP address
-3. If using Cloudflare (Kinsta default), update nameservers to Cloudflare's
-
-**DNS propagation:** Changes typically take 15 minutes to 2 hours. During this window, some visitors will see the old site and some will see the new one. This is normal and resolves automatically.
-
-**SSL activation:** On Hostinger, SSL auto-installs via Let's Encrypt once DNS propagates. On Kinsta, Cloudflare SSL is active immediately. Confirm the padlock appears before sending the client anything.
-
-**Inform the client before you point DNS:**
-
-> *"Payment confirmed — I'm pointing DNS now. The site will be live within 1–2 hours. I'll message you as soon as I've confirmed everything is working."*
+1. Install All-in-One WP Migration on staging
+2. Export as `.wpress` with live domain as the replacement URL
+3. Import on a fresh WordPress installation at the live domain
+4. Follow steps 4–10 above
 
 ### Post-DNS Confirmation
 
@@ -202,9 +152,9 @@ If anything fails, fix on live and retest before proceeding. Do not proceed to c
 
 ---
 
-## Step 4.5 — Set Up Monitoring
+## Step 4.5 — Set Up Monitoring and Maintenance Plugins
 
-Add every tool in sequence. Do not skip this step — if something breaks at 2am, you want to know before the client does.
+Add every tool in sequence. Do not skip this step — if something breaks at 2am, you want to know before the client does. The plugins installed here run passively and feed directly into the monthly Stage 5 maintenance process.
 
 ### UptimeRobot
 
@@ -215,6 +165,7 @@ Add every tool in sequence. Do not skip this step — if something breaks at 2am
 5. Monitoring interval: 5 minutes
 6. Alert contacts: your email address
 7. Save — confirm status shows as Up
+8. **Enable SSL monitoring:** on the monitor settings page, confirm the SSL certificate alert is active. UptimeRobot will automatically alert you if the certificate is approaching expiry. This feeds into the monthly SSL check in Stage 5.
 
 ### BlogVault
 
@@ -231,71 +182,106 @@ Add every tool in sequence. Do not skip this step — if something breaks at 2am
 3. Set scan schedule to weekly
 4. Ensure email alerts are going to your address
 
+### WP-Optimize
+
+1. Install and activate WP-Optimize (WordPress admin → Plugins → Add New → search "WP-Optimize")
+2. Go to WP-Optimize → Settings and enable scheduled automatic clean-up: weekly is sufficient
+3. Run a manual optimisation now to establish a clean baseline: WP-Optimize → Database → Run all optimizations
+4. This plugin runs in the background and is also triggered manually each month during Stage 5 housekeeping
+
+### Broken Link Checker
+
+1. Install and activate Broken Link Checker (WordPress admin → Plugins → Add New → search "Broken Link Checker")
+2. Go to Tools → Broken Links — confirm the plugin is active and scanning
+3. Set email notifications to your address so new broken links alert you automatically
+4. No further configuration needed — it runs passively and surfaces broken links in the monthly Stage 5 housekeeping check
+
 ### Maintenance Calendar
 
 Add the client to your internal monthly maintenance calendar — first working week of each month.
 
 ---
 
-## Step 4.6 — Set Up Subscription
+## Step 4.6 — Set Up Stripe Subscription
 
-Create the Stripe recurring subscription on launch day.
+1. In Stripe Dashboard → Customers — find or create the client as a customer
+2. Create a Subscription:
+   - Product: `Wimbledon Smart Monthly — Professional`
+   - Price: £99/month recurring
+   - Billing cycle start: today (launch date)
+   - Payment method: the card used for Invoice 3 (already on file) or request a new card
+3. Send the subscription confirmation email:
 
-1. In Stripe, create a new subscription for the client
-2. Amount: £99/month (or £1,188/year if on annual billing)
-3. Billing date: today's date (launch date)
-4. Send subscription confirmation email to client — include billing date and what is covered
+> *"Your monthly subscription is now active — £99/month starting today. This covers hosting, maintenance, security updates, and email support. You'll receive an automatic receipt each month. You can cancel anytime with 30 days written notice. Full details are in the handover pack I'll send after our call."*
 
-Template:
-
-> *"Your monthly subscription is now active at £99/month, billed on the [date] each month. This covers hosting, security, backups, monthly maintenance, and ongoing support. You can cancel anytime with 30 days' written notice."*
-
-Record the subscription start date in Bonsai.
+4. Record subscription start date in Bonsai under the client record.
 
 ---
 
 ## Step 4.7 — Onboarding Call
 
-Schedule within 48 hours of launch. 30–45 minutes on Zoom. Start Jamie recording before the call begins.
+### Timing
+
+Schedule within **48 hours of launch**. Send the calendar invite immediately after confirming the site is live.
+
+> *"The site is live — congratulations! I've booked an onboarding call for [date/time] so I can walk you through everything. Here's the link: [Zoom link]. It'll take about 30–40 minutes."*
 
 ### Agenda
 
-1. Confirm they can log in and everything is working from their end
-2. Walk through the business dashboard — viewing bookings, blocking time, editing services, reading reports
-3. Walk through the customer booking experience (book a test appointment together if helpful)
-4. Explain email notifications — what triggers them, how to update contact details if they change
-5. Explain support — email only, 24–48hr response, what counts as an emergency
-6. Explain the monthly subscription — what is included, billing date, 30-day cancellation notice
-7. Answer any questions
+**Dashboard walkthrough (10 minutes)**
+- How to log in and navigate the dashboard
+- How to view, manage and manually add bookings
+- How to add or update services, staff hours, and pricing
+- How to view reports and booking history
 
-### What to Have Ready
+**Booking flow walkthrough (10 minutes)**
+- Show them the booking widget from a customer's perspective
+- Walk through the confirmation email and reminders they will receive
+- Explain how deposits and payments work
+- Show the cancellation and rescheduling flow
 
-- Their dashboard open on your screen
-- A test booking ready to walk through
-- The handover pack content drafted (you will send it after the call)
+**Notifications and settings (5 minutes)**
+- Where to update notification preferences
+- How to set holiday/unavailable dates
+- How to customise reminder timing
 
-Do not rush this call. A client who feels confident using the system is a client who stays.
+**Support and billing (5 minutes)**
+- How to reach you — email response time, what counts as urgent
+- Where to find invoices and receipts
+- How subscription billing works
+- How to raise a change request
+
+**Questions (remaining time)**
+
+### Recording
+
+Start Jamie before joining. Confirm it is running. The recording goes into the handover pack.
 
 ---
 
 ## Step 4.8 — Send Handover Pack
 
-Send within 24 hours of the onboarding call. Email contents:
+Send within **24 hours of the onboarding call**.
 
-- Onboarding call recording (Google Drive link or Zoom recording link)
-- Written Quick-Start Guide (PDF, specific to their setup) covering:
-  - How to log in
-  - How to view and manage bookings
-  - How to block time off
-  - How to update services and prices
-  - How to handle a customer cancellation
-  - How to export customer data
-  - How to contact support and what to expect
-- Support contact and expected response time
-- Subscription summary — what is included, billing date, cancellation process
-- What to do if the site goes down: contact Wimbledon Smart, do not attempt fixes independently
+The handover pack is a single email containing:
+- Personalised Quick-Start Guide PDF (their screenshots, their URLs, their login details)
+- Link to the onboarding call recording (Jamie or Zoom)
+- Link to your support contact
+- Reminder of subscription terms
 
-Save the Quick-Start Guide PDF to Google Drive: `[Client Name]/Ongoing/`.
+> *"Hi [Name], great to meet you on the call today. Here's everything you need in one place:*
+>
+> *📄 Quick-Start Guide: [link]*
+> *🎥 Call recording: [link]*
+> *✉️ Support: [email address] — I aim to respond within 1 working day*
+>
+> *Your subscription of £99/month started today and will renew automatically. You can cancel with 30 days written notice.*
+>
+> *Let me know if anything comes up — I'm always happy to help.*
+>
+> *Liron"*
+
+Save the PDF to Google Drive: `[Business Name]/Ongoing/Handover_Pack_[date].pdf`
 
 ---
 
@@ -328,7 +314,7 @@ When the reminder fires, send:
 >
 > *Liron"*
 
-**If they leave a review:** Screenshot it, save it to Google Drive under `Ongoing/`, and add a note to Bonsai. This review becomes social proof for future proposals.
+**If they leave a review:** Screenshot it, save it to Google Drive under `Ongoing/`, and add a note to Bonsai.
 
 **If they don't respond:** Follow up once after 7 days. If still nothing, let it go — do not chase more than twice.
 
@@ -337,7 +323,7 @@ When the reminder fires, send:
 ## Stage 4 — Checklist
 
 **Step 4.1 — Pre-Launch:**
-- [ ] All payments items checked (Stripe live mode, test payment, webhooks)
+- [ ] All payment items checked (Stripe live mode, test payment, webhooks)
 - [ ] All Brevo/email items checked (domain verified, test email in inbox)
 - [ ] All compliance items checked (GDPR, privacy policy, T&Cs, cookie notice)
 - [ ] All technical items checked (SSL, Analytics, Search Console, favicon, OG tags)
@@ -350,6 +336,7 @@ When the reminder fires, send:
 **Step 4.3 — Migration:**
 - [ ] Staging backup saved to Google Drive before migration
 - [ ] Site migrated to Hostinger or Kinsta (hPanel Publish preferred; migration plugin as fallback)
+- [ ] Hostinger cache purged immediately after Publish
 - [ ] All URLs updated from staging to live domain (Better Search Replace plugin)
 - [ ] Permalink structure re-saved (Settings → Permalinks → Save Changes)
 - [ ] Stripe webhook updated to live domain — test webhook sent and 200 response confirmed
@@ -359,7 +346,6 @@ When the reminder fires, send:
 - [ ] End-to-end test booking completed on live site
 
 **Step 4.4 — Post-Launch Verification:**
-- [ ] Hostinger cache purged (hPanel → WordPress → Cache → Purge Cache)
 - [ ] Live site loads correctly on desktop and mobile
 - [ ] No SSL warnings, no mixed content errors, no JS console errors
 - [ ] Complete booking flow confirmed end-to-end
@@ -367,10 +353,13 @@ When the reminder fires, send:
 - [ ] Dashboard and all logins working
 - [ ] Google Calendar sync confirmed
 
-**Step 4.5 — Monitoring:**
+**Step 4.5 — Monitoring and Maintenance Plugins:**
 - [ ] UptimeRobot monitor created — status showing as Up
+- [ ] UptimeRobot SSL monitoring enabled on the monitor
 - [ ] BlogVault connected — first manual backup completed
 - [ ] Wordfence scan completed — no critical issues
+- [ ] WP-Optimize installed — scheduled weekly clean-up enabled, baseline optimisation run
+- [ ] Broken Link Checker installed — active and scanning, email alerts configured
 - [ ] Client added to monthly maintenance calendar
 
 **Step 4.6 — Subscription:**
@@ -401,9 +390,10 @@ When the reminder fires, send:
 - [ ] Bonsai status updated to **Live — Active Client**
 - [ ] Google Drive fully organised — all Stage 4 records filed
 
-**Success measure:** The site is live, the client can log in and use the dashboard independently, all monitoring is active, the subscription is running, and the handover pack is in their inbox.
+**Success measure:** The site is live, the client can log in and use the dashboard independently, all monitoring is active, both maintenance plugins are installed and running, the subscription is running, and the handover pack is in their inbox.
 
 ---
 
-*Document Version: 1.1 | Updated: March 2026 — Added hPanel Publish as primary migration route; Better Search Replace named explicitly; permalink re-save added; Stripe test webhook step added; Hostinger cache purge added to post-launch verification*
+*Document Version: 1.2 | Updated: March 2026*
+*Changes from v1.1: Added SSL monitoring toggle to UptimeRobot setup in Step 4.5; added WP-Optimize installation and setup to Step 4.5; added Broken Link Checker installation and setup to Step 4.5; updated Steps at a Glance summary; updated Stage 4 checklist to reflect all three additions.*
 *Related documents: Stage3_Build.md | Client_Delivery_Workflow.md | Tools_Stack.md | Dev_Deployment_Workflow.md*

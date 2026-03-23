@@ -1,7 +1,7 @@
 # WordPress Maintenance — Best Practices Reference
 ## Wimbledon Smart Business — Internal Reference
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Date:** March 2026
 **Status:** Active Reference
 **Purpose:** External best practice research to validate and improve Stage 5 maintenance process
@@ -13,7 +13,7 @@
 
 This document summarises current (2025–2026) best practices for maintaining a small portfolio of client WordPress sites. It is written specifically for Wimbledon Smart's stack: Hostinger Business Cloud, Wimbledon Smart Plugin, Stripe, Brevo SMTP, BlogVault, Wordfence, and UptimeRobot.
 
-Flags throughout indicate where current best practice **confirms**, **improves upon**, or **conflicts with** what is documented in `Stage5_6_OngoingAndReview.md`.
+Flags throughout indicate where current best practice **confirms**, **improves upon**, or **conflicts with** what was documented in `Stage5_6_OngoingAndReview.md` v1.0. All gaps identified have since been addressed — see Section 6 for the resolution record.
 
 ---
 
@@ -35,9 +35,7 @@ The consensus across current best practice is to run maintenance tasks in a fixe
 
 **✅ Confirms Stage 5:** The existing step order in `Stage5_6_OngoingAndReview.md` (dashboards → updates → plugin check → report → email) matches this sequence well.
 
-**⚠️ Improvement — Steps 6 & 7 missing from Stage 5:** Database optimisation and SSL certificate checking are both standard monthly tasks in current best practice guides but are absent from the current Stage 5 process. Both are low-effort:
-- **Database:** WP-Optimize plugin handles cleanup in one click (clears post revisions, drafts, expired transients). Run monthly.
-- **SSL:** UptimeRobot's free tier includes SSL expiry monitoring with automatic alerts. Add this as a one-time setup step in Stage 4 (Launch) alongside the existing UptimeRobot setup, so it is already running for every client before Stage 5 begins.
+**✅ Now resolved — Steps 6 & 7:** Database optimisation (WP-Optimize) added to Stage 5 Step 5.4. SSL monitoring (UptimeRobot) added to Stage 4 Step 4.5 setup and Stage 5 Step 5.1 review.
 
 ---
 
@@ -78,7 +76,7 @@ Run through this sequence on staging before applying to live:
 5. Calendar sync triggers (where applicable)
 6. No PHP errors in admin (check Tools → Site Health, or Query Monitor plugin)
 
-**⚠️ Improvement — changelog review:** Current best practice recommends reading plugin changelogs *before* applying updates, not after. A changelog flagging "significant database changes" or "breaking change for custom integrations" warrants extra caution on staging. This is particularly relevant for Wimbledon Smart Plugin releases: document what changed in each version and check for downstream effects on Stripe, Brevo, and Google Calendar integrations before pushing to any live site.
+**✅ Now resolved — changelog review:** Added to Stage 5 Step 5.2 — read plugin changelogs before applying updates, not after.
 
 **✅ Confirms Stage 5:** The staging-first rule, the booking flow test checklist, and the instruction never to auto-update live sites are all consistent with current best practice.
 
@@ -137,52 +135,61 @@ Built on BlogVault (already in the stack). Provides centralised plugin/theme/cor
 
 ---
 
-## 5. Additional Best Practices Not Currently in Stage 5
+## 5. Additional Best Practices — Resolution Record
 
-The following are mentioned consistently in current best practice sources and are worth adding to Stage 5 or the Stage 6 Quarterly Review.
+The following items were identified as missing from the original Stage 5 process. All have since been addressed in the relevant documents.
 
-### PHP Version Monitoring
-WordPress performance and security depend partly on the PHP version running on each site's hosting. Outdated PHP versions are a common attack vector and can also block newer plugin versions from installing. Check the PHP version per site in Hostinger dashboard or via WordPress → Tools → Site Health. Current recommended minimum is PHP 8.2+.
+### Database Optimisation (Monthly)
+WP-Optimize plugin added to Stage 4 Step 4.5 (installed at launch, weekly scheduled clean-up enabled). Manual run added to Stage 5 Step 5.4 (Housekeeping).
 
-**Suggested action:** Add a quarterly PHP version check to the Stage 6 Quarterly Review checklist.
+### SSL Certificate Monitoring
+SSL monitoring toggle added to Stage 4 Step 4.5 UptimeRobot setup. SSL status check added to Stage 5 Step 5.1 and the monthly report template.
+
+### Staging Environment Refresh
+Note added to Stage 5 Step 5.2 — refresh staging from live before each monthly update session.
+
+### Changelog Review Before Updates
+Added to Stage 5 Step 5.2 — read changelogs before applying, not after. Especially flagged for Wimbledon Smart Plugin releases.
 
 ### Broken Link Checking
-Broken internal and external links are a recurring minor issue on service business sites — staff change, services are removed, external sites go offline. Broken Link Checker plugin runs passively in the background and emails alerts when broken links are detected.
+Broken Link Checker plugin added to Stage 4 Step 4.5 (installed at launch, passive monitoring with email alerts). Review of flagged links added to Stage 5 Step 5.4 (Housekeeping).
 
-**Suggested action:** Install Broken Link Checker at Stage 3 or 4. Review any flagged links as part of the monthly report or client check-in email.
+### Backup Restoration Testing (Quarterly)
+Added to Stage 6 Step 6.5 (Quarterly Technical Checks) — restore most recent backup to staging, verify booking flow, log result.
 
-### Backup Restoration Testing
-A backup that cannot be restored is worthless. Having BlogVault show 31 successful backups does not confirm those backups can be restored. Current best practice recommends testing restoration at least quarterly — not restoring the live site itself, but verifying a recent backup can be retrieved and mounted in a staging environment with the booking flow intact. BlogVault includes restoration tools.
+### PHP Version Monitoring (Quarterly)
+Added to Stage 6 Step 6.5 (Quarterly Technical Checks) — confirm PHP 8.2+ via Hostinger hPanel or Tools → Site Health.
 
-**Suggested action:** Add a quarterly backup restoration test to the Stage 6 Quarterly Review. Document the result in the client record.
+### Plugin Audit for Abandoned Plugins (Quarterly)
+Added to Stage 6 Step 6.5 (Quarterly Technical Checks) — flag any plugin not updated in 12+ months, replace or remove as needed.
 
-### Plugin Audit (Quarterly)
-Plugins that have not received an update in 12+ months are potentially abandoned and represent a growing security risk. At each quarterly review, check the installed plugin list for anything flagged as abandoned or with known vulnerabilities (Wordfence flags these automatically). Remove or replace as needed.
-
-**Suggested action:** Add a plugin audit to the Stage 6 Quarterly Review checklist.
+### Error Log Management
+Added to Stage 5 Step 5.3 — review and clear error log monthly. WP_DEBUG confirmed off on all live sites.
 
 ---
 
-## 6. Summary: Flags Against Stage5_6_OngoingAndReview.md
+## 6. Summary: Resolution Status
 
-| Item | Status | Suggested Action |
+| Item | Original Status | Resolution |
 |---|---|---|
 | Step order (dashboards → updates → plugin check → report → email) | ✅ Confirmed as best practice | No change needed |
 | Staging-before-live rule | ✅ Confirmed | No change needed |
 | Batching maintenance sessions at scale | ✅ Confirmed | No change needed |
 | BlogVault backup check before applying updates | ✅ Confirmed as correct sequencing | No change needed |
-| Database optimisation (monthly) | ⚠️ Missing | Add WP-Optimize step after plugin check in Step 5.3 |
-| SSL certificate expiry monitoring | ⚠️ Missing | Add to Stage 4 UptimeRobot setup; review status monthly |
-| Staging environment refresh before update session | ⚠️ Not mentioned | Add note to Step 5.2 |
-| Changelog review before applying updates | ⚠️ Not mentioned | Add to Step 5.2 guidance |
-| Backup restoration testing (quarterly) | ⚠️ Missing | Add to Stage 6 Quarterly Review checklist |
-| PHP version monitoring (quarterly) | ⚠️ Missing | Add to Stage 6 Quarterly Review checklist |
-| Broken link checking | ⚠️ Missing | Add as passive plugin at Stage 4 Launch; review monthly |
-| Plugin audit for abandoned plugins (quarterly) | ⚠️ Missing | Add to Stage 6 Quarterly Review checklist |
+| Database optimisation (monthly) | ~~⚠️ Missing~~ | ✅ Resolved — WP-Optimize added to Stage 4 Step 4.5 and Stage 5 Step 5.4 |
+| SSL certificate expiry monitoring | ~~⚠️ Missing~~ | ✅ Resolved — UptimeRobot SSL toggle added to Stage 4 Step 4.5; review added to Stage 5 Step 5.1 |
+| Staging environment refresh before update session | ~~⚠️ Not mentioned~~ | ✅ Resolved — added to Stage 5 Step 5.2 |
+| Changelog review before applying updates | ~~⚠️ Not mentioned~~ | ✅ Resolved — added to Stage 5 Step 5.2 |
+| Backup restoration testing (quarterly) | ~~⚠️ Missing~~ | ✅ Resolved — added to Stage 6 Step 6.5 |
+| PHP version monitoring (quarterly) | ~~⚠️ Missing~~ | ✅ Resolved — added to Stage 6 Step 6.5 |
+| Broken link checking | ~~⚠️ Missing~~ | ✅ Resolved — Broken Link Checker added to Stage 4 Step 4.5 and Stage 5 Step 5.4 |
+| Plugin audit for abandoned plugins (quarterly) | ~~⚠️ Missing~~ | ✅ Resolved — added to Stage 6 Step 6.5 |
+| Error log management | ~~⚠️ Missing~~ | ✅ Resolved — review and clear added to Stage 5 Step 5.3; WP_DEBUG check added |
 | Multi-site management tool | ℹ️ Not yet needed | Revisit at 6–8 sites (WP Remote); adopt MainWP at 10+ |
 
 ---
 
-*Document Version: 1.0 | Created: March 2026*
+*Document Version: 1.1 | Updated: March 2026*
+*Changes from v1.0: Section 6 flags table updated to show all items resolved; Section 5 converted from suggested actions to resolution record; introductory note updated.*
 *Sources: StellarWP (Apr 2025), Pagely (Dec 2025), MantyWeb (Jan 2026), DreamHost (Sep 2025), WPDive (Dec 2025), WisdmLabs (Nov 2025), InstaWP (Jan 2026), MalCare (Jun 2025)*
 *Related documents: Stage5_6_OngoingAndReview.md | Stage4_Launch.md | Tools_Stack.md*
