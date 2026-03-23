@@ -1,7 +1,7 @@
 # Stage 5 & 6 — Ongoing Monthly and Quarterly Review
 ## Wimbledon Smart Business — Complete Step-by-Step Operational Guide
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Date:** March 2026
 **Status:** Active Reference
 **Applies To:** All live clients — Professional Plan
@@ -47,6 +47,7 @@ Open each tool and review last month's status for the client.
 - Was the site up for the full month? (Target: 99.9%+)
 - Any incidents? If yes: when, how long, was it resolved, did the client notice?
 - If there was downtime you didn't catch in real time — investigate now
+- **SSL certificate status:** UptimeRobot monitors SSL expiry automatically. Flag immediately if under 30 days to renewal. (This should never happen on Hostinger — SSL auto-renews — but confirm the auto-renewal succeeded.)
 
 **BlogVault:**
 - Did all daily backups complete? (30 or 31 out of 30/31 should show as successful)
@@ -68,21 +69,28 @@ Resolve it before sending the monthly check-in email. The email should either re
 
 **The rule: never auto-update a live client site. Always test on staging first.**
 
+**Before you start — two pre-update checks:**
+1. Confirm BlogVault shows a successful backup from the last 24 hours. If not, trigger a manual backup and wait for it to complete before touching anything.
+2. Refresh the staging environment from the current live site if it hasn't been synced this month. Testing updates against a stale clone gives unreliable results.
+
+**Update process:**
 1. Log into the live WordPress admin
 2. Check for pending updates: Dashboard → Updates
 3. Note what needs updating: WordPress core, plugins, themes
-4. Go to the staging environment for this client (Local by Flywheel or WP Staging)
-5. Apply all pending updates to staging
-6. Test the full booking flow end-to-end on staging:
+4. **Read the changelog for any plugin with a major version bump before applying** — a changelog flagging "breaking changes" or "database schema changes" warrants extra caution on staging. This is especially important for Wimbledon Smart Plugin releases: check for downstream effects on Stripe, Brevo, and Google Calendar integrations before pushing to any client.
+5. Go to the staging environment for this client (Local by Flywheel or WP Staging)
+6. Apply all pending updates to staging
+7. Test the full booking flow end-to-end on staging:
    - Make a test booking
    - Confirm deposit/payment processes correctly (test mode)
    - Confirm confirmation email sends
    - Confirm booking appears in dashboard
    - Confirm calendar sync triggers
-7. Check all pages load correctly after the update
-8. If staging passes: apply the same updates to live
-9. Repeat the booking flow test on live (brief — just confirm it's working)
-10. Log everything applied in the monthly report
+   - Check Tools → Site Health for any new PHP errors or warnings
+8. Check all pages load correctly after the update
+9. If staging passes: apply the same updates to live
+10. Repeat the booking flow test on live (brief — just confirm it's working)
+11. Log everything applied in the monthly report
 
 **If an update breaks staging:** Do not apply to live. Investigate — is it a plugin conflict? A theme incompatibility? Resolve on staging first, then apply to live. If you cannot resolve it quickly, note it in the report and schedule a fix.
 
@@ -96,7 +104,8 @@ Resolve it before sending the monthly check-in email. The email should either re
 
 Log into the WordPress admin on the live site and check:
 
-- **Plugin error logs:** Any errors logged since last month? Failed bookings, failed notifications, failed calendar syncs?
+- **Plugin error logs:** Any errors logged since last month? Failed bookings, failed notifications, failed calendar syncs? After reviewing, **clear the log** so next month's entries are fresh — carried-over noise makes it harder to spot new problems.
+- **WP_DEBUG status:** Confirm `WP_DEBUG` is set to `false` in `wp-config.php` on all live client sites. Debug logging should only ever be enabled temporarily when actively diagnosing a specific issue, then turned off immediately. Leaving it on degrades performance and can expose sensitive path information.
 - **Stripe connection:** Is the payment gateway still connected and processing? Check Stripe Dashboard → Payments for any recent failures
 - **Google Calendar sync:** Is it still active for all staff? Calendar sync tokens expire — if a staff member changed their Google password, the sync will have broken silently
 - **Brevo email delivery:** Log into Brevo → Statistics. Any unusual drop in delivery rate? Any spike in bounces or spam reports?
@@ -106,9 +115,28 @@ Log into the WordPress admin on the live site and check:
 
 ---
 
-## Step 5.4 — Internal Monthly Report
+## Step 5.4 — Housekeeping (5 minutes)
 
-File this to Google Drive after completing steps 5.1–5.3. This is for your records — not sent to the client. It protects you if there is ever a dispute about what maintenance was done and when.
+These are fast, low-effort tasks that prevent slow-accumulating problems.
+
+**Database optimisation:**
+- Run WP-Optimize (WordPress admin → WP-Optimize → Run all optimizations)
+- This clears post revisions, auto-drafts, expired transients, and spam comments
+- Takes under a minute. Keeps the database clean and queries fast over time.
+- If WP-Optimize is not yet installed on this client's site, install it now and run it.
+
+**Broken links:**
+- If Broken Link Checker is installed (it should be — see Stage 4 setup), check for any newly flagged broken links
+- Fix or remove any broken internal links. Note external link breaks in the monthly report — the client may want to update their content.
+
+**Error log:**
+- Confirm the error log has been reviewed and cleared (covered in Step 5.3 above)
+
+---
+
+## Step 5.5 — Internal Monthly Report
+
+File this to Google Drive after completing steps 5.1–5.4. This is for your records — not sent to the client. It protects you if there is ever a dispute about what maintenance was done and when.
 
 Save as: `[Business Name]/Ongoing/Monthly_Report_[YYYY-MM].md`
 
@@ -118,6 +146,7 @@ MONTH: [Month Year]
 MAINTENANCE DATE: [Date]
 ---
 UPTIME: [e.g. 100% — 0 incidents | 99.94% — 1 incident, 32 min, resolved]
+SSL: [e.g. Valid — renews [date] | Flagged — under 30 days, actioned]
 BACKUPS: [e.g. All 31 daily backups completed | 29/31 — 2 failures on [dates], resolved]
 SECURITY: [e.g. No threats detected | 47 blocked login attempts — no action required]
 UPDATES APPLIED:
@@ -128,6 +157,9 @@ UPDATES APPLIED:
 PLUGIN STATUS: [e.g. All systems normal | Calendar sync broken for [staff] — notified owner]
 STRIPE: [e.g. Processing normally | 1 failed payment — client notified]
 EMAIL DELIVERY: [e.g. Brevo delivering normally | Delivery rate dropped — investigated, resolved]
+ERROR LOG: [e.g. No errors | 3 PHP notices — reviewed, no action required / actioned]
+DATABASE: [e.g. WP-Optimize run — clean]
+BROKEN LINKS: [e.g. None flagged | 2 flagged — fixed]
 SUPPORT TICKETS: [e.g. None | 1 — password reset, resolved same day]
 NOTES: [Anything unusual worth recording]
 NEXT MONTH: [Any planned actions — pending update, scheduled feature change, etc.]
@@ -135,7 +167,7 @@ NEXT MONTH: [Any planned actions — pending update, scheduled feature change, e
 
 ---
 
-## Step 5.5 — Monthly Check-in Email
+## Step 5.6 — Monthly Check-in Email
 
 Send within the first week of the month — after maintenance is complete, not before.
 
@@ -154,43 +186,44 @@ This email should feel personal, not templated. Five to eight sentences. The cli
 >
 > Quick monthly check-in from me. Everything is running smoothly — no issues to report this month.
 >
-> I applied a WordPress security update and a small update to the booking plugin this week. Both tested and confirmed on staging before going live. Nothing changes for you or your customers.
+> I applied a WordPress core update and a couple of plugin updates this week — all tested and working correctly. Nothing that changes anything for you or your customers.
 >
-> [Optional: something specific — "I noticed you had your busiest Saturday since launch last week — 18 bookings in one day. Great sign."]
+> [Optional: one relevant observation about their booking data or a seasonal tip]
 >
-> [Optional: proactive tip — "With [season] coming up, it might be worth updating your available hours in the dashboard if your opening times are changing."]
->
-> As always, if anything comes up just reply to this email.
+> As always, drop me a message any time if anything comes up.
 >
 > Liron
 
-**What makes a good check-in email:**
-- It is short — they should be able to read it in 30 seconds
-- It mentions something specific to their business or month — not generic
-- It does not ask them to do anything unless necessary
-- It ends with an open door — not a call to action
+**If there was an incident:**
 
-**What makes a bad one:**
-- A wall of text listing every update applied
-- Generic filler ("I hope you're well")
-- Raising an issue you haven't already resolved
-- Asking for a call when an email will do
+> Hi [First Name],
+>
+> Monthly check-in from me — and a quick note on something that happened this month.
+>
+> [Brief explanation: what happened, when, how long, what you did, whether bookings were affected.]
+>
+> It's been resolved and I've [note any preventive action taken]. No action needed from you.
+>
+> [Continue with any other updates or observations.]
+>
+> Liron
 
 ---
 
-## Proactive Alerts — When to Contact Between Check-ins
+## Proactive Alerts (Outside the Monthly Cycle)
 
-Do not wait for the monthly window if something requires immediate action.
+These happen in real time — do not wait for the monthly window.
 
-| Alert | Tool | Your Action | Notify Client? |
+| Alert Type | Tool | Your Action | Client Notified? |
 |---|---|---|---|
-| Site down | UptimeRobot (immediate) | Investigate and fix immediately | Yes — if downtime exceeds 15 minutes |
-| Backup failed 2+ days in a row | BlogVault (daily) | Investigate and resolve | Only if data is at risk |
-| Security threat detected | Wordfence (immediate) | Investigate, clean if needed | Only if action needed from client |
-| Email delivery failing | Brevo (monitor) | Investigate and resolve | Only if bookings are being affected |
-| Payment failed | Stripe (immediate) | Follow failed payment process | Yes — see below |
+| Site down | UptimeRobot (immediate) | Investigate and fix immediately | Only if downtime > 15 min |
+| Backup failed | BlogVault (same day) | Investigate and resolve | Only if data risk |
+| Security threat | Wordfence (immediate) | Investigate, clean if needed | Only if action required |
+| Email delivery issue | Brevo (monthly check) | Investigate and resolve | Only if bookings affected |
+| SSL expiry warning | UptimeRobot (automatic) | Check auto-renewal, renew manually if needed | Only if there is any risk of expiry |
+| Plugin conflict | Manual monthly check | Test on staging, resolve | Only if site affected |
 
-**Downtime notification template:**
+**Downtime client notification template:**
 > *"Hi [Name], I wanted to let you know your site experienced a brief outage earlier today. It was back online within [X] minutes. I've investigated and [resolved the cause / am monitoring closely]. Your bookings were [not affected / I'll note any that need following up]. No action needed from you."*
 
 ---
@@ -213,17 +246,23 @@ Keep the tone professional and non-accusatory — missed payments are usually ad
 
 ## Stage 5 — Checklist (Per Client, Per Month)
 
-- [ ] UptimeRobot reviewed — uptime noted, any incidents investigated
-- [ ] BlogVault reviewed — all backups confirmed complete
+- [ ] UptimeRobot reviewed — uptime noted, SSL status confirmed, any incidents investigated
+- [ ] BlogVault reviewed — all backups confirmed complete, most recent under 24h old
 - [ ] Wordfence reviewed — no critical alerts, scan results noted
-- [ ] WordPress and plugin updates applied to staging and tested
+- [ ] Staging environment refreshed from live before update session
+- [ ] Plugin changelogs reviewed for any major version bumps
+- [ ] WordPress and plugin updates applied to staging and tested (booking flow, payment, email, calendar)
 - [ ] Updates applied to live and booking flow confirmed working
 - [ ] Plugin and system check complete — Stripe, Calendar sync, Brevo delivery
+- [ ] Error log reviewed and cleared
+- [ ] WP_DEBUG confirmed off on live site
+- [ ] WP-Optimize run — database cleaned
+- [ ] Broken Link Checker reviewed — any flagged links addressed
 - [ ] Monthly report filed to Google Drive
 - [ ] Monthly check-in email sent to client
 - [ ] Any failed payments followed up
 
-**Time target:** 20–30 minutes per client. If a month is taking longer, identify what is causing it — likely an unresolved issue that needs proper attention, not a faster process.
+**Time target:** 25–35 minutes per client. The additional housekeeping steps add around 5 minutes versus the previous process.
 
 ---
 
@@ -343,7 +382,36 @@ Action any site changes within 48 hours of the call. Do not let agreed changes s
 
 ---
 
-## Step 6.5 — Referral Ask
+## Step 6.5 — Quarterly Technical Checks (Internal — Not on the Call)
+
+In the same week as each quarterly review, run these additional technical checks that go deeper than the monthly routine. These are internal — not discussed with the client unless something needs actioning.
+
+**PHP version check:**
+- In Hostinger hPanel → Hosting → PHP Configuration, confirm the PHP version for this client's site
+- Minimum acceptable: PHP 8.2+
+- If below 8.2: test a PHP upgrade on staging first, confirm the booking flow and all plugins work, then upgrade live
+- Note the PHP version in the quarterly report
+
+**Backup restoration test:**
+- In BlogVault, select the most recent backup for this client
+- Restore it to the staging environment
+- Verify the staging site loads correctly and the full booking flow works
+- This confirms the backups are not just completing — they are actually restorable
+- Log the result: "Restoration test passed — [date]" or note any issue found
+- You do not need to do this every month. Once per quarter per client is sufficient.
+
+**Plugin audit:**
+- Review the full list of installed plugins on the live site
+- Flag any plugin that has not received an update in the last 12 months — Wordfence also flags these automatically
+- For any flagged plugin: check the WordPress.org plugin page to confirm whether it is actively maintained or abandoned
+- If abandoned: find a maintained alternative or remove it if no longer needed
+- Abandoned plugins with known vulnerabilities are a security risk and should be replaced promptly
+
+**Note:** These quarterly checks add approximately 20–30 minutes to the review month. The time budget table below accounts for this.
+
+---
+
+## Step 6.6 — Referral Ask
 
 If the call went well and the client is clearly happy — introduce this naturally at the end, not as a scripted close:
 
@@ -356,7 +424,7 @@ Not every quarterly review warrants this. Use your judgement:
 
 ---
 
-## Step 6.6 — Upsell Opportunities
+## Step 6.7 — Upsell Opportunities
 
 Introduce upsells at the right review — not before the client is settled and seeing value. Rushing an upsell before month 6 usually backfires.
 
@@ -364,89 +432,44 @@ Introduce upsells at the right review — not before the client is settled and s
 
 > *"I've started offering SMS appointment reminders for existing clients. Most businesses see a 30–40% drop in no-shows — it sends automatically 24 hours before each appointment. It's £25/month for up to 300 messages. Given how many bookings you're running, I thought it was worth mentioning. Want me to set it up this week?"*
 
-Introduce only if: they have mentioned no-shows as an issue, OR they are running 20+ bookings per month.
+**9-month review — email marketing:**
 
-**9-month review — email marketing campaigns:**
-
-> *"Quick question — when did you last email your full customer list? I now offer a monthly campaign management service: two or three branded emails per month, fully managed, promoting your services, seasonal offers, whatever makes sense. It's £50/month. Want me to put together an example for your business so you can see what it would look like?"*
-
-Introduce only if: they have an active customer list and haven't been marketing to it, OR they mentioned wanting to do more marketing.
+> *"Something I've been rolling out for clients is a simple monthly email to their customer list — things like seasonal promotions, rebooking reminders, or a newsletter. It runs through the same system as your booking emails, so the setup is minimal. Worth a conversation if that's something you'd find useful?"*
 
 **12-month review — website refresh:**
 
-> *"Your site has been live for a year — which is a great milestone. Worth asking: are there services you've added, team changes, new photos, or anything that's changed that you'd like reflected? I can also do a light design refresh if you want to keep things feeling current. Happy to look at what makes sense once I know what you have in mind."*
-
-Introduce at every 12-month anniversary as standard — this is almost always relevant.
-
----
-
-## Step 6.7 — Handling Cancellations
-
-When a client requests to cancel, always respond before processing:
-
-> *"Thanks for letting me know. Before I process anything, can I ask what the main reason is? I'd genuinely like to understand — and in some cases there may be something I can do that I haven't thought to offer."*
-
-**Common reasons and how to respond:**
-
-**"Too expensive"**
-> *"I understand. Can I ask — are you using the booking system actively? If it's fully embedded in how you run the business, the £99 is working hard for you. If you're not using it much, that's worth understanding too — it might be a training gap I can help with."*
-
-Consider a temporary reduced rate for a client you want to keep — but do not make this a blanket offer and do not offer it immediately. Make them work slightly for it by understanding the real reason first.
-
-**"Not using it / customers aren't booking online"**
-> *"That's worth understanding. Have you promoted the booking link directly to your customers — in your email signature, on Instagram, on a note at the till? Most businesses find it takes 4–6 weeks of actively pointing customers to the link before they start using it habitually. I can help you with a quick push if you'd like to try that before we make a decision."*
-
-**"Switching to Fresha / another platform"**
-> *"Happy to talk through what's pulling you that way — is it a specific feature, or the cost? If it's a feature the system doesn't currently have, it's worth knowing whether it's on the roadmap before you go through the effort of switching."*
-
-**If they have decided and the reason is legitimate:**
-Accept the cancellation gracefully. Process it professionally. A client who leaves well may come back, and they will definitely talk to other business owners.
-
-**Cancellation process:**
-1. Confirm cancellation in writing by email
-2. Note 30-day notice period — final billing date
-3. Within 7 days: provide full data export (WordPress XML, database SQL, customer CSV, booking history CSV, payment CSV)
-4. After 30 days: take site offline, deactivate plugin, cancel Stripe subscription
-5. After 90 days: delete all client data from hosting and Google Drive
-6. Update Bonsai status to **Churned — [Reason]**
-7. Add to **Win-Back** list with a 6-month reminder
-
-**Win-back message (6 months after churn):**
-> *"Hi [Name], it's been a few months since we last worked together. I hope things are going well. I've added a few new features since you left — [mention 1–2 genuinely relevant items]. If your situation has changed and you'd like to revisit, I'd love to chat."*
-
-Send this once only. If no response, remove from win-back list.
+> *"It's been a year — the site's been working hard. A lot of clients at the 12-month mark find it's worth a small refresh: updating the photography, tightening the copy, maybe adding a page or two. It's not a rebuild — just bringing it up to date. I can put together a quick proposal if you're interested."*
 
 ---
 
 ## Stage 6 — Checklist (Per Client, Per Quarter)
 
-**One week before:**
-- [ ] Pre-call email sent — call booked via booking link
-
 **Before the call:**
+- [ ] Pre-call email sent 1 week before
 - [ ] Jamie recording started
-- [ ] Bonsai record reviewed — previous notes checked
-- [ ] Last monthly report reviewed
-- [ ] Live site open for reference
+- [ ] Last maintenance report reviewed
+- [ ] Bonsai notes reviewed
 
 **On the call:**
-- [ ] "How's it going?" section covered — experience, friction, no-shows
-- [ ] Results section covered — wins noted for case study if relevant
-- [ ] Roadmap items shared — feature requests logged
-- [ ] Housekeeping covered — updates needed, support feedback, billing questions
-- [ ] Next review booked before call ends
+- [ ] "How's it going?" conversation — listen first
+- [ ] Results conversation — any wins noted for case study potential
+- [ ] Roadmap tease — relevant features shared
+- [ ] Feature requests logged
+- [ ] Housekeeping items noted
+- [ ] Next review booked before ending the call
 
 **After the call:**
-- [ ] Jamie summary reviewed
-- [ ] Bonsai satisfaction status updated: Happy / Neutral / At Risk
-- [ ] Feature requests logged in product feedback log
-- [ ] Next quarterly review set in Google Calendar
+- [ ] Bonsai satisfaction status updated (Happy / Neutral / At Risk)
+- [ ] Feature requests added to product feedback log
 - [ ] Follow-up email sent within 48 hours
-- [ ] Any agreed changes actioned within 48 hours
-- [ ] Referral ask made (if appropriate)
-- [ ] Upsell introduced (if appropriate — see timing guidance above)
+- [ ] Any agreed site changes actioned within 48 hours
+- [ ] Referral ask actioned if appropriate
+- [ ] Upsell follow-up sent if appropriate (see timing guide above)
 
-**Success measure:** Client satisfaction status confirmed in Bonsai. Any churn risk identified and flagged. Next review scheduled before ending the call.
+**Technical checks (same week — internal):**
+- [ ] PHP version confirmed — 8.2+ (note version in quarterly report)
+- [ ] Backup restoration test completed and logged
+- [ ] Plugin audit completed — any abandoned plugins flagged and actioned
 
 ---
 
@@ -456,22 +479,23 @@ Send this once only. If no response, remove from win-back list.
 |---|---|---|
 | **Inputs from client** | Nothing required | Call attendance and honest feedback |
 | **Outputs to client** | Monthly check-in email | Follow-up email, changes actioned, upsell email if relevant |
-| **Internal records** | Monthly report (Drive), Bonsai updated for any issues | Satisfaction status (Bonsai), feature requests logged, next review scheduled |
-| **Complete when** | Report filed, check-in email sent | Follow-up email sent, Bonsai updated |
+| **Internal records** | Monthly report (Drive), Bonsai updated for any issues | Satisfaction status (Bonsai), feature requests logged, quarterly technical checks logged, next review scheduled |
+| **Complete when** | Report filed, check-in email sent | Follow-up email sent, Bonsai updated, technical checks done |
 
 ---
 
 ## Time Budget — Stages 5 and 6 Combined
 
-| Clients | Stage 5 Monthly | Stage 6 Quarterly | Total Monthly Average |
+| Clients | Stage 5 Monthly | Stage 6 Quarterly (call + technical checks) | Total Monthly Average |
 |---|---|---|---|
-| 3 clients | 3 × 25 min = 75 min | 1 × 30 min = 30 min | ~105 min/month |
-| 5 clients | 5 × 25 min = 125 min | 1–2 × 30 min = 45 min | ~170 min/month |
-| 10 clients | 10 × 25 min = 250 min | 2–3 × 30 min = 75 min | ~325 min/month |
+| 3 clients | 3 × 30 min = 90 min | 1 × 50 min = 50 min | ~115 min/month |
+| 5 clients | 5 × 30 min = 150 min | 1–2 × 50 min = 65 min | ~190 min/month |
+| 10 clients | 10 × 30 min = 300 min | 2–3 × 50 min = 115 min | ~380 min/month |
 
-At 10 clients you are spending roughly 5.5 hours per month on Stages 5 and 6 combined — well within the 5–10 hours per week available. Reactive support time adds to this, but a well-maintained estate with good documentation significantly reduces inbound queries.
+At 10 clients you are spending roughly 6.5 hours per month on Stages 5 and 6 combined — still comfortably within the 5–10 hours per week available. Reactive support time adds to this, but a well-maintained estate with good documentation significantly reduces inbound queries.
 
 ---
 
-*Document Version: 1.0 | Created: March 2026*
-*Related documents: Stage4_Launch.md | Client_Delivery_Workflow.md | Tools_Stack.md*
+*Document Version: 1.1 | Updated: March 2026*
+*Changes from v1.0: Added SSL monitoring to Step 5.1; added staging refresh and changelog review to Step 5.2; added WP_DEBUG check and error log clearing to Step 5.3; added new Step 5.4 (Housekeeping — WP-Optimize, broken links); expanded monthly report template; renumbered Steps 5.4/5.5 to 5.5/5.6; added SSL and broken links to Stage 5 checklist; added Step 6.5 (Quarterly Technical Checks — PHP version, backup restoration test, plugin audit); updated Stage 6 checklist and time budget.*
+*Related documents: Stage4_Launch.md | Client_Delivery_Workflow.md | Tools_Stack.md | WordPress_Maintenance_Reference.md*
