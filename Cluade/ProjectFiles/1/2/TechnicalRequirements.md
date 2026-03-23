@@ -1489,15 +1489,6 @@ DELETE FROM wp_bookings_customer_auth WHERE customer_id = 12345;
    - PHP session cookie: `PHPSESSID` (booking flow state)
    - Dashboard auth cookie: `booking_auth_token` (login session)
 
-2. **Analytics (Consent Required - Phase 2):**
-   - Google Analytics: `_ga`, `_gid` (website usage tracking)
-   - Consent required BEFORE setting these cookies
-
-**Cookie Banner (Phase 2):**
-- Show banner on first visit
-- Options: "Accept All" | "Reject Non-Essential" | "Cookie Settings"
-- Strictly necessary cookies set immediately
-- Analytics cookies set only after consent
 
 **Phase 1 Implementation:**
 - No analytics cookies → No cookie banner required

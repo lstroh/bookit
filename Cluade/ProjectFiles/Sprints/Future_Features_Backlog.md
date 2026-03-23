@@ -42,6 +42,7 @@ The following features previously documented as Phase 2, deferred, or COULD HAVE
 - Customer portal (full self-service) — Phase 2 Priority 2
 - PDF report exports — Phase 2
 - Scheduled report emails — Phase 2
+- Post-appointment review requests (Google / Facebook) — Phase 2, Bookit Reviews extension
 
 **Pulled into Phase 1 (Sprint 4H — Notification Infrastructure, ~22h):**
 - Email provider abstraction layer (driver pattern): Brevo primary,
@@ -429,6 +430,60 @@ packages_enabled gate on /wizard/my-packages endpoint — the customer package l
 
 
 Discount mode purchase_price not stored at creation — create_customer_package stores null for purchase_price on discount-mode packages. The correct price can only be calculated once the applicable service price is known. Needs to be resolved when the Stripe package purchase flow is built in Sprint 5.
+
+
+## Bookit Reviews Extension — Architecture Decision
+
+**Decision date:** 21 March 2026
+
+**Why extension plugin, not core:**
+- Review requests are optional and platform-specific — not every client
+  will want them, and the target platform (Google, Facebook) varies
+- Core booking flow should have no awareness of review platforms
+- Can be deactivated without affecting any booking functionality
+- Follows the same reasoning as Bookit Meetings: supplementary
+  post-booking behaviour belongs in an extension
+
+**Core hook used:**
+- `bookit_after_booking_completed` (or `bookit_after_payment_completed`)
+  fires at the right moment — no new core hooks needed
+
+**Bookit Reviews extension owns:**
+- Extension registration + dashboard settings page
+  - Review platform selector: Google / Facebook / Both
+  - Google review URL (direct link from GBP "Share review form")
+  - Facebook review URL
+  - Delay before sending: 0 / 2h / 4h / 24h / 48h (dropdown)
+  - Toggle: enable/disable review requests
+- Its own database table: `wp_bookit_review_requests`
+  (booking_id, customer_email, platform, scheduled_at, sent_at, status)
+- Scheduled sending via WP-Cron (respects configured delay)
+- Deduplication: one request per booking, never sends twice
+- Email template: friendly post-appointment message with direct
+  review link button; matches Bookit email style conventions
+- Vue dashboard page: simple stats (requests sent, open rate if
+  trackable, platform breakdown)
+
+**Phase 1 scope (~20h, no live environment needed):**
+- Extension registration
+- Settings page (platform URLs, delay, toggle)
+- DB migration for wp_bookit_review_requests table
+- Hook into bookit_after_booking_completed
+- WP-Cron job: send review request email at scheduled time
+- Deduplication check before sending
+- Basic dashboard stats page
+- PHPUnit tests for cron scheduling, send logic, deduplication
+
+**Phase 2 scope (post-launch, optional):**
+- SMS review request via Twilio (depends on SMS notifications being live)
+- Click tracking on review links (adds a redirect endpoint)
+
+**No new core hooks required.**
+Core already provides `bookit_after_booking_completed` — the extension
+attaches to this and schedules its own cron job. Core plugin files are
+not modified.
+
+**Claude project:** `Bookit Reviews` — created when ready to build (post-launch).
 
 
 

@@ -854,6 +854,92 @@ Add these DNS records:
 - Complex segmentation or automation needs
 
 ---
+## Analytics Services
+
+### Umami Analytics (Self-Hosted)
+
+#### Decision
+
+**Analytics Platform:** Umami (open-source, self-hosted)  
+**Hosting:** Hostinger VPS — one-click Docker deployment  
+**Cost:** ~£5/month fixed (VPS only, no per-site or per-pageview fees)  
+**Timing:** Phase 2 — no analytics required for Phase 1 launch  
+
+#### Why Not Google Analytics
+
+GA4 requires explicit consent under UK PECR before setting cookies, making a cookie banner mandatory. Multiple EU data protection authorities (Austria, France, Norway, Denmark) have ruled that GA violates GDPR due to data transfers to US servers. It also shares visitor data with Google's advertising ecosystem — incompatible with Wimbledon Smart's positioning as a privacy-respecting provider.
+
+#### Why Not Paid SaaS (Plausible, Fathom, Simple Analytics)
+
+Plausible's Starter plan covers one site; multi-site requires the Growth or Business tier. Running separate accounts per client would cost £70–100+/month for 10 clients. Fathom starts at $15/month per account. At agency scale, SaaS analytics becomes a significant overhead with no added benefit over self-hosting.
+
+#### Why Umami
+
+1. **Cookieless by default** — GDPR and PECR compliant out of the box, no consent banner needed on any client site
+2. **Unlimited websites** from one installation — add all client sites as separate properties
+3. **Per-client logins** — each client can log in and see only their own data
+4. **Lightest resource footprint** of the main open-source options (Node.js + PostgreSQL, runs comfortably on 1 GB RAM VPS)
+5. **Simple dashboard** — clean enough for non-technical salon/spa owners to use themselves without training
+6. **City-level geographic data** in self-hosted mode (Plausible CE only provides country-level)
+7. **Fully open source** — no vendor lock-in, data never leaves your infrastructure
+
+#### Hosting Setup
+
+**Platform:** Hostinger VPS (KVM 1 or equivalent)  
+**Deployment:** One-click Docker template via Hostinger VPS panel — no manual Docker configuration required  
+**Minimum spec:** 1 vCPU, 1 GB RAM — sufficient for 10+ low-traffic client sites  
+**Location:** Choose London/EU region for GDPR data residency  
+
+**Link:** https://www.hostinger.com/vps/docker/umami-analytics
+
+#### How Multi-Client Access Works
+
+1. You deploy one Umami instance on the Hostinger VPS
+2. Add each client site as a separate "website" property in Umami
+3. Create a dedicated Umami login for each client (view-only access to their site only)
+4. Install the Umami tracking script on each client's WordPress site via a lightweight WP helper (Phase 2 sprint task)
+5. Clients access their own dashboard at your Umami subdomain (e.g. `analytics.wimbledonsmart.co.uk`)
+
+#### Cost Analysis
+```
+Hostinger KVM 1 VPS:          ~£5/month
+Umami licence:                 £0 (open source)
+Per additional client site:    £0
+─────────────────────────────────────────
+Total for 10 client sites:    ~£5/month fixed
+```
+
+Compare to Plausible Cloud: ~£9–14/month per client account = £90–140/month for 10 clients.
+
+**Cost per client:** ~£0.50/month (shared VPS cost) — absorb into Regular tier or include as a value-add in Professional tier.
+
+#### Positioning as a Client Benefit
+
+Analytics can be presented as an included feature rather than a technical add-on:
+
+- **Professional tier:** Analytics included — *"privacy-first website analytics, no Google tracking your visitors"*
+- **Regular tier:** Analytics available as optional add-on
+
+This is a genuine differentiator against competitors who install Google Analytics by default, forcing clients to display cookie banners and share visitor data with Google.
+
+#### UK Compliance Notes
+
+- **No cookie banner required** — Umami sets no cookies and collects no personal data
+- **GDPR compliant by design** — no personal data stored, no third-party data transfers
+- **PECR compliant** — cookieless tracking does not trigger PECR consent requirements
+- **Data residency** — all analytics data stays on your Hostinger VPS in the EU
+
+#### Implementation Timing
+
+| Phase | Action |
+|-------|--------|
+| **Phase 1 (now)** | No action — plugin uses no analytics cookies, no cookie banner needed |
+| **Phase 2** | Provision Hostinger VPS, deploy Umami via one-click template, create client properties |
+| **Phase 2** | Build lightweight WP helper to inject Umami script into `<head>` on client sites |
+| **Ongoing** | Add new client site property + login at each new client onboarding |
+
+---
+
 
 ## SMS Services
 

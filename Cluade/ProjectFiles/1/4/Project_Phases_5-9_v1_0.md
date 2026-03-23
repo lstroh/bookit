@@ -317,7 +317,7 @@ The complete document continues with detailed sections for:
 | **Phase 6: Sprint 0** | **Claude Code**, PHPUnit, Git | Actual coding begins, database setup |
 | **Phase 7: Sprints 1-5** | **Claude Code**, Postman, Browser DevTools | Feature development, API testing |
 | **Phase 8: Launch** | OWASP ZAP, Lighthouse, Pandoc | Security audit, accessibility testing |
-| **Phase 9: Post-Launch** | Sentry, New Relic, Google Analytics | Monitoring, performance tracking |
+| **Phase 9: Post-Launch** | Sentry, New Relic, Umami (self-hosted, Hostinger VPS) | Monitoring, performance tracking |
 
 **When to Use Claude Code (CLI tool):**
 - ✅ Phase 6 onwards - All actual coding
