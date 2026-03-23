@@ -1,7 +1,7 @@
 # Stage 4 — Launch
 ## Wimbledon Smart Business — Complete Step-by-Step Operational Guide
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Date:** March 2026
 **Status:** Active Reference
 **Applies To:** Every client site going live — Professional Plan
@@ -121,21 +121,33 @@ Once paid, confirm in Bonsai and move immediately to Step 4.3.
 
 Every site gets its own WordPress installation on the hosting account — not a subdirectory, a separate installation with its own database.
 
-**On Hostinger:** Create a new WordPress installation via the Hostinger hPanel. Name it clearly (e.g. `salonname-live`). Do not use the staging site — create a clean installation and migrate the staging content across.
+**On Hostinger:** The preferred route is to use the hPanel native staging Publish button — this pushes the entire staging environment (files + database) to the live domain in one action. Hostinger automatically creates a backup before publishing so you can revert if needed. Only use the manual migration plugin route if the build was done entirely in Local by Flywheel without using Hostinger staging.
 
 **On Kinsta:** Use the MyKinsta dashboard to create a new WordPress site. Use the 1-click staging push if available, or migrate manually.
 
-### Migration Process
+### Migration Process — Hostinger hPanel (Primary Route)
 
-1. **Export from staging** — export the WordPress database and all files (plugins, themes, uploads). Use a migration plugin such as All-in-One WP Migration or Duplicator, or export/import manually via phpMyAdmin and SFTP.
+1. In hPanel, go to **WordPress → Staging**
+2. Click **⋮ → Publish** next to the staging environment
+3. Confirm the pop-up — this replaces the live site files and database with the staging copy
+4. Hostinger creates an automatic backup before publishing — confirm BlogVault also has a recent manual backup as a secondary safety net
+5. Proceed to the post-migration steps below
 
-2. **Import to live hosting** — install on the live Hostinger or Kinsta environment. Update wp-config.php with live database credentials.
+### Migration Process — Manual Plugin (Fallback)
 
-3. **Update all URLs** — run a search-and-replace to update staging URLs to the live domain. Use WP-CLI or a plugin like Better Search Replace. This step is critical — missed staging URLs break images, links, and plugin callbacks.
+If migrating from Local by Flywheel directly to the live Hostinger environment:
 
-4. **Update Stripe webhook** — go to Stripe Dashboard → Developers → Webhooks. Add the live domain webhook endpoint and confirm it matches what is configured in the plugin.
+1. **Export from staging** — use **All-in-One WP Migration** to export the site as a `.wpress` package. Specify the live domain as the replacement URL during export so URLs are updated automatically.
 
-5. **Update Brevo SMTP** — confirm the plugin SMTP settings are pointing to Brevo with the live sender domain credentials (not staging).
+2. **Import to live hosting** — install All-in-One WP Migration on the clean live WordPress installation and import the `.wpress` file.
+
+3. **Update all URLs** — run **Better Search Replace** plugin to confirm no staging or `.local` URLs remain in the database. Search for the old domain, replace with the live domain. This step is critical — missed staging URLs break images, links, and plugin callbacks.
+
+4. **Re-save permalink structure** — go to Settings → Permalinks and click Save Changes without making any edits. This regenerates the `.htaccess` file and prevents 404 errors on the live domain. Do this even if nothing looks wrong — it takes 10 seconds and avoids a common post-launch issue.
+
+5. **Update Stripe webhook** — go to Stripe Dashboard → Developers → Webhooks. Confirm the webhook endpoint URL points to the live domain. If it still shows the staging URL, delete the old endpoint and add a new one pointing to `https://[clientdomain]/[plugin-webhook-path]`. Then **send a test webhook from the Stripe dashboard** and confirm it returns a 200 response before proceeding. This 30-second check eliminates the most common cause of booking failures on Day 1.
+
+6. **Update Brevo SMTP** — confirm the plugin SMTP settings are pointing to Brevo with the live sender domain credentials (not staging).
 
 ### Pointing DNS
 
@@ -184,6 +196,7 @@ A second pass over everything now that it is on the live domain. Some issues onl
 - [ ] No JavaScript errors in browser console
 - [ ] Google Analytics firing — confirm real-time view shows your test visit
 - [ ] All page load times acceptable — no pages taking more than 3 seconds
+- [ ] **Hostinger cache purged** — in hPanel go to WordPress → Cache → Purge Cache immediately after migration. Stale cached content can cause visitors to see old pages even after a successful Publish. Do this before any other post-launch testing.
 
 If anything fails, fix on live and retest before proceeding. Do not proceed to client-facing steps with known issues.
 
@@ -201,217 +214,119 @@ Add every tool in sequence. Do not skip this step — if something breaks at 2am
 4. URL: `https://[clientdomain]`
 5. Monitoring interval: 5 minutes
 6. Alert contacts: your email address
-7. Save and confirm the monitor shows as Up
+7. Save — confirm status shows as Up
 
 ### BlogVault
 
-1. Log into BlogVault at https://blogvault.net
-2. Add Site → enter live domain and WordPress admin credentials
-3. Confirm connection successful
-4. Trigger a manual backup — confirm it completes
-5. Set schedule to daily
-6. Confirm backup storage destination (BlogVault cloud — offsite from hosting)
-
-Note in the monthly maintenance calendar: first automated backup should complete within 24 hours of setup. Check it did.
+1. Log into BlogVault and add the new site
+2. Install the BlogVault plugin on the live WordPress site
+3. Connect the site to your BlogVault account
+4. Trigger the first manual backup and confirm it completes
+5. Confirm daily backup schedule is active
 
 ### Wordfence
 
-Wordfence was installed and activated during Stage 3. On launch:
+1. Confirm Wordfence is active on the live site
+2. Run a full scan — confirm no critical issues
+3. Set scan schedule to weekly
+4. Ensure email alerts are going to your address
 
-1. Log into WordPress admin on live site
-2. Wordfence → Dashboard — confirm no critical alerts
-3. Wordfence → Scan → Start New Scan — run a full scan on the fresh live site
-4. Confirm scan completes with no malware or critical issues
-5. Wordfence → Firewall → confirm Learning Mode has completed and firewall is set to Enabled and Protecting
+### Maintenance Calendar
 
-### Monthly Maintenance Calendar
-
-Add the client to your internal maintenance schedule. Use Google Calendar or a Bonsai recurring task:
-
-- Task: `Monthly maintenance — [Business Name]`
-- Frequency: First working week of each month
-- Duration: Allow 30 minutes
+Add the client to your internal monthly maintenance calendar — first working week of each month.
 
 ---
 
-## Step 4.6 — Set Up Stripe Subscription
+## Step 4.6 — Set Up Subscription
 
-If the client has opted in to the monthly subscription (strongly recommended — this is the ongoing revenue that makes the business work):
+Create the Stripe recurring subscription on launch day.
 
-1. In Stripe Dashboard → Customers — find or create the client as a customer
-2. Create a Subscription:
-   - Product: `Wimbledon Smart Monthly — Professional`
-   - Price: £99/month recurring
-   - Billing cycle start: today (launch date)
-   - Payment method: the card used for Invoice 3 (already on file) or request a new card
-3. Send the subscription confirmation email:
+1. In Stripe, create a new subscription for the client
+2. Amount: £99/month (or £1,188/year if on annual billing)
+3. Billing date: today's date (launch date)
+4. Send subscription confirmation email to client — include billing date and what is covered
 
-> *"Your monthly subscription is now active — £99/month starting today. This covers hosting, maintenance, security updates, and email support. You'll receive an automatic receipt each month. You can cancel anytime with 30 days written notice. Full details are in the handover pack I'll send after our call."*
+Template:
 
-4. Record subscription start date in Bonsai under the client record.
+> *"Your monthly subscription is now active at £99/month, billed on the [date] each month. This covers hosting, security, backups, monthly maintenance, and ongoing support. You can cancel anytime with 30 days' written notice."*
+
+Record the subscription start date in Bonsai.
 
 ---
 
 ## Step 4.7 — Onboarding Call
 
-### Timing
+Schedule within 48 hours of launch. 30–45 minutes on Zoom. Start Jamie recording before the call begins.
 
-Schedule within **48 hours of launch**. Send the calendar invite immediately after confirming the site is live — do not wait for them to reach out.
+### Agenda
 
-> *"The site is live — congratulations! I've booked an onboarding call for [date/time] so I can walk you through everything. Here's the link: [Zoom link]. It'll take about 30–40 minutes."*
+1. Confirm they can log in and everything is working from their end
+2. Walk through the business dashboard — viewing bookings, blocking time, editing services, reading reports
+3. Walk through the customer booking experience (book a test appointment together if helpful)
+4. Explain email notifications — what triggers them, how to update contact details if they change
+5. Explain support — email only, 24–48hr response, what counts as an emergency
+6. Explain the monthly subscription — what is included, billing date, 30-day cancellation notice
+7. Answer any questions
 
-Use your Wimbledon Smart Plugin booking link if the client needs to reschedule — don't do this over email back-and-forth.
+### What to Have Ready
 
-### Before the Call
+- Their dashboard open on your screen
+- A test booking ready to walk through
+- The handover pack content drafted (you will send it after the call)
 
-- Start Jamie recording before joining
-- Have the live site and dashboard open and ready to share screen
-- Have the client's Project Brief open for reference (service names, staff names)
-- Test that you can log in as both the business owner and a staff member
-
-### Onboarding Call Agenda
-
-**Welcome and confirm access (5 minutes)**
-> *"Can you confirm you can log into the dashboard at [URL]? Let's start there."*
-
-If they cannot log in, troubleshoot immediately before proceeding.
-
-**Business dashboard walkthrough (15 minutes)**
-Walk through each section while they follow along on their own screen:
-
-- Calendar view — how to read it, how bookings appear, how to switch between day/week/month view
-- Today's appointments — the first thing they'll look at each morning
-- How to add a manual booking (for phone calls and walk-ins)
-- How to block time (holiday, personal appointments)
-- How to edit a service or update a price
-- Customer list — how to search, how to view a customer's booking history
-- Reports — how to read the basics (bookings this week, revenue this month)
-
-**Customer booking experience (5 minutes)**
-Share screen and walk through a booking as if you are a customer:
-
-> *"This is what your customers see when they visit your site. Let's go through it together."*
-
-Confirm they understand: this is fully automatic — no action needed from them when a customer books.
-
-**Email notifications (5 minutes)**
-Explain each notification:
-- Customer confirmation — sent immediately on booking
-- Staff notification — sent to the assigned staff member
-- 24-hour reminder — sent automatically the day before
-- Cancellation — what happens when a customer cancels via magic link
-
-**Support and subscription (5 minutes)**
-- Email only — reply within 24–48 hours on working days
-- What the £99/month covers (hosting, updates, security, support)
-- Billing date is today's date each month
-- Cancellation: 30 days written notice, they keep their data
-- If the site ever goes down: email Wimbledon Smart immediately — do not attempt any fixes independently
-
-**Questions (5 minutes)**
-> *"Before we finish — is there anything you're unsure about or want to go through again?"*
-
-**Close**
-> *"I'll send you the recording of this call plus a written guide within 24 hours. You've got everything you need to get started. Good luck with the first booking!"*
+Do not rush this call. A client who feels confident using the system is a client who stays.
 
 ---
 
 ## Step 4.8 — Send Handover Pack
 
-Send within **24 hours of the onboarding call**. This is the client's permanent reference document — they should never need to contact you for basic how-to questions if this pack is comprehensive.
+Send within 24 hours of the onboarding call. Email contents:
 
-### Handover Pack Email Template
+- Onboarding call recording (Google Drive link or Zoom recording link)
+- Written Quick-Start Guide (PDF, specific to their setup) covering:
+  - How to log in
+  - How to view and manage bookings
+  - How to block time off
+  - How to update services and prices
+  - How to handle a customer cancellation
+  - How to export customer data
+  - How to contact support and what to expect
+- Support contact and expected response time
+- Subscription summary — what is included, billing date, cancellation process
+- What to do if the site goes down: contact Wimbledon Smart, do not attempt fixes independently
 
-> **Subject:** Your Wimbledon Smart handover pack — [Business Name]
-
-> Hi [First Name],
->
-> Great speaking with you today. Here's everything you need in one place.
->
-> **Onboarding call recording:**
-> [Google Drive link — set to "anyone with the link can view"]
->
-> **Your Quick-Start Guide:**
-> [PDF download link]
-> Covers: logging in, managing bookings, blocking time, updating services, handling cancellations, exporting data, and how to contact support.
->
-> **Your dashboard:**
-> [https://yourdomain.com/dashboard]
-> Login: [their email address]
->
-> **Your live site:**
-> [https://yourdomain.com]
->
-> **Support:**
-> Email: liron@wimbledonsmart.co.uk
-> Response time: within 24–48 hours on working days
->
-> **Your subscription:**
-> £99/month — billing started today [date]
-> Cancel anytime with 30 days written notice
->
-> If anything comes up that the guide doesn't cover, just email me.
->
-> Really proud of how this one came out — enjoy it.
->
-> Liron
-
-### Quick-Start Guide Content
-
-Create this as a PDF for each client. Keep it to 8–10 pages. Use screenshots from their actual live site — not generic screenshots. Personalise it with their business name throughout.
-
-Sections to include:
-
-1. **Logging in** — URL, email address, password reset process
-2. **Viewing your bookings** — calendar view, today's list, upcoming appointments
-3. **Adding a manual booking** — for phone and walk-in bookings
-4. **Blocking time** — for holidays, personal time, staff leave
-5. **Managing a cancellation** — what happens automatically, when you need to act
-6. **Updating a service** — changing price, duration, assigned staff
-7. **Exporting customer data** — how to download a CSV of your customer list
-8. **What happens if the site goes down** — contact Wimbledon Smart, what not to do
-9. **Support contact and billing** — email, response time, cancellation process
-
-Store the PDF in Google Drive: `[Business Name]/Ongoing/Handover_Pack_[date].pdf`
+Save the Quick-Start Guide PDF to Google Drive: `[Client Name]/Ongoing/`.
 
 ---
 
 ## Step 4.9 — Welcome Email Sequence
 
-Add the client to the Brevo onboarding sequence on launch day — not after the onboarding call, on launch day itself. The sequence runs automatically from that point.
+Add the client to the Brevo onboarding sequence on launch day.
 
-In Brevo, add the client's business email address to the onboarding list. Confirm the Day 0 email fires correctly.
-
-**Sequence:**
-
-| Day | Subject | Content |
+| Day | Email | Purpose |
 |---|---|---|
-| Day 0 | You're live — welcome to Wimbledon Smart | Congratulations message, dashboard link, quick-start guide link |
-| Day 2 | Have you tested your first booking? | Prompt to make a test booking, link to tutorial, reassurance it's normal to test |
-| Day 5 | Reduce no-shows by up to 40% | How reminder emails work, how to check reminder settings, tip on cancellation policy wording |
-| Day 30 | One month in — here's what to check | How to read the reports, what to look for, prompt to reach out with any questions |
+| Day 0 | Welcome — you're live | Celebrate launch, link to dashboard |
+| Day 2 | Have you tested your first booking? | Encourage a test, link to tutorial |
+| Day 5 | Tips for reducing no-shows | Reminder settings, cancellation policy advice |
+| Day 30 | One month in — here's what to check | Reports overview, prompt to reach out |
 
-Write these emails once and reuse them for every client. The only personalisation needed is the first name and business name — use Brevo merge tags.
+Confirm the Day 0 email has sent before closing out Stage 4.
 
 ---
 
 ## Step 4.10 — Testimonial Request
 
-Set a Bonsai task on launch day: **"Testimonial request — [Business Name]"** due 14 days from today.
+Set a Bonsai task for 14 days from launch: "Testimonial request — [Client Name]."
 
-When the task fires, send this email:
+When the reminder fires, send:
 
-> **Subject:** Quick favour — [Business Name]
-
-> Hi [First Name],
+> *"Hi [Name], it's been two weeks since we launched — I hope the bookings are coming in!*
 >
-> It's been two weeks since we launched — I hope the bookings are coming in!
+> *If you've had a chance to use the system and you're happy with it, I'd really appreciate a quick Google review. It makes a big difference for a small business like mine. Here's the direct link: [Google review link]*
 >
-> If you've had a chance to use the system and you're happy with it, I'd really appreciate a quick Google review. It makes a big difference for a small business like mine. Here's the direct link: [Google review link]
+> *No pressure at all — and thank you again for trusting me with your site.*
 >
-> No pressure at all — and thank you again for trusting me with your site.
->
-> Liron
+> *Liron"*
 
 **If they leave a review:** Screenshot it, save it to Google Drive under `Ongoing/`, and add a note to Bonsai. This review becomes social proof for future proposals.
 
@@ -434,15 +349,17 @@ When the task fires, send this email:
 
 **Step 4.3 — Migration:**
 - [ ] Staging backup saved to Google Drive before migration
-- [ ] Site migrated to Hostinger or Kinsta
-- [ ] All URLs updated from staging to live domain
-- [ ] Stripe webhook updated to live domain
+- [ ] Site migrated to Hostinger or Kinsta (hPanel Publish preferred; migration plugin as fallback)
+- [ ] All URLs updated from staging to live domain (Better Search Replace plugin)
+- [ ] Permalink structure re-saved (Settings → Permalinks → Save Changes)
+- [ ] Stripe webhook updated to live domain — test webhook sent and 200 response confirmed
 - [ ] Brevo SMTP confirmed on live domain
 - [ ] DNS pointed — client informed before change
 - [ ] SSL certificate active — padlock confirmed
 - [ ] End-to-end test booking completed on live site
 
 **Step 4.4 — Post-Launch Verification:**
+- [ ] Hostinger cache purged (hPanel → WordPress → Cache → Purge Cache)
 - [ ] Live site loads correctly on desktop and mobile
 - [ ] No SSL warnings, no mixed content errors, no JS console errors
 - [ ] Complete booking flow confirmed end-to-end
@@ -488,16 +405,5 @@ When the task fires, send this email:
 
 ---
 
-## Stage 4 — Inputs and Outputs
-
-| Item | Detail |
-|---|---|
-| **Inputs from client** | Invoice 3 payment · DNS access or action · Attendance at onboarding call |
-| **Outputs to client** | Live website · Onboarding call (recorded) · Handover pack (PDF + call recording) · Brevo welcome sequence · Subscription confirmation |
-| **Internal records** | Bonsai status: Live — Active Client · Pre-launch checklist (Drive) · Monitoring all active · Stripe subscription confirmed · Monthly maintenance calendar updated |
-| **Stage 4 complete when** | All monitoring active, subscription running, handover pack sent, Bonsai status updated |
-
----
-
-*Document Version: 1.0 | Created: March 2026*
-*Related documents: Stage3_Build.md | Client_Delivery_Workflow.md | Tools_Stack.md | Infrastructure_Reference.md*
+*Document Version: 1.1 | Updated: March 2026 — Added hPanel Publish as primary migration route; Better Search Replace named explicitly; permalink re-save added; Stripe test webhook step added; Hostinger cache purge added to post-launch verification*
+*Related documents: Stage3_Build.md | Client_Delivery_Workflow.md | Tools_Stack.md | Dev_Deployment_Workflow.md*

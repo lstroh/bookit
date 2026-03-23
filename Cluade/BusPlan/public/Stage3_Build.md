@@ -1,7 +1,7 @@
 # Stage 3 — Build
 ## Wimbledon Smart Business — Complete Step-by-Step Operational Guide
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Date:** March 2026
 **Status:** Active Reference
 **Applies To:** Every client build from brief confirmed to final approval
@@ -59,7 +59,9 @@ If the client has an existing WordPress site you are replacing, install WP Stagi
 4. Install and activate Wordfence — run initial setup wizard
 5. Install any theme or page builder required
 6. Set WordPress to discourage search engines (Settings → Reading → discourage search engine indexing) — important on staging to prevent Google indexing a half-built site
-7. Create a note in the Project Brief with the local URL and admin credentials
+7. **Password-protect the staging subdomain** — if using Hostinger hPanel staging, add HTTP authentication via hPanel → Hosting → Advanced, or use a maintenance mode plugin. The staging site must never be publicly accessible. This prevents accidental Google indexing and keeps the client from stumbling on an unfinished build.
+8. **Confirm PHP version parity** — check the PHP version in Local (site Info tab) and confirm it matches the PHP version set for this client's hosting account in hPanel (Hosting → PHP Configuration). Mismatches can cause silent plugin failures that only appear after migration.
+9. Create a note in the Project Brief with the local URL, staging URL, and admin credentials
 
 ### What Not to Do
 
@@ -101,65 +103,48 @@ For each staff member listed in the Project Brief:
 - Lunch breaks and regular blocks (add as recurring unavailability)
 - Buffer time between appointments
 - Assigned services
-- Google Calendar email address (note: sync is tested in Step 3.4, requires client to grant access)
+- Google Calendar email address (note: sync configured in Stage 4 — see below)
 
 ### Booking Rules
 
 Set each of the following according to the Project Brief:
 
 - **Advance booking window** — how far ahead customers can book (e.g. up to 8 weeks)
-- **Minimum notice** — minimum time before an appointment can be booked (e.g. 24 hours)
-- **Online cancellation** — enabled/disabled; if enabled, minimum hours before appointment
-- **Online rescheduling** — enabled/disabled; if enabled, minimum hours before appointment
-- **Cancellation policy** — whether deposit is forfeited on late cancellation, and the threshold
-- **Booking approval** — immediate confirmation or manual approval required
+- **Minimum notice** — minimum time before an appointment can be booked (e.g. 2 hours)
+- **Cancellation policy** — how far in advance a customer can cancel without penalty
+- **Rescheduling policy** — whether customers can reschedule, and under what conditions
 
-### Payment Gateway
+### Payments — Stripe
 
-Connect Stripe in **test mode first** — do not switch to live until the pre-launch checklist in Stage 4.
+Connect Stripe in **test mode only** on staging. Never connect live Stripe keys to a staging or local environment.
 
-- Add Stripe test API keys
-- Test a deposit payment end-to-end: make a booking with a test card, confirm the deposit appears in Stripe test dashboard, confirm the confirmation email fires
-- Test a full payment end-to-end if applicable
-- Add PayPal in test mode if the client requested it
+1. Go to plugin settings → Payments
+2. Enter the Stripe **test** publishable key and secret key
+3. Process a test booking using Stripe's test card (4242 4242 4242 4242)
+4. Confirm the test payment appears in your Stripe dashboard under test mode
+5. Confirm the booking confirmation email triggers correctly
 
-**Stripe test card numbers:**
-- Successful payment: 4242 4242 4242 4242
-- Card declined: 4000 0000 0000 0002
-- 3D Secure required: 4000 0025 0000 3155
+Switching to live Stripe keys is a Stage 4 action — not done here.
 
-### Email Notifications
+### Email Notifications — Brevo SMTP
 
-Configure via Brevo SMTP. For staging, use your own Wimbledon Smart sender domain — the client's domain is verified and switched in Stage 4.
-
-Set up and test the following notification emails:
-
-| Notification | Recipients | Trigger |
-|---|---|---|
-| Booking confirmation | Customer | New booking confirmed |
-| Booking notification | Business owner | New booking received |
-| Staff notification | Assigned staff member | New booking assigned to them |
-| Reminder | Customer | 24 hours before appointment |
-| Cancellation confirmation | Customer | Booking cancelled |
-| Cancellation notification | Business owner | Booking cancelled |
-| Reschedule confirmation | Customer | Booking rescheduled |
-
-Apply client branding to all templates:
-- Client logo in header
-- Client name in sender name field
-- Client colours in template styling
-- Client contact details in footer
-- Reply-to set to client's business email address
+1. In the plugin SMTP settings, configure Brevo as the mail provider
+2. Set the sender domain to the client's verified sender domain (must be verified in Brevo with SPF + DKIM + CNAME records before this works)
+3. Set the sender name to the client's business name
+4. Set the reply-to address to the client's business email
+5. Test all seven notification types — confirm each arrives in inbox, not spam, from the correct sender address
 
 ### Dashboard Branding
 
-- Upload client logo to dashboard header
-- Apply primary and secondary brand colours
-- Confirm "Powered by Wimbledon Smart" appears in dashboard footer only — not on customer-facing booking pages and not in customer emails
+- Upload the client's logo
+- Set brand colours to match the client's palette
+- Confirm the footer shows "Powered by Wimbledon Smart" only — no other attribution
 
 ### Google Calendar Sync
 
-Note in the Project Brief that Google Calendar sync requires the client (and each staff member) to grant calendar access after the site goes live. This cannot be fully tested on staging without live Google accounts. Flag this as a Step 4 action.
+**Do not configure Google Calendar sync on local or staging.** Google Calendar OAuth requires a redirect URI that is bound to a specific domain — it will not work on a local or staging URL, and attempting to set it up can create invalid token states that cause problems later.
+
+Google Calendar sync is configured in Stage 4, on the live domain, after DNS has propagated and SSL is active. Note this in the Project Brief under "Stage 4 Actions."
 
 ---
 
@@ -167,40 +152,23 @@ Note in the Project Brief that Google Calendar sync requires the client (and eac
 
 ### Standard Page Set
 
-Every Professional Plan site includes these seven pages as standard:
-
-| Page | What Goes on It |
+| Page | Contents |
 |---|---|
-| **Home** | Hero section (headline, subheadline, CTA button to book), key benefits (3), social proof (Google reviews or testimonials), secondary CTA section |
-| **About** | Business story (2–3 paragraphs), team photos and bios, values or approach |
-| **Services** | All services listed with name, brief description, duration, price, and individual "Book Now" CTA per service |
-| **Booking** | Embedded full booking widget (the complete customer-facing booking flow) |
-| **Contact** | Address, phone, email, embedded map, contact form |
-| **Privacy Policy** | GDPR-compliant — generate using the client's business details; have client review before launch |
-| **Terms & Conditions** | Booking terms, cancellation policy, payment terms — derived from contract and Project Brief |
+| **Home** | Hero, key benefits, social proof (testimonials / Google review screenshots), CTA to book |
+| **About** | Business story, team bios and photos, values or approach |
+| **Services** | All services with duration and price, book CTA per service |
+| **Booking** | Embedded booking widget — full booking flow |
+| **Contact** | Address, phone, email, contact form, embedded map |
+| **Privacy Policy** | GDPR-compliant — generate using a tool, then review for accuracy |
+| **Terms & Conditions** | Booking terms, cancellation policy, deposit forfeiture rules |
 
-Additional pages are added if scoped during discovery and noted in the Project Brief.
+Additional pages are added if scoped during discovery. No page is added outside the original scope without a written change request.
 
-### Build Order
+### Build Principles
 
-Work in this order to avoid rework:
+**Consistency:** Global styles (fonts, colours, button styles, spacing) must be set once and applied everywhere. Do not hard-code styles per element — use theme or page builder global settings. This saves hours during revision rounds.
 
-1. Install and configure theme / page builder
-2. Set up global styles — fonts, colours, button styles — matching brand guidelines
-3. Build the Services page first — it is the most content-heavy and confirms all services are correctly configured
-4. Build the Booking page — embed the booking widget and test it immediately
-5. Build the Home page — hero, benefits, social proof, CTA
-6. Build the About page — team photos, bios, business story
-7. Build the Contact page — form, map embed, contact details
-8. Generate and add Privacy Policy and T&Cs
-9. Set up header navigation and footer
-10. Mobile and cross-browser check as you go — not just at the end
-
-### Content Notes
-
-**Copy editing:** Take what the client provided in the questionnaire and edit it for clarity, consistency, and professionalism. Do not publish rough notes verbatim. Do not rewrite entirely in a style that doesn't sound like them — find the balance.
-
-**Photos:** Resize and compress all images before uploading. Large uncompressed images are the single most common cause of slow-loading sites. Target under 200KB per image where possible without visible quality loss. Use a tool like Squoosh or Imagify.
+**Images:** All images must be resized and compressed before uploading. Target under 200KB per image where possible without visible quality loss. Use a tool like Squoosh or Imagify.
 
 **Placeholder content:** If the client has not provided a photo or piece of copy for a specific section, use a clearly labelled placeholder (e.g. "[PHOTO — awaiting client]") rather than leaving the section blank or using something random. This makes the design review much easier for the client to navigate.
 
@@ -305,41 +273,50 @@ Business owner username and temporary password. Remind them to change the passwo
 
 **4. Clear instructions**
 
-> *"Take your time reviewing — there's no rush. When you're ready, reply to this email with any changes you'd like. Please try to compile all your feedback into one reply if possible, so I can action everything in one round. If I don't hear back within 3 working days I'll send a follow-up."*
+> *"Take your time reviewing — there's no rush. If you can send me all your feedback in a single reply, that helps me make the changes efficiently. The most important things to check are: all your services and prices are correct, staff hours are right, and the booking flow feels right for your customers."*
 
-### Design Review Email Template
+### The Email
 
-> **Subject:** Your site is ready to review — [Business Name]
+Send the design review email and Invoice 2 at the same time — same email, or back to back within minutes. Do not wait for client feedback before raising Invoice 2.
 
-> Hi [First Name],
+Template:
+
+> *Subject: Your website is ready for review — [Business Name]*
 >
-> Your site is ready for your first look. I'm really pleased with how it's come together.
+> *Hi [Name],*
 >
-> **Watch the walkthrough first:** [Loom/recording link]
-> This is a 12-minute video walking you through the full site and your dashboard. Worth watching before you click around yourself — it'll make more sense that way.
+> *Your site is ready for your first look — I think you're going to like it.*
 >
-> **Then explore it yourself:** [Staging URL]
+> *Here's how to access it:*
+> *→ Website: [staging URL]*
+> *→ Dashboard login: [staging URL]/wp-admin*
+> *→ Username: [username] | Password: [password]*
 >
-> **Your dashboard login:**
-> URL: [staging URL]/dashboard
-> Username: [username]
-> Password: [temporary password]
-> (Please change the password after your first login — Settings → My Account)
+> *I've also recorded a short walkthrough so you can see everything in action before diving in yourself: [Loom link]*
 >
-> **What to do next:**
-> Reply to this email with any changes you'd like — a list is fine, as much detail as you can. Please try to send all your feedback in one go so I can action everything together.
+> *When you're ready, send me your feedback as a single list — that makes it much easier for me to work through everything in one go. The most important things to check: services and prices, staff hours, and the booking flow.*
 >
-> If anything is unclear or you'd find it helpful to talk through any section, just reply and we can jump on a quick call.
+> *I'll also send Invoice 2 separately now — this covers the design delivery milestone.*
 >
-> Looking forward to your thoughts.
+> *Any questions, just reply here.*
 >
-> Liron
+> *Liron*
+
+### Response Window
+
+Set a Bonsai task: "Design review response due — [3 working days from today]."
+
+If no response after 3 working days, send one chase:
+
+> *"Just checking you received the design review — let me know if you have any issues accessing the site or the recording."*
+
+If still no response after a further 3 working days, proceed as if approved (note this in Bonsai) and follow up by phone if possible.
 
 ---
 
-## Step 3.6 — Raise Invoice 2 (40%)
+## Step 3.6 — Invoice 2 (40%)
 
-Send Invoice 2 **at the same time** as the design review email. Invoice 2 is triggered by design delivery — not by client approval.
+Invoice 2 is raised at design delivery — not at client approval. This is the design delivery milestone.
 
 | Pricing Option | Setup Fee | Invoice 2 (40%) |
 |---|---|---|
@@ -347,85 +324,52 @@ Send Invoice 2 **at the same time** as the design review email. Invoice 2 is tri
 | Standard annual | £995 | £398 |
 | Introductory (first 2 clients) | £495 | £198 |
 
-Add a note to the invoice:
+Send Invoice 2 at the same time as the design review email. It does not need to be paid before revision rounds begin, but it must be paid before the site goes live.
 
-> *"Milestone 2 — design review delivered. Thank you."*
-
-Payment due within 5 working days. If payment is not received by the time the client approves the site and is ready to go live, pause Stage 4 until it is cleared. Do not go live with an outstanding invoice.
+If Invoice 2 is still outstanding at the time of final approval, hold the launch until it clears.
 
 ---
 
 ## Step 3.7 — Revision Rounds
 
-### The Rule
-
-Revisions are **unlimited within the original agreed scope**. Any new features, additional pages, or significant changes that were not in the original proposal are quoted separately before work begins.
-
-If a client requests something out of scope, respond promptly and clearly:
-
-> *"Happy to add that. It's outside the original scope, so I'd quote it separately — probably [£X / a few hours of work]. Want me to put a quick quote together, or shall we keep the current scope for now and add it as a follow-on?"*
-
-Never do out-of-scope work without agreement. Never agree to out-of-scope work without a written confirmation (email is fine).
-
 ### How to Handle Feedback
 
-**Ask for consolidated feedback:**
-> *"To keep things moving efficiently, please compile all your feedback into one reply if possible. I'll action everything in one round and send you an updated link."*
+Ask the client to compile all feedback into a single reply. Avoid acting on drip-fed changes — each round of revisions should be a complete batch, not a stream of individual messages.
 
-If the client sends feedback in dribs and drabs across multiple messages — a common pattern — acknowledge each message but implement all changes at once at the end of the feedback thread:
+**What is in scope:**
+- Changes to content, layout, colours, fonts, images within the original brief
+- Corrections to services, prices, staff hours
+- Adjustments to booking rules
+- Fixing anything that doesn't work as agreed
 
-> *"Got it — I'll add this to the list and implement everything together once you've had a chance to review the full site."*
+**What is out of scope:**
+- New pages not in the original brief
+- New features not in the plugin scope
+- Structural redesigns (e.g. changing the theme or rebuilding a page from scratch)
 
-**Implement on staging, not live.** All revisions go to the staging site. When the round is complete, send the updated staging link.
+When out-of-scope work comes in, acknowledge it positively and quote separately:
 
-**Log all revisions** in a simple Revision Log saved to Google Drive: `[Business Name]/Build/Revision_Log.md`
+> *"That's a great idea — it's outside the original scope but I can quote for it as a separate add-on. Want me to send a quick estimate?"*
 
-```
-REVISION LOG — [Business Name]
+### Revision Log
 
-Round 1 — [date received]
-- [Change 1]
-- [Change 2]
-- [Change 3]
-Implemented: [date]
-Staging link sent: [date]
+Keep a running log of all changes requested and implemented. Save it to Google Drive: `[Client Name]/Build/Revision_Log.md`. This protects you if there is ever a dispute about what was agreed.
 
-Round 2 — [date received]
-- [Change 1]
-Implemented: [date]
-Staging link sent: [date]
-```
+### How Many Rounds
 
-This log protects you if there is ever a dispute about what was agreed, and it is a useful reference when building future sites.
-
-### Common Revision Requests and How to Handle Them
-
-**"Can we change the colours?"**
-Fine — within scope. Ask for the specific hex codes if not already in the brand guidelines.
-
-**"Can we add another page?"**
-If it is a simple informational page (e.g. a FAQ page, a gallery page), use your judgement — a single additional page is not worth a scope conversation. If it is a complex page or requires significant content work, quote it.
-
-**"Can we change how the booking system works?"**
-This depends on what they mean. Adjusting booking rules (minimum notice, cancellation policy) — fine. Adding a fundamentally different booking flow or feature not in the original scope — quote it.
-
-**"Can we add a blog?"**
-Out of scope for the Professional Plan. Quote it separately or park it for Phase 2.
-
-**"I've changed the logo / brand colours"**
-This happens. Update the site, email templates, and dashboard branding. Within scope — but note in the Revision Log and update the Project Brief.
+There is no limit to revision rounds within scope. The job is not done until the client is satisfied with what was in the brief. Do not rush this stage — a client who launches feeling lukewarm about their site will be harder to work with in the ongoing relationship.
 
 ---
 
-## Step 3.8 — Final Written Approval
+## Step 3.8 — Final Approval
 
-### What You Need
+### What Counts as Approval
 
-Before Stage 4 begins, you need the client's explicit written approval by email. A Zoom call saying "yes I'm happy" is not sufficient — you need it in writing.
+A written confirmation by email that the client is happy and approves the site to go live. It does not need to be formal — any clear positive response qualifies:
 
-Ask for it directly when you believe the site is in its final state:
-
-> *"Are you happy for this to go live? If so, just reply to this email confirming approval and I'll move into launch preparation."*
+> *"Yes, looks great — happy to go ahead!"*
+> *"All good from my end, let's launch."*
+> *"Perfect, I'm happy with everything."*
 
 Their reply — even a simple "yes, happy to go live!" — is your approval. Save it immediately.
 
@@ -454,6 +398,8 @@ If Invoice 2 is outstanding when approval arrives, send a friendly reminder:
 - [ ] Wimbledon Smart Plugin installed and activated
 - [ ] Wordfence installed and activated
 - [ ] Search engine indexing discouraged on staging
+- [ ] Staging subdomain password-protected — HTTP auth via hPanel or maintenance mode plugin active
+- [ ] PHP version in Local confirmed matching Hostinger PHP configuration for this client's account
 - [ ] Staging credentials noted in Project Brief
 
 **Step 3.2 — Plugin Configuration:**
@@ -464,7 +410,7 @@ If Invoice 2 is outstanding when approval arrives, send a friendly reminder:
 - [ ] Email notifications configured — all seven types tested
 - [ ] Client branding applied to all email templates
 - [ ] Dashboard branding applied — logo, colours, "Powered by Wimbledon Smart" in footer only
-- [ ] Google Calendar sync flagged as Stage 4 action (requires live credentials)
+- [ ] Google Calendar sync confirmed as Stage 4 action — not configured here (OAuth requires live domain)
 
 **Step 3.3 — Website Build:**
 - [ ] All seven standard pages built
@@ -506,7 +452,7 @@ If Invoice 2 is outstanding when approval arrives, send a friendly reminder:
 - [ ] Invoice 2 confirmed paid
 - [ ] Bonsai status updated to Awaiting Launch
 
-**Success measure:** The staging site is fully functional, all QA checks pass, the client has given written approval, and Invoice 2 is paid. Everything is ready for Stage 4 — Launch.
+**Success measure:** The staging site is fully functional, all QA checks pass, the client has given written approval, and Invoice 2 is paid.
 
 ---
 
@@ -521,5 +467,5 @@ If Invoice 2 is outstanding when approval arrives, send a friendly reminder:
 
 ---
 
-*Document Version: 1.0 | Created: March 2026*
-*Related documents: Stage2_Onboarding.md | Client_Delivery_Workflow.md | Tools_Stack.md*
+*Document Version: 1.1 | Updated: March 2026 — Added staging password protection, PHP version parity check, and Google Calendar sync rationale*
+*Related documents: Stage2_Onboarding.md | Client_Delivery_Workflow.md | Tools_Stack.md | Dev_Deployment_Workflow.md*
