@@ -6,6 +6,12 @@
 **Requires core:** 1.0.0+
 **Status:** Core pre-task ✅ complete — ready to begin extension sprint
 
+
+Need to add:
+In every extraction use a name for that plugin extntion, as there might be other extractions. This should be for every function,class, DB migration and so on.
+I have access to the core plugin and other extractions if you have any question or not sure about code from the core plugin please ask.
+
+
 ---
 
 ## 1. What this extension does

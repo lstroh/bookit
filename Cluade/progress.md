@@ -1714,3 +1714,212 @@ Deferred to Sprint 5 (requires live environment)
 Next after Sprint 4H
   Sprint 5 (Live Environment): Brevo activation, Stripe live, Google
   Calendar OAuth, My Packages page
+
+
+  Update 24/03/26:
+
+Sprint 4G: ✅ Client Readiness (~20h) — COMPLETE
+
+Sprint 4G Progress: 3/3 tasks complete
+
+✅ Task 1: packages_enabled gate on /wizard/my-packages (~1h)
+✅ Task 2: [bookit_my_packages] shortcode (~9h)
+✅ Task 3: Theme override system (~10h)
+
+Estimated: ~20h | Actual: ~20h
+
+Key deliverables:
+
+packages_enabled gate:
+- /wizard/my-packages now returns empty array (200) when packages
+  are disabled, consistent with /wizard/available-packages
+- 1 PHPUnit test added
+
+[bookit_my_packages] shortcode:
+- New public endpoint GET /wizard/package-redemptions — scoped by
+  customer email ownership, rate limited 30/hour, max 10 results,
+  packages_enabled gated, anti-enumeration on unknown emails
+- New [bookit_my_packages] shortcode with server-rendered PHP template;
+  email input form with nonce, package cards with sessions/expiry,
+  AJAX redemption history toggle (vanilla JS, no Vue)
+- my-packages.css enqueued only on pages with the shortcode
+- bookitMyPackages JS object localised with REST URL and nonce
+- My Packages page auto-created on plugin activation
+- Logged-in WP admin email excluded from auto-fill (non-customer
+  role guard added after testing revealed admin email being used)
+- 10 PHPUnit tests added across 2a and 2b sub-tasks
+
+Theme override system:
+- CSS custom property token system: :root block with full set of
+  --bookit-* variables added to booking-wizard.css; hardcoded
+  colour/radius/shadow values replaced with var() references in
+  booking-wizard.css, confirmation-page.css, and my-packages.css
+- .bookit-btn-next migrated from hardcoded #0056B3 to
+  var(--bookit-primary) after CSS cascade issue discovered during
+  testing (plugin stylesheet loads after theme; client overrides
+  require !important — documented in template loader class)
+- Bookit_Template_Loader: WooCommerce-style locate_template() +
+  get_template() with child/parent/plugin fallback chain; themes
+  place overrides in {theme}/bookit/
+- All shortcode template includes migrated to
+  Bookit_Template_Loader::get_template()
+- Step template loading in booking-wizard-shell.php migrated to loader
+- Developer documentation block in class-bookit-template-loader.php
+  covers both template overrides and CSS custom property system
+- 4 PHPUnit tests added
+
+Test suite: 706 → 721 tests (+15), 0 failures
+
+Implementation notes:
+- CSS variable override requires !important in theme stylesheets due
+  to plugin stylesheet loading after theme; this is expected cascade
+  behaviour and is documented in the template loader class
+- Task 2c (shortcode registration + page auto-creation) merged into
+  Task 2b prompt; effectively delivered as one task
+
+Next: Sprint 4H — Notification Infrastructure (~22h) — LOCAL
+
+
+Update 26/03/26:
+
+Sprint 4H: ✅ Notification Infrastructure (~22h) — COMPLETE
+
+Sprint 4H Progress: 5/5 tasks complete
+
+✅ Task 1: Interfaces + Provider Scaffold (~3h)
+✅ Task 2: Queue Table + Action Scheduler Integration (~6h)
+✅ Task 3: Retry, Rate Limiting + 429 Handling (~5h)
+✅ Task 4: Settings Page + Provider Switching (~4h)
+✅ Task 5: Replace Existing Email Calls + Tests (~4h)
+
+Bonus fix: Cooling-off waiver not applied to dashboard manual bookings
+
+Estimated: ~22h | Actual: ~22h
+
+Test suite: 721 → 761 tests (+40), 0 failures
+
+Key deliverables:
+
+Provider abstraction layer:
+- Bookit_Email_Provider_Interface and Bookit_SMS_Provider_Interface
+  define the contract all providers must implement
+- Bookit_Brevo_Email_Provider: full implementation using
+  getbrevo/brevo-php v4 SDK; reads brevo_api_key, brevo_from_name,
+  brevo_from_email from wp_bookings_settings; handles 429 as
+  WP_Error('brevo_rate_limited') for retry-without-penalty path
+- Bookit_WP_Mail_Fallback_Provider: wraps wp_mail() with HTML
+  Content-Type header; always is_configured() = true; default
+  provider when no Brevo key is set
+- Bookit_Brevo_SMS_Provider: stub only; logs and no-ops; full
+  implementation deferred to Sprint 5
+- getbrevo/brevo-php ^4.0 added to composer.json
+
+Email queue:
+- Migration 0010: wp_bookit_email_queue table — id, booking_id,
+  email_type, recipient_email, recipient_name, subject, html_body,
+  params (JSON), status ENUM, attempts, max_attempts, scheduled_at,
+  sent_at, last_error, created_at, updated_at
+- Composite index idx_status_scheduled on (status, scheduled_at)
+- Bookit_Email_Queue class: insert, update_status, get_row,
+  fetch_pending, cancel_for_booking
+- bookit_enqueue_email() global helper function
+
+Dispatcher + Action Scheduler:
+- Bookit_Notification_Dispatcher: enqueue_email(), resolve_email_provider(),
+  resolve_sms_provider(), process_email_queue_item(), handle_send_failure()
+- AS integration: as_schedule_single_action() when Action Scheduler
+  available; wp_schedule_single_event() fallback
+- bookit_process_email_queue action hooked to dispatcher processor
+- bookit_after_booking_cancelled listener calls cancel_for_booking()
+- bookit_booking_rescheduled listener registered with TODO comment
+  (action not yet fired in core)
+
+Retry + rate limiting:
+- Exponential back-off: attempt 1 → +5min, attempt 2 → +30min,
+  attempt 3 → +2h
+- 429 from Brevo: re-queued at +60s without incrementing attempts
+- Per-minute transient rate limiter: key bookit_email_rate_{YmdHi},
+  cap configurable via email_rate_limit_per_minute setting (default 30),
+  TTL 90s; blocked items pushed to next minute boundary, attempts unchanged
+- bookit_email_permanently_failed action fired on terminal failure
+- Bookit_Notification_Exception class with get_email_type() and
+  get_queue_id() context methods
+
+Settings page:
+- EmailSettings.vue replaced with provider-aware layout
+- Section 1: Email Provider dropdown (wp_mail / Brevo); Brevo fields
+  (API key, From Name, From Email) shown/hidden via v-if; green
+  "Connected" / grey "API key required" status indicator
+- Section 2: SMTP Configuration (Advanced) — all existing SMTP fields
+  preserved unchanged; Brevo SMTP relay recommended for production
+- Section 3: SMS Notifications — provider dropdown (none / Brevo SMS
+  coming soon); disabled API key input stub
+- Section 4: Test Notifications — send test email via dispatcher
+  bypass (not queue); success message includes resolved provider name;
+  "Send Test SMS" button disabled with tooltip
+- Amber warning banner at page top when email_provider = 'wp_mail'
+- New setting keys added to allowlist: email_provider, brevo_api_key,
+  brevo_from_name, brevo_from_email, sms_provider, brevo_sms_api_key,
+  email_rate_limit_per_minute
+- brevo_api_key and brevo_sms_api_key masked as 'SAVED' in GET
+  responses (same pattern as Stripe keys)
+- send_test_email() endpoint updated to use dispatcher provider bypass
+
+Email call replacement:
+- send_customer_confirmation() now calls bookit_enqueue_email()
+  instead of wp_mail() directly
+- send_business_notification() now calls bookit_enqueue_email()
+  instead of wp_mail() directly
+- generate_customer_email() and generate_business_email() untouched
+- All existing call sites (class-dashboard-bookings-api.php,
+  class-payment-processor.php, booking-confirmed.php) automatically
+  use queue path with no changes needed at call sites
+- class-stripe-webhook.php confirmed: no direct email calls
+- test-package-email.php updated to capture HTML via
+  generate_customer_email() directly (no longer relies on pre_wp_mail)
+- test-payment-success.php updated to assert queue insertion
+
+Bug fix — cooling-off waiver on dashboard bookings:
+- Booking_System_Booking_Creator::create_booking() was enforcing the
+  14-day cooling-off waiver check for all callers including dashboard
+  staff creating manual bookings
+- Consumer Contracts Regulations 2013 only applies to online/distance
+  consumer contracts; staff-created bookings are not distance sales
+- Fix: skip_waiver flag added to booking data; dashboard API passes
+  skip_waiver=true; all public booking paths (Stripe, pay-on-arrival,
+  package redemption) remain fully enforced
+- 1 PHPUnit test added: test_dashboard_booking_skips_waiver_check
+
+Architecture decisions:
+- Settings reads in provider classes use direct $wpdb->get_var() query
+  against wp_bookings_settings (bookit_get_setting() does not exist
+  as a defined helper in this codebase; function_exists guard in
+  booking-step-5-payment.php was forward-looking only)
+- Private static get_setting() helper added to each provider class
+  rather than a global function, keeping Task 1 self-contained
+- Brevo provider sends raw HTML body in this sprint; Brevo template
+  ID mapping deferred to Sprint 5 when templates are created in dashboard
+- Email provider and SMTP are complementary, not competing: recommended
+  production setup is Brevo API provider + Brevo SMTP relay for
+  wp_mail() calls elsewhere in WordPress (password resets etc.)
+
+New files:
+- includes/notifications/interfaces/interface-bookit-email-provider.php
+- includes/notifications/interfaces/interface-bookit-sms-provider.php
+- includes/notifications/providers/class-bookit-brevo-email-provider.php
+- includes/notifications/providers/class-bookit-wp-mail-fallback-provider.php
+- includes/notifications/providers/class-bookit-brevo-sms-provider.php
+- includes/notifications/class-bookit-email-queue.php
+- includes/notifications/class-bookit-notification-dispatcher.php
+- includes/notifications/class-bookit-notification-exception.php
+- includes/functions-notifications.php
+- database/migrations/0010-add-email-queue-table.php
+
+Next: Sprint 5 (Live Environment)
+- Brevo account setup, domain verification, SPF/DKIM, verified sender
+- Stripe live mode + package purchase routing
+- Google Calendar OAuth (requires live domain for redirect URI)
+- End-to-end email testing with real Brevo credentials
+- Brevo template creation + template ID mapping
+- SMS queue + dispatcher SMS path
+- [bookit_my_packages] customer page (deferred from Sprint 4G)

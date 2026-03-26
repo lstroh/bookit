@@ -1,5 +1,10 @@
 Let me check what's documented about each extension before writing the instructions.I have everything I need. Here are the complete instructions for all three extension projects.
 
+Need to add:
+In every extraction use a name for that plugin extntion, as there might be other extractions. This should be for every function,class, DB migration and so on.
+I have access to the core plugin and other extractions if you have any question or not sure about code from the core plugin please ask.
+
+
 ---
 
 ## PROJECT SETUP INSTRUCTIONS
