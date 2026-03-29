@@ -1923,3 +1923,218 @@ Next: Sprint 5 (Live Environment)
 - Brevo template creation + template ID mapping
 - SMS queue + dispatcher SMS path
 - [bookit_my_packages] customer page (deferred from Sprint 4G)
+
+
+Update 29/03/26:
+
+Sprint Wizard-V2: ✅ Customer-Facing Booking Wizard V2 — COMPLETE
+
+Sprint Wizard-V2 Progress: 6/6 tasks complete
+
+✅ Task 1: Shell, progress partial, step stubs
+✅ Task 2: Step 1 — Service selection
+✅ Task 3: Step 2 — Staff selection
+✅ Task 4: Step 3 — Calendar and time slots
+✅ Task 5: Step 4 — Contact details form
+✅ Task 6: Step 5 — Payment and full JS implementation
+
+Test suite: 761 → 791 tests (+30), 0 failures
+
+Key deliverables:
+
+New shortcode [bookit_wizard_v2] built additively alongside existing
+[bookit_booking_wizard] — no existing files modified except where
+explicitly required (contact-form.js, class-wizard-api.php,
+class-shortcodes.php, class-datetime-api.php).
+
+New files:
+- public/templates/booking-wizard-v2-shell.php
+- public/templates/booking-wizard-v2-step-1.php (service selection)
+- public/templates/booking-wizard-v2-step-2.php (staff selection, avatar colour hash)
+- public/templates/booking-wizard-v2-step-3.php (PHP-rendered calendar, bank holiday blocking)
+- public/templates/booking-wizard-v2-step-4.php (contact form, waiver conditional)
+- public/templates/booking-wizard-v2-step-5.php (Zone A/B/C payment, deposit calc)
+- public/templates/partials/booking-wizard-v2-progress.php
+- public/templates/page-wizard-v2.php
+- public/assets/css/booking-wizard-v2.css (scoped to .bookit-v2-wizard-container,
+  12 --bookit-v2-* tokens, waiver block amber values intentionally fixed)
+- public/assets/js/booking-wizard-v2.js (vanilla JS IIFE, no jQuery dependency;
+  step navigation, service/staff selection, date tap + slot fetch + slot reveal,
+  special requests toggle, Zone B/C mutual exclusivity, dynamic CTA label matrix)
+- includes/wizard-v2-payment-amounts.php (bookit_v2_compute_payment_amounts_from_service helper)
+- tests/unit/test-booking-wizard-v2.php (30 PHPUnit tests)
+
+Modified files:
+- public/class-shortcodes.php: [bookit_wizard_v2] registration, asset
+  enqueueing, bookitWizardV2 localisation, theme_page_templates +
+  template_include filters for page template dropdown
+- includes/api/class-wizard-api.php: validate_step allows 1-5, accepts
+  service_name/service_duration/payment_method, maybe_fill_service_meta_from_db()
+- includes/api/class-datetime-api.php: GET bookit/v1/wizard/timeslots alias
+- public/assets/js/contact-form.js: success handler detects
+  .bookit-v2-wizard-container and navigates to window.location.pathname
+  instead of data.redirect_url (v1 redirect behaviour preserved)
+
+Architecture decisions:
+- Wizard page uses content-based shortcode (not page template dropdown)
+  because Gutenberg ignores the theme_page_templates filter; template
+  dropdown issue documented for Bookit Theme Workflow project
+- Step 2 staff selection uses bookit/v1/staff/select (not generic session
+  API) to validate staff and set staff_name, matching production behaviour
+  and keeping existing wizard flow tests green
+- advanceStep() navigates to window.location.pathname (not reload()) to
+  strip ?step= query params that would cause PHP shell to clamp back to
+  a previous step
+- Contact form submit on step 4 uses form= attribute to associate the
+  submit button (outside <form>) with the form, valid HTML5
+- Waiver block amber values are intentionally fixed CSS — not theme-
+  overridable — because the waiver is a legal signal under Consumer
+  Contracts Regulations 2013, not a brand element
+
+Post-task bug fixes (all committed):
+- Calendar day cell max-width: 44px + margin:0 auto to cap size in
+  7-column grid (was expanding to ~97px via aspect-ratio)
+- Hidden prev arrow: min-width:32px + display:inline-block to preserve
+  layout when on current month
+- Step 1 card click: now saves service to session (current_step:1)
+  and enables Continue button; no longer reloads to step 2 directly
+- Step 1 Continue: PHP outputs disabled when $selected_service_id === 0
+  to eliminate flash before DOMContentLoaded
+- Step 2 Continue: PHP outputs disabled when $selected_staff_id === -1;
+  JS removes disabled on staff selection
+- ?step= URL clamping loop: advanceStep() navigates to
+  window.location.pathname instead of reload() to prevent stale ?step=
+  param from clamping PHP shell back to previous step
+- Step 3 empty day: when slot fetch returns no slots, day gets --disabled
+  class, no-availability message shown, Continue stays disabled
+- Step 3 scroll: scrollIntoView changed from block:start to block:nearest
+  to reduce jarring scroll behaviour
+- Step 4→5 redirect: contact-form.js now detects v2 container and
+  navigates to current page pathname instead of /book?step=5 (v1 URL)
+- Step 5 Zone C pointer-events: removed pointer-events:none from
+  .bookit-v2-payment-row--disabled so Zone C rows remain clickable
+  when a package is selected; opacity:0.4 preserved for visual state
+- Step 5 package toggle: clicking an already-selected package row
+  deselects it, re-enables Zone C, resets CTA to card default
+
+CSS customisation guide:
+- bookit-wizard-v2-css-guide.md and .docx produced documenting all
+  overridable --bookit-* and --bookit-v2-* tokens with examples
+
+Next: Sprint 5 (Live Environment)
+- Brevo account setup, domain verification, SPF/DKIM, verified sender
+- Stripe live mode + package purchase routing
+- Google Calendar OAuth (requires live domain for redirect URI)
+- End-to-end email testing with real Brevo credentials
+- Brevo template creation + template ID mapping
+- SMS queue + dispatcher SMS path
+- [bookit_my_packages] customer page (deferred from Sprint 4G)
+
+
+
+Update 29/03/26 (continued):
+
+Sprint Confirmed-V2: ✅ Booking Confirmed V2 Page — COMPLETE
+Sprint Wizard-V2-Complete: ✅ V2 Wizard Booking Submission — COMPLETE
+Sprint Pages-V2: ✅ Auto-create V2 Pages on Activation — COMPLETE
+
+Test suite: 791 → 813 tests (+22), 0 failures
+
+---
+
+Sprint Confirmed-V2: Booking Confirmed V2 Page
+
+Decision: Build a parallel V2 confirmation page additively alongside
+the existing page — same shortcode pattern as Wizard V2. Old page and
+stylesheet completely untouched.
+
+New files:
+- public/templates/booking-confirmed-v2.php (new template; same PHP
+  logic as V1; email block replaced with comment; SVG checkmark icon;
+  human-readable booking ref with BK- fallback; conditional deposit /
+  full payment / pay-on-arrival blocks; waiver + special requests
+  conditionals; meeting section filter preserved)
+- public/assets/css/confirmation-page-v2.css (scoped to
+  .bookit-confirmation-page; all --bookit-* tokens; waiver amber fixed)
+- tests/unit/test-booking-confirmed-v2.php (17 PHPUnit tests)
+
+Modified files:
+- public/class-shortcodes.php: [bookit_booking_confirmed_v2] shortcode
+  registered; confirmation-page-v2.css enqueued when shortcode present;
+  $has_confirmation_v2 added to early-return guard; confirmed_v2_url
+  added to bookitWizardV2 localisation object; wizard_version set to
+  'v1' in render_booking_wizard() and 'v2' in render_booking_wizard_v2()
+- includes/payment/class-payment-processor.php: process_pay_on_arrival()
+  and process_use_package() read wizard_version from session snapshot
+  and route to /booking-confirmed-v2/ when 'v2'
+- includes/payment/class-stripe-checkout.php: success_url uses V2
+  confirmation URL when wizard_version === 'v2'
+
+Architecture decisions:
+- Option A (new file + new shortcode) chosen over Option B (flag on
+  existing template) to maintain additive-only discipline
+- .bookit-confirmation-page wrapper class preserved on V2 template so
+  theme stylesheets continue to apply
+- bookit-wizard CSS dependency on confirmation-page-v2.css is
+  intentional — needed for --bookit-* token resolution
+- Waiver amber values fixed in V2 stylesheet (same rationale as wizard)
+- design/booking-confirmed-design-decisions.md was absent from repo;
+  implementation based on sprint brief and design/booking-confirmed.html
+
+---
+
+Sprint Wizard-V2-Complete: V2 Wizard Booking Submission
+
+Root cause resolved: initStep5() CTA was calling window.location.reload()
+after saving payment method to session. Nothing server-side triggered
+the payment processor on reload, so the page re-rendered step 5 indefinitely.
+
+New endpoint:
+- POST bookit/v1/wizard/complete registered in class-wizard-api.php
+  Rate limited (wizard_book, 10/hr/IP), CSRF via existing check_permission()
+  Delegates to process_pay_on_arrival() or process_use_package()
+  Returns { success, booking_id, redirect_url }
+  Card/PayPal/Stripe return 400 payment_method_not_available (Sprint 5)
+  use_package_{id} values normalised: package ID extracted, customer_package_id
+  written to session, routed to process_use_package()
+
+Modified files:
+- includes/api/class-wizard-api.php: complete_booking() method + route
+- includes/payment/class-payment-processor.php: process_use_package()
+  changed from private to public (REST layer needs direct access)
+- public/assets/js/booking-wizard-v2.js: initStep5() CTA handler replaces
+  window.location.reload() with fetch() to /wizard/complete; button
+  disabled + "Confirming…" during request; restores on error
+- tests/unit/test-wizard-api.php: 5 new tests added; rate-limit transient
+  reset in setUp() to prevent 429 in repeated test runs
+
+---
+
+Sprint Pages-V2: Auto-create V2 Pages on Activation
+
+Modified files:
+- includes/class-bookit-activator.php: two new wp_insert_post blocks
+  added after my-packages creation, using identical get_page_by_path()
+  duplicate guard pattern:
+  - /book-v2/ — title "Book Online", content [bookit_wizard_v2]
+  - /booking-confirmed-v2/ — title "Booking Confirmed",
+    content [bookit_booking_confirmed_v2]
+
+---
+
+Known deferred items carried forward to Sprint 5:
+- "Add to calendar" button on V2 confirmation page is a placeholder
+  (links to /book/ical?booking_id=X; .ics endpoint not yet built)
+- Card and PayPal payments via V2 wizard return 400 until live Stripe
+  keys and Sprint 5 wiring are complete
+- bookit_confirmed_v2_url stored as wp_option; default is
+  home_url('/booking-confirmed-v2/') — no admin UI to change it yet
+
+Next: Sprint 5 (Live Environment)
+- Brevo account setup, domain verification, SPF/DKIM, verified sender
+- Stripe live mode + V2 card payment wiring
+- Google Calendar OAuth (requires live domain for redirect URI)
+- End-to-end email testing with real Brevo credentials
+- Brevo template creation + template ID mapping
+- .ics calendar download endpoint
+- [bookit_my_packages] customer page (deferred from Sprint 4G)
