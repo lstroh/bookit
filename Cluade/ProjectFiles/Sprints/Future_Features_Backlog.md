@@ -345,7 +345,10 @@ customer_packages to get sessions_remaining, add to email template variables.
 
 ---
 
-### Task: Customer-Facing "My Packages" Page (Sprint 5 — Live Environment)
+### Task: Customer-Facing "My Packages" Page — ✅ COMPLETE (Sprint 4G)
+**Status: Delivered in Sprint 4G (24 March 2026). Shortcode [bookit_my_packages]
+is live. New public endpoint GET /wizard/package-redemptions added.
+"My Packages" page auto-created on activation.**
 **Effort:** ~8–10h
 **Description:** A WordPress shortcode [bookit_my_packages] that renders a
 customer-facing page showing their active and past packages. Customer identified

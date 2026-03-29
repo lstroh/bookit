@@ -85,7 +85,6 @@ Sprint 4H scope:
 - Full PHPUnit coverage
 
 Revised local sprint sequence:
-  Sprint 4G  (active)   — [bookit_my_packages] shortcode + theme overrides
   Sprint 4H  (new)      — Notification Infrastructure (~22h)
   Sprint 5              — Live Environment (Brevo activation, Stripe live,
                           Google Calendar OAuth, My Packages page)
