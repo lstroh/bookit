@@ -2138,3 +2138,88 @@ Next: Sprint 5 (Live Environment)
 - Brevo template creation + template ID mapping
 - .ics calendar download endpoint
 - [bookit_my_packages] customer page (deferred from Sprint 4G)
+
+
+Update 30/03/26:
+
+DB Schema Audit: ✅ Pre-Sprint 5 Housekeeping — COMPLETE
+
+Test suite: 813 → 816 tests (+3), 0 failures
+Commits: 2
+
+─────────────────────────────────────────────
+
+Full schema audit conducted across all 17 tables, cross-referencing
+schema.sql, class-bookit-database.php, class-bookit-activator.php,
+migrations 0001–0010, booking-creator, stripe-webhook, dashboard
+bookings API, package APIs, email queue, and notification dispatcher.
+
+19 issues identified and triaged. 6 fixed now, remainder deferred
+to Sprint 5 or intentionally accepted.
+
+─────────────────────────────────────────────
+
+Commit 1 — schema.sql + create_settings_table alignment
+Tests: 813 → 813 (no change), 0 failures
+
+Fixed:
+- Issue 1: Added cooling_off_waiver_given + cooling_off_waiver_at
+  to schema.sql TABLE 7. Columns existed in live DB via migration
+  0004 (Sprint 4C) but were missing from the reference document.
+- Issue 3: Added setting_type ENUM to create_settings_table() in
+  class-bookit-database.php, between setting_value and autoload.
+  Removed the ad-hoc ALTER TABLE + SHOW COLUMNS guard from
+  class-bookit-activator.php. Column now created via dbDelta on
+  fresh install; activator no longer bypasses the migration pattern.
+
+─────────────────────────────────────────────
+
+Commit 2 — bookings table alignment, dead table removal, queue fix
+Tests: 813 → 816 (+3), 0 failures
+
+Fixed:
+- Issue 2: Added booking_reference column and UNIQUE KEY
+  uq_booking_reference to create_bookings_table() in
+  class-bookit-database.php. lock_version was already present.
+  Fresh installs now get these columns from dbDelta rather than
+  relying solely on migrations 0001/0003.
+- Issue 14: Dropped wp_bookings_working_hours (dead table).
+  Confirmed via code search that class-datetime-model.php queries
+  exclusively wp_bookings_staff_working_hours. The simple table
+  had no data and was never queried. Migration 0011 drops it;
+  down() recreates it for reversibility. create_working_hours_table()
+  retained with deprecation docblock, call removed from
+  create_tables(). table count log updated 11 → 10. schema.sql
+  TABLE 9 removed, tables 10–16 renumbered to 9–15. test_all_tables_exist
+  updated: no longer expects bookings_working_hours, positively
+  asserts bookings_staff_working_hours is present.
+- Issue 16: Added Bookit_Email_Queue::rescue_stuck_processing() —
+  resets any queue item stuck in 'processing' for more than 5
+  minutes back to 'pending'. Hooked at the start of
+  Bookit_Notification_Dispatcher::process_email_queue_item() so
+  every queue processing run clears stale items before new work
+  begins. Protects against PHP process kills on shared hosting.
+  3 new PHPUnit tests.
+
+─────────────────────────────────────────────
+
+Issues deferred to Sprint 5:
+- Issue 5:  Refund state not shown on booking row (build alongside
+            Stripe refund feature)
+- Issue 7:  No state transition enforcement in update_booking()
+- Issue 9:  stripe_session_id missing index (add on live DB)
+- Issue 12: balance_payment missing from payments ENUM (build
+            alongside balance collection feature)
+- Issue 13: POA bookings create no payment record (build alongside
+            dashboard mark-as-paid flow)
+
+Issues intentionally accepted / deferred indefinitely:
+- Issue 4:  magic_link_token — build when cancellation links built
+- Issue 6:  'pending' status reserved for future approval workflow
+- Issue 8:  total_bookings/total_spent — computed on demand, not cached
+- Issue 15: Email queue not in uninstall — uninstall delete path
+            not yet enabled
+- Issue 19: Migration-added tables missing from uninstall drop list —
+            same reason
+
+Next: Sprint 5 (Live Environment)
