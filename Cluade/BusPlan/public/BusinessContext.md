@@ -6,6 +6,17 @@
 - I will build websites that include this booking functionality
 - Target: UK-based SMBs across multiple service industries
 
+## Business Identity
+
+**Business name:** Wimbledon Smart Business (short form: Wimbledon Smart)
+**Primary domain:** wimbledonsmart.co.uk
+**Redirect domain:** wimbledonsmart.com (301 redirect to .co.uk)
+**Business email:** liron@wimbledonsmart.co.uk
+**Location:** Wimbledon, SW London
+**Hosting:** Hostinger Agency Startup (purchased March 2026)
+
+---
+
 ## Plugin Positioning
 - Part of a complete website solution
 - Differentiator for my web dev service

@@ -26,7 +26,7 @@ These are the infrastructure decisions already embedded in the active workflow. 
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| Standard hosting | Hostinger Business Cloud (~£1.50/site/month) | UK servers, sufficient for 1–4 concurrent dashboard users, cost-effective margin |
+| Standard hosting | Hostinger Agency Startup (~£1.50/site/month, 100 sites max) | UK servers, full site isolation, sufficient for 1–4 concurrent dashboard users, cost-effective margin — purchased March 2026 |
 | Premium hosting trigger | Kinsta Agency (~£11.20/site/month) | 5+ concurrent users, paid ads, or WooCommerce |
 | Transactional email | Brevo shared account (free tier) | Single account, multiple verified sender domains, sufficient for current volume |
 | Staff email | Personal email only | Staff log in with personal email; only owner/receptionist need business email |
@@ -49,15 +49,30 @@ A 7-staff salon at 9am with all staff checking their schedules simultaneously, a
 - 1–4 concurrent users → Hostinger is fine
 - 5+ concurrent users → Kinsta recommended
 
-### Hostinger Business Cloud — Full Specification
+### Hostinger Agency Startup — Full Specification
 
-**Product:** Business Cloud Hosting
-**Price:** £14.99/month for 300 websites (~£1.50/site)
-**Server Location:** London, UK
-**Technology:** LiteSpeed web server, CloudLinux OS (resource isolation per account), 200 GB NVMe storage
-**Uptime SLA:** 99.9% (~43 minutes downtime/month)
-**Support:** 24/7 live chat
-**Link:** https://www.hostinger.co.uk/wordpress-hosting
+**Product:** Agency Startup Web Hosting
+**Status:** Purchased March 2026 ✓
+**Price:** Agency Startup plan — up to 100 sites from one account (~£1.50/site/month effective cost)
+**Server Location:** UK
+**Technology:** LiteSpeed web server, full per-site isolation (each site in its own environment)
+**Specifications:** 6 CPU cores, 12 GB RAM, 4,800 PHP workers
+**Uptime SLA:** 99.9%
+**Support:** 24/7 priority support, under 2-minute response time
+**Link:** https://www.hostinger.com/pro
+
+**Best for:** 1–4 staff, under 50 bookings/day, light to moderate dashboard usage
+
+**Key features relevant to Wimbledon Smart:**
+- Full website isolation — no cross-site security risk, no noisy neighbour problem
+- Per-site access sharing — share individual client site access without exposing whole account
+- Dedicated IP included
+- Bulk WordPress updates from hPanel (update all client sites in one pass)
+- One-click staging environment
+
+**Limitations:**
+- 100 site maximum (sufficient for Phase 1 and Phase 2 — upgrade to Agency Professional at 100+ sites)
+- No white-label reseller programme
 
 **Best for:** 1–4 staff, under 50 bookings/day, light dashboard usage
 

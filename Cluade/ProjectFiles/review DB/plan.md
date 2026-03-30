@@ -41,9 +41,13 @@ cross-reference:
    the migration runner on activation (ALTER TABLE statements, seeded
    settings, auto-created pages).
 
-3. **All migration files** (`database/migrations/0001` through `0011`)
+3. **All migration files** (`database/migrations/0001` through `0010`)
    — columns and tables added since initial creation. Confirm schema.sql
    reflects all of them and that down() is correct inverse of up().
+   Note: migrations 0010 is the email queue table (Sprint 4H). Migrations
+   0011 were written during Sprint 4F planning but subsequently reverted
+   when the online meetings feature was moved to an extension plugin —
+   confirm no 0011 file exists in the repo.
 
 4. **`includes/api/class-dashboard-bookings-api.php`** — specifically
    `format_booking()` and `update_booking()`. Check every column it
@@ -169,6 +173,24 @@ wp_bookings_customer_packages, wp_bookings_package_redemptions):
 - Are all ENUM values in package status correct and consistent with
   what the API enforces?
 
+### wp_bookit_email_queue — new table (Sprint 4H)
+
+This table was added by migration 0010. It is the only table in the
+schema with the `bookit_` prefix rather than `bookings_`. Check:
+- Is the table name prefix inconsistency (`wp_bookit_email_queue` vs
+  `wp_bookings_*`) intentional or an oversight? Does it matter?
+- Is the `status` ENUM complete? Values: pending / processing / sent /
+  failed / cancelled. Is `processing` actually set anywhere in code,
+  or is the queue worker atomic enough that items go direct from
+  pending to sent/failed?
+- Is `booking_id` nullable correctly? Confirm there are email types
+  that legitimately have no booking_id (e.g. test emails).
+- Does the `down()` method drop the table cleanly with no orphan
+  data concerns?
+- Are the two indexes (`idx_status_scheduled`, `idx_booking_id`)
+  sufficient for the query patterns in `Bookit_Email_Queue::fetch_pending()`
+  and `cancel_for_booking()`?
+
 ### Missing indexes
 
 Identify any columns that are heavily used in WHERE clauses or JOINs
@@ -177,6 +199,7 @@ that are not indexed. Pay particular attention to:
 - wp_bookings.booking_reference (used for human-readable lookup)
 - wp_bookings_customers.email (used for wizard my-packages lookup)
 - wp_bookings_package_redemptions foreign keys
+- wp_bookit_email_queue.booking_id (used for cancel_for_booking())
 
 ---
 
@@ -220,7 +243,7 @@ At the end, provide:
   say so explicitly — do not guess
 - If something looks like an intentional design decision (even if
   unusual), note it as such before marking it an issue
-- The test suite is at 706 passing tests — any fix recommendation
+- The test suite is at 813 passing tests — any fix recommendation
   must note if it would require new or modified PHPUnit tests
 
 ---
@@ -232,7 +255,7 @@ Start with these — do not write anything until you have read them all:
 1. `database/schema.sql` — current state of all tables
 2. `includes/class-bookit-database.php` — original activation schema
 3. `includes/class-bookit-activator.php` — activation logic
-4. `database/migrations/0001` through `0011` — all migrations in order
+4. `database/migrations/0001` through `0010` — all migrations in order
 5. `includes/booking/class-booking-creator.php` — booking INSERT logic
 6. `includes/api/class-stripe-webhook.php` — webhook booking creation
 7. `includes/api/class-dashboard-bookings-api.php` — format_booking(),
@@ -240,6 +263,10 @@ Start with these — do not write anything until you have read them all:
 8. `includes/api/class-package-types-api.php`
 9. `includes/api/class-customer-packages-api.php`
 10. `includes/api/class-package-redemption-api.php`
+11. `includes/notifications/class-bookit-email-queue.php` — queue
+    insert, fetch_pending, cancel_for_booking patterns
+12. `includes/notifications/class-bookit-notification-dispatcher.php`
+    — how queue items are processed and status transitions happen
 
 Cross-reference as needed with:
 - `ScopeDefinition.md` — original planned schema

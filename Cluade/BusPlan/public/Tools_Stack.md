@@ -25,9 +25,11 @@
 | **WP-Optimize** | Database optimisation — clears revisions, transients, spam | £0 (free tier) | 4, 5 |
 | **Broken Link Checker** | Passive broken link detection with email alerts | £0 (free tier) | 4, 5 |
 | **Local by Flywheel / WP Staging** | Staging environment for builds and updates | £0 (free) | 3, 5 |
-| **Hostinger Business Cloud** | Live client site hosting — standard tier | ~£1.50/site/month | 4, 5 |
+| **Hostinger Agency Startup** | Live client site hosting — standard tier | ~£1.50/site/month (100 sites max) | 4, 5 |
 | **Kinsta Agency** | Live client site hosting — premium tier (upgrade path) | ~£11.20/site/month | 4, 5 |
 | **Google Workspace** | Business email (liron@wimbledonsmart.co.uk) | ~£5/month | All stages |
+| **wimbledonsmart.co.uk** | Primary business domain | Registered (renewal ~£10–15/year) | All stages |
+| **wimbledonsmart.com** | Redirect to .co.uk — brand protection | Registered (renewal ~£10–15/year) | — |
 
 ---
 
@@ -238,20 +240,32 @@
 
 ---
 
-### Hostinger Business Cloud — Standard Hosting Tier
+### Hostinger Agency Startup — Standard Hosting Tier
 
 **What it does:** Live hosting for all standard client sites. This is where every built and approved site lives once it goes live.
 
 **Why this tool:** Hostinger Business Cloud hosts up to 300 WordPress sites on a single account at ~£1.50 per site per month. UK-based servers (London), LiteSpeed caching, daily backups included, and free SSL certificates. The per-client cost is low enough that it comfortably fits within your £99/month subscription margin.
 
-**Cost:** £14.99/month for the Business Cloud account — covering up to 300 sites. Per-client cost: approximately £1.50/site/month.
+**Cost:** Agency Startup plan — covers up to 100 sites from one account. Per-client cost: approximately £1.50/site/month.
 
 **Suitable for:** Clients with 1–4 concurrent dashboard users and under 50 bookings per day. This covers the vast majority of your target clients — salons, therapists, coaches, photographers with small teams.
 
+**Key upgrade over previous plan:** Agency Startup includes full website isolation per site — each client site runs in its own environment, eliminating cross-site security risks and preventing one site's resource usage from affecting others. Also includes per-site access sharing (hand client or collaborator access to their specific site only, not the whole account).
+
+**Plan specifications:**
+- CPU: 6 cores
+- RAM: 12 GB
+- PHP workers: 4,800
+- Max sites: 100
+- Website isolation: Yes (per-site environment)
+- Access sharing: Yes (per-site client/collaborator access)
+- Priority support: Yes (24/7, under 2-minute response)
+- Dedicated IP: Yes
+
 **Performance expectations:**
-- Page load time: 1.5–3 seconds
+- Page load time: 1.5–2.5 seconds (faster than Business Cloud due to isolation)
 - Dashboard load: 2–4 seconds
-- Concurrent dashboard users: up to 3–5 comfortably
+- Concurrent dashboard users: up to 3–5 comfortably per site
 - Uptime SLA: 99.9%
 
 **Included features:**
@@ -308,6 +322,24 @@ For clients who want professional email setup, refer to `Infrastructure_Referenc
 
 **Used in:** All stages — all client communication sent from liron@wimbledonsmart.co.uk.
 
+
+---
+
+### Domain — wimbledonsmart.co.uk / wimbledonsmart.com
+
+**What it does:** wimbledonsmart.co.uk is the primary domain for the Wimbledon Smart Business website and all business email. wimbledonsmart.com is registered for brand protection and redirects to the .co.uk.
+
+**Why .co.uk as primary:** UK-based target audience (salons, therapists, coaches in SW London) — a .co.uk domain signals local credibility and is the expected format for a UK service business.
+
+**Why also register .com:** Prevents a third party registering wimbledonsmart.com and creating confusion. Standard practice for any business with a real brand name.
+
+**Cost:** ~£10–15/year each at renewal (first year may be discounted or included in Hostinger plan).
+
+**Setup required:**
+- Point wimbledonsmart.co.uk DNS to Hostinger Agency Startup account
+- Set up wimbledonsmart.com as a 301 permanent redirect to wimbledonsmart.co.uk
+- Configure Google Workspace MX records on wimbledonsmart.co.uk for business email
+- SSL certificate on wimbledonsmart.co.uk (free via Hostinger/Let's Encrypt)
 ---
 
 ## Tools by Stage — Cross-Reference

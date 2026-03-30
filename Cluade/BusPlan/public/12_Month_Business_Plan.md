@@ -47,6 +47,13 @@ Priority features for a salon MVP:
 
 Everything else (SMS, packages, recurring appointments, group bookings, intake forms) can follow in Phase 2.
 
+**Infrastructure already in place (March 2026):**
+- Hostinger Agency Startup hosting account: ✓ purchased
+- wimbledonsmart.co.uk domain: ✓ registered
+- wimbledonsmart.com domain: ✓ registered (redirect)
+
+This removes one setup step from Phase 1 — hosting and domain are ready to use as soon as the Wimbledon Smart website is built.
+
 ### Sales Assets
 
 Once the core booking flow works, build these two things in parallel:
@@ -64,14 +71,11 @@ Five pages only:
 
 Keep it clean and professional. Built on WordPress. A premium theme or Elementor Pro is sufficient — this is not the main product, it's a brochure.
 
-### Budget: Phase 1 (~£300–500)
-
-| Item | Estimated Cost |
-|---|---|
-| Hosting for Wimbledon Smart site + demo site | £100–150/year |
-| Premium theme or Elementor Pro | £100–200 |
-| Google Workspace (business email) | £5/month |
-| **Total** | **~£300–500** |
+**Budget allocation for Phase 1:** ~£200–400 (reduced — hosting and domains already purchased)
+- Hostinger Agency Startup: ✓ already purchased
+- wimbledonsmart.co.uk + wimbledonsmart.com: ✓ already registered
+- Theme / page builder: £100–200
+- Business email (Google Workspace): £5/month
 
 ---
 
