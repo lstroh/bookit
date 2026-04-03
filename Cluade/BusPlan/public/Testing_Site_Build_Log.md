@@ -261,6 +261,35 @@ The following items were identified during this build and must be added to the s
 3. **LiteSpeed Object Cache** — enable Redis object cache via hPanel on every new site.
 
 ---
+## Post-Launch Notes
+
+### Brevo Email Templates (Optional — Post-Launch)
+
+**Status:** Not required before launch — plain HTML emails via Brevo are fully working.
+
+The plugin currently sends its own plain HTML emails via Brevo. No action is required before launch.
+
+Brevo supports branded transactional email templates (logo, colours, footer, unsubscribe link) designed in their drag-and-drop editor. The plugin has been built to support these — six template ID fields are available in Bookit Dashboard → Settings → Email → Brevo Email Templates, one per notification type:
+
+- Booking confirmation (customer)
+- Booking cancellation (customer)
+- Booking rescheduled (customer)
+- Magic link cancellation email
+- Magic link reschedule email
+- Business/staff new booking alert
+
+**How to set up a Brevo template (when ready):**
+1. Log into Brevo → Transactional → Templates → Create a new template
+2. Design using Brevo's editor — add variable placeholders such as `{{ params.customer_name }}`, `{{ params.service_name }}`, `{{ params.booking_date }}` for dynamic content
+3. Publish the template — Brevo assigns a numeric ID (e.g. `5`)
+4. Enter that ID in the relevant field in Bookit Dashboard → Settings → Email → Brevo Email Templates
+5. Save — future emails of that type will use the Brevo template design
+
+Any field left blank continues to use the plain HTML fallback. Can be done one notification type at a time, in any order. Zero-downtime change — no code deployment required.
+
+**Timing:** Post-launch, client-facing task. Requires access to the client's Brevo account and their brand assets (logo, colours). Suggested timing: after the first week of live bookings, once the client is comfortable with the system.
+
+
 
 *Document Version: 1.0 | Created: 3 April 2026*
 *Related documents: Testing_Site_Decisions.md | Stage3_Build.md | Stage4_Launch.md | Tools_Stack.md*

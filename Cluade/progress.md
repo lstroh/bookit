@@ -2276,7 +2276,7 @@ Status: Brevo transactional email working end-to-end on live server.
 
 ### Deployment process established for Hostinger:
 - Run locally: composer install --no-dev --optimize-autoloader
-  --classmap-authoritative
+  --classmap-authoritative -> this is not confirmed yet.
 - Zip bookit-booking-system/ folder
 - WordPress admin → Plugins → Deactivate → Delete → Upload → Activate
 - Note: vendor/ and dist/ are gitignored — both must be built locally
