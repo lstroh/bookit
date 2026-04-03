@@ -2223,3 +2223,78 @@ Issues intentionally accepted / deferred indefinitely:
             same reason
 
 Next: Sprint 5 (Live Environment)
+
+
+
+─────────────────────────────────────────────
+
+Update 03/04/26 — Sprint 5: Brevo Live Activation
+
+Status: Brevo transactional email working end-to-end on live server.
+
+## Live Site Setup (test.wimbledonsmart.co.uk / Hostinger)
+
+### Issues resolved during first live deployment:
+
+1. Dashboard login loop (LiteSpeed cache)
+   - Root cause: LiteSpeed was caching POST requests to /bookit-dashboard/
+   - Fix: Added /bookit-dashboard/, /bookit-dashboard/app/,
+     /bookit-dashboard/setup/ to LiteSpeed Private Cached URIs
+   - Additional pages added to exclude list:
+     /bookit-dashboard/logout/, /book/, /booking-confirmed/,
+     /booking-confirmed-v2/, /my-packages/, /wp-json/bookit/
+
+2. Rate limiter lockout after repeated failed login attempts
+   - Root cause: Stale session cookie in browser after cache fix
+   - Fix: Clear browser cookies for site; rate limit transient
+     expires automatically after 15 minutes
+
+3. Brevo provider fatal error — Class "Brevo\Client\Configuration" not found
+   - Root cause: getbrevo/brevo-php v4 is a full SDK rewrite.
+     The old Brevo\Client\* namespace no longer exists. Provider
+     code was written against the old API.
+   - Fix: Rewrote class-bookit-brevo-email-provider.php for v4 SDK:
+     · Entry point: \Brevo\Brevo (unified client)
+     · Request: \Brevo\TransactionalEmails\Requests\SendTransacEmailRequest
+     · Sender/To types: SendTransacEmailRequestSender /
+       SendTransacEmailRequestToItem
+     · Errors: BrevoApiException (429 → brevo_rate_limited),
+       BrevoException (→ brevo_send_failed)
+     · Class names verified against vendor/composer/autoload_classmap.php
+       (sole source of truth — all online docs including Context7 are stale
+       for v4)
+   - Tests: 816 → 821 (+5 new unit tests for provider), 0 failures
+
+4. Missing PSR-18 HTTP client
+   - Root cause: Brevo v4 SDK dropped hard Guzzle dependency in favour
+     of PSR-18. Guzzle must now be explicitly required.
+   - Fix: Added "guzzlehttp/guzzle": "^7.0" to composer.json require
+   - Note: Unit tests did not catch this because tests mock the SDK
+     classes — real HTTP client is never instantiated in unit tests.
+     This class of issue (missing runtime dependencies) requires
+     integration/live testing to catch.
+
+### Deployment process established for Hostinger:
+- Run locally: composer install --no-dev --optimize-autoloader
+  --classmap-authoritative
+- Zip bookit-booking-system/ folder
+- WordPress admin → Plugins → Deactivate → Delete → Upload → Activate
+- Note: vendor/ and dist/ are gitignored — both must be built locally
+  before zipping
+
+### Brevo configuration confirmed working:
+- Account: Brevo free plan (300 emails/day)
+- DNS: SPF + DKIM configured on wimbledonsmart.co.uk (Brevo-assisted)
+- Sender verified in Brevo dashboard
+- API key saved in Bookit Dashboard → Settings → Email
+- Provider: Brevo (not wp_mail fallback)
+- Test email sent and received successfully ✅
+
+Test suite: 821 tests, 0 failures
+
+Next: Continue Sprint 5
+- Brevo template creation + template ID mapping
+- Stripe live mode + package purchase routing
+- Google Calendar OAuth
+- SMS queue + dispatcher SMS path
+- Explore Brevo MCP server for email management
