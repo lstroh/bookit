@@ -2298,3 +2298,191 @@ Next: Continue Sprint 5
 - Google Calendar OAuth
 - SMS queue + dispatcher SMS path
 - Explore Brevo MCP server for email management
+
+
+─────────────────────────────────────────────
+Update 04/04/26 — Sprint 5A: Local Buildable Work — COMPLETE
+Sprint 5A: ✅ 6/6 tasks complete
+Test suite: 821 → 861 tests (+40), 0 failures
+─────────────────────────────────────────────
+Task 5A-1 — DB Schema Fixes (Issues 4, 7, 12, 13)
+Tests: 821 → 829 (+8), 0 failures
+New migrations:
+
+0012-add-magic-link-token.php: VARCHAR(64) magic_link_token column
+
+idx_magic_link_token index on wp_bookings
+
+
+0013-add-balance-payment-type.php: MODIFY payment_type ENUM on
+wp_bookings_payments to include 'balance_payment'
+0014-backfill-magic-link-tokens.php: per-record loop backfill of
+magic_link_token for all existing bookings
+
+Application changes:
+
+class-booking-creator.php: generates and stores magic_link_token
+immediately after lock_version on every new booking
+class-dashboard-bookings-api.php: get_allowed_transitions() static
+map + transition guard in update_booking() — returns E2005 (HTTP 422)
+on invalid transition; audit log fired on block
+class-payment-processor.php: process_pay_on_arrival() now inserts
+a payment record (payment_method='pay_on_arrival', status='pending')
+class-bookit-database.php: create_payments_table() ENUM updated to
+include 'balance_payment' for fresh installs
+error-codes.php: E2005 INVALID_STATUS_TRANSITION registered
+
+Resolved schema audit issues:
+
+Issue 4: magic_link_token — built alongside cancellation links ✅
+Issue 7: state transition enforcement in update_booking() ✅
+Issue 12: balance_payment added to wp_bookings_payments ENUM ✅
+Issue 13: POA bookings now create payment record ✅
+
+─────────────────────────────────────────────
+Task 5A-2 — .ics Calendar Download Endpoint
+Tests: 829 → 847 (+18 across 5A-2 and addendum), 0 failures
+New endpoint: GET bookit/v1/wizard/ical
+
+Public, authenticated via hash_equals() on magic_link_token
+RFC 5545 compliant .ics with CRLF line endings
+Business timezone used for DTSTART/DTEND
+Raw delivery via rest_pre_serve_request filter (same as CSV export)
+fetch_and_build_ical() + build_ical_content() separation for
+testability; no exit() — test-compatible
+UID: booking_reference + site host (globally unique)
+DESCRIPTION: booking reference, Cancel URL, Reschedule URL
+
+Wire-ups:
+
+booking-confirmed-v2.php "Add to Calendar" button linked to real
+endpoint with booking_id + magic_link_token params
+class-booking-retriever.php: Stripe path now selects magic_link_token
+
+Addendum — cancel/reschedule links in email:
+
+.ics DESCRIPTION extended with Cancel and Reschedule URLs
+class-email-sender.php generate_customer_email(): "Need to make
+changes?" section added with Reschedule + Cancel buttons (inline CSS)
+Section silently omitted when magic_link_token is absent (old bookings)
+3 additional PHPUnit tests
+
+─────────────────────────────────────────────
+Task 5A-3 — Magic Link Cancellation & Rescheduling
+Tests: 847 → 841 (net; 5A-3a added 12, 5A-3b added 0, fix added 0)
+Note: 5A-2 addendum tests interleaved — combined net is tracked above.
+All 861 final tests pass, 0 failures.
+5A-3a — Backend:
+New REST endpoints (public, permission_callback: __return_true):
+
+POST bookit/v1/wizard/cancel
+· hash_equals() token auth, rate limited 10/hr/IP (magic_cancel)
+· Policy window check via cancellation_window_hours setting
+· Sets status=cancelled, cancelled_by=customer, deleted_at (soft delete)
+· Fires bookit_after_booking_cancelled + enqueues booking_cancelled email
+POST bookit/v1/wizard/reschedule
+· hash_equals() token auth, rate limited 10/hr/IP (magic_reschedule)
+· Slot conflict check, end_time recalculated from service duration
+· Fires bookit_booking_rescheduled + enqueues booking_rescheduled email
+
+New shortcodes: [bookit_cancel_booking], [bookit_reschedule_booking]
+New pages auto-created on activation: /bookit-cancel/, /bookit-reschedule/
+Key finding: cancellation_window_hours is the live setting key
+(not cancellation_notice_hours as in sprint doc) — Cursor read the
+codebase and used the correct key.
+5A-3b — Frontend templates:
+
+public/templates/cancel-booking.php: V2 card layout, booking summary,
+policy notice (blue-grey tinted), PHP policy window pre-check,
+Confirm Cancellation button, vanilla JS IIFE fetch + success/error states
+public/templates/reschedule-booking.php: V2 card layout, PHP calendar
+grid via Bookit_DateTime_Model (bank holidays blocked), day tap →
+GET bookit/v1/wizard/timeslots fetch → slot buttons → Confirm button
+public/assets/css/magic-link-pages.css: scoped to
+.bookit-magic-link-page; --bookit-* tokens only, no hardcoded colours
+
+Fix — class-datetime-api.php:
+
+get_timeslots() extended to accept optional service_id and staff_id
+query args (falls back to session for wizard — existing tests unaffected)
+Required for reschedule page which has no active wizard session
+
+─────────────────────────────────────────────
+Task 5A-4 — bookit_confirmed_v2_url Admin UI
+Tests: → 852 (+2), 0 failures
+
+Settings.vue: new "Booking" card (admin only) with
+"V2 Booking Confirmed Page URL" field
+class-dashboard-bookings-api.php: bookit_confirmed_v2_url added to
+allowed keys; get_settings() merges from get_option(); update_settings()
+routes to update_option()/delete_option() — skips wp_bookings_settings
+upsert (this key lives in wp_options, not the settings table)
+esc_url_raw + FILTER_VALIDATE_URL validation on write
+Empty string clears option so default (home_url('/booking-confirmed-v2/'))
+applies again
+
+─────────────────────────────────────────────
+Task 5A-5 — Admin Email Queue Log View
+Tests: 852 → 858 (+6), 0 failures
+New endpoint: GET bookit/v1/dashboard/email-queue
+
+Admin only (bookit_staff → 403)
+Paginated (page, per_page up to 100, status filter)
+Returns: id, booking_id, email_type, recipient_email, status,
+attempts, max_attempts, scheduled_at, sent_at, last_error, created_at
+html_body, subject, params excluded (too large for log view)
+
+New Vue view: EmailQueue.vue
+
+Table with status badges (pending=grey, processing=blue, sent=green,
+failed=red, cancelled=grey)
+Attempts shown as X / Y
+last_error truncated to 60 chars, full text in title attribute
+Status filter dropdown, pagination, empty state
+Admin guard via BOOKIT_DASHBOARD.staff.role
+
+Route: /email-queue (requiresAdmin: true)
+Sidebar: "Email Queue" under Reports (admin only, 📧 icon)
+─────────────────────────────────────────────
+Task 5A-6 — Brevo Template ID Settings
+Tests: 858 → 861 (+3), 0 failures
+Six new settings keys (stored in wp_bookings_settings as integer strings):
+
+brevo_template_booking_confirmed
+brevo_template_booking_cancelled
+brevo_template_booking_rescheduled
+brevo_template_magic_link_cancel
+brevo_template_magic_link_reschedule
+brevo_template_business_notification
+
+class-bookit-brevo-email-provider.php:
+
+get_template_id_for_email_type() maps email_type slug → setting key
+send(): templateId branch when setting is a positive integer;
+htmlContent fallback when not set (existing behaviour unchanged)
+SDK note: getbrevo/brevo-php v4 uses PSR-4 (not classmap); v4
+SendTransacEmailRequest uses constructor array keys (no setters);
+confirmed by reading vendor source directly
+invoke_brevo_send() extracted for testability (no exit, no live HTTP)
+Dispatcher now merges email_type into $params before send()
+Magic-link queue rows use magic_link_cancel / magic_link_reschedule
+slugs to match template settings keys
+
+EmailSettings.vue:
+
+"Brevo Email Templates" sub-section inside email_provider === 'brevo'
+conditional; six numeric inputs, one per notification type
+
+─────────────────────────────────────────────
+Sprint 5A deferred items carried to Sprint 5B:
+
+Stripe live keys — V2 wizard card/PayPal payments return 400 until wired
+Stripe package purchase routing (deferred from Sprint 4D)
+Google Calendar OAuth (requires live redirect URI on Hostinger)
+stripe_session_id missing index on live DB (Issue 9, schema audit)
+LiteSpeed cache exclusions needed for new pages:
+/bookit-cancel/, /bookit-reschedule/
+Brevo email template creation in Brevo dashboard (client-facing,
+post-launch — template ID fields ready in plugin settings)
+
+Next: Sprint 5B (Live Environment)

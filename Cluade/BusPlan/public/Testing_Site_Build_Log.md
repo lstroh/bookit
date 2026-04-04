@@ -120,6 +120,8 @@
 /booking-confirmed-v2/
 /my-packages/
 /wp-json/bookit/
+/bookit-cancel/
+/bookit-reschedule/
 ```
 
 After saving: clicked **Flush All Cache**.
@@ -237,6 +239,45 @@ define( 'WP_DEBUG_LOG', true );
 **⚠️ Must be turned OFF before any client-facing use or go-live. Set all three to `false` or remove the lines.**
 
 ---
+
+### Step 15 — Stripe test mode configuration
+**Status:** ✅ Complete
+
+**Part A — API Keys**
+
+Keys retrieved from Stripe Dashboard → Test mode → Developers → API keys:
+- Publishable key: `pk_test_...` (visible in Bookit Dashboard → Settings → Payments)
+- Secret key: `sk_test_...` (shows as `SAVED` once stored)
+
+Keys entered in: Bookit Dashboard → Settings → Payments
+
+**Verification method:** If the publishable key field shows the correct `pk_test_...` 
+value, both keys are correctly saved — they are always saved together.
+
+**Part B — Webhook**
+
+Webhook configured in Stripe Dashboard → Test mode → Developers → Webhooks → 
+Add endpoint:
+
+- Endpoint URL: `https://test.wimbledonsmart.co.uk/wp-json/bookit/v1/stripe/webhook`
+- Events registered:
+  - `checkout.session.completed`
+  - `charge.refunded`
+
+Signing Secret (`whsec_...`) revealed after saving the endpoint and entered in:
+Bookit Dashboard → Settings → Payments → Webhook Signing Secret field
+
+**Final settings confirmed in Bookit Dashboard → Settings → Payments:**
+- Stripe Mode: Test
+- Publishable key: `pk_test_...` (confirmed correct)
+- Secret key: SAVED
+- Webhook Signing Secret: SAVED
+
+⚠️ Reminder: Maintenance mode must be temporarily disabled when testing 
+Stripe webhooks — server-to-server calls cannot pass through maintenance mode. 
+Re-enable immediately after webhook testing is complete.
+
+----
 
 ## Outstanding — To Complete in Next Session
 
