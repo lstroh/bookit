@@ -122,6 +122,7 @@
 /wp-json/bookit/
 /bookit-cancel/
 /bookit-reschedule/
+/book-v2/
 ```
 
 After saving: clicked **Flush All Cache**.
@@ -278,6 +279,29 @@ Stripe webhooks — server-to-server calls cannot pass through maintenance mode.
 Re-enable immediately after webhook testing is complete.
 
 ----
+
+### Step 16 — Test persona email accounts confirmed
+**Status:** ✅ Complete
+
+Three email personas established for end-to-end testing:
+
+| Persona | Email | Purpose |
+|---|---|---|
+| Test customer | `wsb.testclient@gmail.com` | Customer confirmation and reminder 
+emails — Gmail spam filter test |
+| Test staff member | `wsb.teststaff@test.wimbledonsmart.co.uk` | Staff booking 
+notifications |
+| Business owner | `liron@wimbledonsmart.co.uk` | Owner booking notifications |
+
+**Notes:**
+- Gmail used for test customer — aggressive spam filtering confirms real-world 
+  deliverability if emails land in primary inbox
+- | Email personas | ✅ All three confirmed — see Step 16 |
+- A second Gmail account for staff could not be created (Google account limit) — 
+  Hostinger email on the test domain is a suitable alternative for staff 
+  notification testing
+
+  ----
 
 ## Outstanding — To Complete in Next Session
 
