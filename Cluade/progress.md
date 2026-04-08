@@ -2486,3 +2486,297 @@ Brevo email template creation in Brevo dashboard (client-facing,
 post-launch — template ID fields ready in plugin settings)
 
 Next: Sprint 5B (Live Environment)
+
+---
+
+## BACKLOG
+
+### INVOICE GENERATION (Phase 1.5)
+**Priority:** High — required before first client go-live with payments
+**Estimated effort:** 10–14 hours
+**Migration:** 0016
+
+**Scope:**
+- Native PDF invoice generation using DOMPDF (no third-party plugin dependency)
+- VAT-aware: `business_vat_number` setting — empty = standard invoice, populated = full VAT invoice
+- Sequential gapless invoice numbering with configurable prefix (e.g. INV-2025-001)
+- Two-document deposit flow: Invoice at deposit payment + Invoice at balance payment
+- Single-document full-payment flow
+- Pay-on-arrival invoice issued at time of payment recording
+- Voided deposits (cancellation, forfeited): existing invoice stands — no credit note, VAT remains due
+- PDF attached to Brevo confirmation email
+- PDF downloadable from customer dashboard and admin booking detail view
+- PDFs stored in WP uploads (`bookit/invoices/YYYY/MM/`) — retained 6 years (HMRC requirement)
+
+**New settings keys required:**
+| Key | Type | Notes |
+|-----|------|-------|
+| `invoice_prefix` | VARCHAR | e.g. `INV`, configurable per client |
+| `business_vat_number` | VARCHAR | Empty = non-VAT registered; non-empty = full VAT invoice |
+
+**Phase 2 extension (accounting integrations):**
+- Xero REST API — priority 1 (dominant UK accountant platform)
+- QuickBooks Online API — priority 2
+- Both as separate Bookit extension plugins, not core
+- Note: every existing WordPress Xero/QuickBooks plugin requires WooCommerce — no off-the-shelf option exists for a custom booking system
+
+**DB Schema — `wp_bookings_invoices` (migration 0016):**
+```sql
+CREATE TABLE wp_bookings_invoices (
+  id                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+  invoice_number        INT UNSIGNED NOT NULL,
+  invoice_prefix        VARCHAR(20) NOT NULL DEFAULT 'INV',
+
+  booking_id            BIGINT UNSIGNED NOT NULL,
+  payment_id            BIGINT UNSIGNED NOT NULL COMMENT 'The wp_bookings_payments row this invoice covers',
+  customer_id           BIGINT UNSIGNED NOT NULL,
+
+  parent_invoice_id     BIGINT UNSIGNED DEFAULT NULL COMMENT 'Set on balance invoice; references deposit invoice id',
+
+  invoice_type          ENUM('deposit', 'balance', 'full_payment', 'pay_on_arrival') NOT NULL,
+  status                ENUM('draft', 'issued', 'void') NOT NULL DEFAULT 'issued',
+
+  -- Business snapshot (at time of issue)
+  business_name         VARCHAR(255) NOT NULL,
+  business_address      TEXT NOT NULL,
+  business_email        VARCHAR(255) NOT NULL,
+  business_phone        VARCHAR(20) DEFAULT NULL,
+  business_vat_number   VARCHAR(30) DEFAULT NULL COMMENT 'NULL = non-VAT-registered',
+
+  -- Customer snapshot
+  customer_name         VARCHAR(255) NOT NULL,
+  customer_email        VARCHAR(255) NOT NULL,
+  customer_address      TEXT DEFAULT NULL,
+
+  -- Service snapshot
+  service_name          VARCHAR(255) NOT NULL,
+  service_description   TEXT DEFAULT NULL COMMENT 'e.g. with Emma, 45 min, 14 Apr 2026 at 10:00',
+  appointment_date      DATE NOT NULL,
+  appointment_time      TIME NOT NULL,
+  staff_name            VARCHAR(255) NOT NULL,
+
+  -- Financials (GBP)
+  subtotal_amount       DECIMAL(10,2) NOT NULL COMMENT 'Amount before VAT',
+  vat_rate              DECIMAL(5,2) DEFAULT NULL COMMENT 'e.g. 20.00; NULL if not VAT-registered',
+  vat_amount            DECIMAL(10,2) DEFAULT NULL COMMENT 'NULL if not VAT-registered',
+  total_amount          DECIMAL(10,2) NOT NULL COMMENT 'Amount this invoice covers (inc. VAT if applicable)',
+  booking_total_price   DECIMAL(10,2) NOT NULL COMMENT 'Full service price snapshot',
+
+  -- HMRC tax point
+  tax_point_date        DATE NOT NULL COMMENT 'Date payment received — sets the VAT period',
+  invoice_date          DATE NOT NULL COMMENT 'Date invoice was generated',
+
+  -- PDF storage
+  pdf_path              VARCHAR(500) DEFAULT NULL COMMENT 'Relative to WP uploads: bookit/invoices/YYYY/MM/filename.pdf',
+  pdf_generated_at      DATETIME DEFAULT NULL,
+
+  -- Audit
+  created_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  voided_at             DATETIME DEFAULT NULL,
+  voided_reason         TEXT DEFAULT NULL,
+
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_invoice_number (invoice_prefix, invoice_number),
+  KEY idx_booking_id   (booking_id),
+  KEY idx_payment_id   (payment_id),
+  KEY idx_customer_id  (customer_id),
+  KEY idx_parent       (parent_invoice_id),
+  KEY idx_invoice_date (invoice_date),
+  KEY idx_tax_point    (tax_point_date),
+  KEY idx_status       (status),
+  KEY idx_issued_date  (invoice_date, status)
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+Update 07/04/26 — Sprint 5B: Live Environment — COMPLETE
+Sprint 5B: ✅ 5/5 tasks complete (+ 4 deferred sub-tasks)
+Test suite: 861 → 880 tests (+19), 0 failures
+─────────────────────────────────────────────
+
+5B-0 — Pre-Flight Deployment Steps
+LiteSpeed cache exclusions confirmed for /bookit-cancel/ and
+/bookit-reschedule/ (added to Private Cached URIs in Hostinger).
+idx_stripe_session_id index added manually to live DB via phpMyAdmin
+(also now in schema.sql for fresh installs — was missing from live DB
+created before the audit fix).
+All four plugin pages verified present and published on live site:
+/book-v2/ [bookit_wizard_v2]
+/booking-confirmed-v2/ [bookit_booking_confirmed_v2]
+/bookit-cancel/ [bookit_cancel_booking]
+/bookit-reschedule/ [bookit_reschedule_booking]
+
+─────────────────────────────────────────────
+5B-1 — Stripe Configuration (Test Mode)
+Decision: Remaining in Stripe test mode throughout Sprint 5B.
+Live keys deferred until first client go-live.
+Test webhook registered in Stripe Dashboard pointing to:
+https://test.wimbledonsmart.co.uk/wp-json/bookit/v1/stripe/webhook
+Events: checkout.session.completed, charge.refunded
+Webhook signing secret saved in plugin settings.
+Test keys confirmed reading from wp_bookings_settings (not wp_options).
+
+─────────────────────────────────────────────
+5B-2 — V2 Wizard Card/PayPal + Package Stripe Routing + Refund State
+
+Part A — V2 wizard card payment wiring:
+Tests: 861 → 865 (+4), 0 failures
+
+class-stripe-config.php: fixed to read Stripe keys from
+wp_bookings_settings via $wpdb->get_var() — was incorrectly using
+get_option('bookit_stripe_*') which did not match what the dashboard
+writes; keys were never being found.
+class-wizard-api.php: complete_booking() — card + V2 session →
+normalised to stripe before switch; stripe case creates Checkout
+Session via Booking_System_Stripe_Checkout and returns
+{ success: true, redirect_url: $session->url }; paypal case returns
+HTTP 501 PAYMENT_METHOD_NOT_SUPPORTED.
+wizard_version read from Bookit_Session_Manager::get_data() only —
+never trusts client-posted value.
+class-stripe-checkout.php: create_checkout_session() returns
+['session_id' => ..., 'redirect_url' => ...] array for V2;
+plain session ID string for V1 (backward compatible).
+V2 success_url uses trailingslashit() for base URL — fixes
+{CHECKOUT_SESSION_ID} placeholder not being replaced by Stripe.
+Metadata cast fix: $session->metadata->toArray() used in webhook
+handler instead of (array) cast which fails on Stripe\StripeObject
+on MariaDB/live environment.
+PAYMENT_METHOD_NOT_SUPPORTED error code registered in error-codes.php.
+
+Part B — Package purchase Stripe routing (buy & book in one step):
+Tests: 865 → 870 (+5), 0 failures
+
+Decision: Buy + book in one step (Option B) — webhook creates
+both customer_package row and booking atomically; no two-step flow.
+class-wizard-api.php: buy_{id} payment method detected, package type
+looked up, charge amount calculated (fixed price or discount against
+service price), calls create_package_checkout_session().
+class-stripe-checkout.php: new create_package_checkout_session()
+method — flow_type=package metadata, full booking + package fields
+in metadata (PHP session not relied on in webhook), success_url routes
+to /booking-confirmed-v2/?session_id={CHECKOUT_SESSION_ID}.
+class-stripe-webhook.php: flow_type=package routes to new
+handle_package_purchase_completed(); DB transaction wraps:
+find/create customer → insert wp_bookings_customer_packages →
+create booking (payment_method=package_redemption) → SQL decrement
+sessions_remaining → insert redemption record → insert payment record
+→ COMMIT; idempotency key: stripe_pkg_{session_id}.
+PACKAGE_PRICE_INVALID error code registered.
+
+MariaDB JSON_CONTAINS fix:
+booking-wizard-v2-step-5.php was using JSON_CONTAINS(col, CAST(%d AS
+JSON)) which fails silently on MariaDB 11.4 (Hostinger). Fixed by
+removing JSON_CONTAINS from both package queries entirely and
+replacing with PHP-side filtering using json_decode() + in_array(),
+matching the established pattern in class-available-packages-api.php.
+This is now the project-wide rule: applicable_service_ids filtering
+is always done in PHP, never in SQL JSON functions.
+
+Part C — Refund state:
+Tests: 870 → 875 (+5), 0 failures
+
+Migration 0015: ADD COLUMN refunded_amount DECIMAL(10,2) NULL DEFAULT
+NULL on wp_bookings; column_exists() guards in up() and down();
+schema.sql updated.
+class-stripe-webhook.php: handle_charge_refunded() —
+lookup booking by payment_intent_id; update refunded_amount
+(cumulative from Stripe amount_refunded); full refund
+(refunded_amount >= total_price) sets status=cancelled,
+cancelled_by='0' (system-initiated, bypasses admin guard);
+inserts wp_bookings_payments row with payment_type=refund,
+negative amount, payment_status=refunded or partially_refunded;
+fires booking.refunded audit log; returns true on no booking found
+(may be package payment, not booking payment).
+
+─────────────────────────────────────────────
+5B-2d — Hide Pay by Card/PayPal when charge amount is zero
+Tests: 875 → 880 (+5, including fix), 0 failures
+
+includes/wizard-v2-payment-amounts.php: new helper
+bookit_v2_stripe_charge_amount() returns deposit_due when has_deposit
+is true, 0.0 when has_deposit is false (no-deposit service = nothing
+charged online now, pay in full on arrival).
+booking-wizard-v2-step-5.php: $show_online_payment = charge > 0;
+Pay by Card and PayPal rows both wrapped in this condition; Pay in
+person becomes default selection (class + checked attribute) when
+both hidden; showOnlinePayment passed to JS via wp_json_encode.
+booking-wizard-v2.js: null-check guards on cardRow/cardRadio
+references; package deselect fallback uses showOnlinePayment flag.
+
+─────────────────────────────────────────────
+5B-2e — Notification emails in Stripe webhook
+Tests: 875 → 877 (+2), 0 failures
+
+class-stripe-webhook.php: private helper
+send_booking_confirmation_emails_after_webhook($booking_id) added —
+retrieves full booking via Booking_System_Booking_Retriever,
+calls send_customer_confirmation() and send_business_notification();
+called from both handle_booking_checkout_completed() and
+handle_package_purchase_completed() after idempotency transient set;
+email failures are best-effort and do not block webhook 200 response;
+handle_charge_refunded() intentionally excluded.
+
+─────────────────────────────────────────────
+5B-2f — Add to Calendar link in customer confirmation email
+Tests: 877 → 878 (+1), 0 failures
+
+class-email-sender.php: "Add to Calendar" button added as first
+button in "Need to make changes?" section, linking to
+GET bookit/v1/wizard/ical?booking_id=X&token=Y (token param confirmed
+from reading class-wizard-api.php endpoint registration);
+silently omitted when magic_link_token absent (same guard as
+Reschedule/Cancel buttons).
+
+─────────────────────────────────────────────
+5B-3 — Brevo Templates + End-to-End Email Testing
+
+Decision: Brevo template variable wiring deferred to Sprint 6.
+Current architecture passes pre-rendered HTML as html_body — template
+ID mode would receive no params for variable substitution and render
+blanks. Pre-rendered HTML emails work correctly for Phase 1 launch.
+
+End-to-end email testing confirmed on live site:
+✅ Customer confirmation email (POA and Stripe)
+✅ Business notification email
+✅ Magic link cancel — cancellation email delivered
+✅ Magic link reschedule — rescheduled confirmation email delivered
+✅ Add to Calendar button downloads valid .ics file
+✅ All emails include Cancel and Reschedule magic links
+
+─────────────────────────────────────────────
+5B-4 — Magic Link Edge Case Testing
+
+All edge cases confirmed on live site:
+✅ Invalid token → "Invalid or expired link" message
+✅ Already cancelled booking → appropriate error shown
+✅ Within cancellation window → blocked with correct message
+✅ Rate limiting → 11th request returns rate limit message
+
+─────────────────────────────────────────────
+Sprint 5B deferred items carried to Sprint 6:
+
+Stripe live keys — deferred until first client go-live; switch is
+5 minutes of config (swap keys, register live webhook, flip mode)
+Brevo template variable wiring — params not passed to Brevo send();
+pre-rendered HTML fallback works for Phase 1
+Google Calendar OAuth — requires live redirect URI (still deferred)
+
+Key technical decisions and findings this sprint:
+- class-stripe-config.php must read from wp_bookings_settings
+  (not get_option) — matches dashboard save path
+- applicable_service_ids filtering: always PHP json_decode+in_array,
+  never SQL JSON_CONTAINS (MariaDB 11.4 incompatibility confirmed)
+- bookit_v2_stripe_charge_amount() returns 0.0 when has_deposit=false
+  (no-deposit service charges nothing online; full amount on arrival)
+- wizard_version always from Bookit_Session_Manager::get_data() only
+- Stripe metadata->toArray() required for StripeObject (not (array))
+- trailingslashit() required on V2 success_url base for placeholder
+  replacement to work
+- DB transaction pattern for package purchase: customer_package +
+  booking + redemption + payment all atomic with ROLLBACK on failure
+- charge.refunded returns true (HTTP 200) when no booking found —
+  prevents Stripe retry loop for package payments
+
+Next: Sprint 6
