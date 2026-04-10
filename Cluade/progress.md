@@ -2780,3 +2780,285 @@ Key technical decisions and findings this sprint:
   prevents Stripe retry loop for package payments
 
 Next: Sprint 6
+
+Update 10/04/26 — Sprint 6A: Staff Notification System — COMPLETE
+Sprint 6A: ✅ 10/10 tasks complete
+Test suite: 880 → 928 tests (+48), 0 failures
+─────────────────────────────────────────────
+
+6A-1 — Fire Missing Hooks
+Tests: 880 → 886 (+6), 0 failures
+
+bookit_booking_rescheduled now fires from update_booking() in
+class-dashboard-bookings-api.php when booking_date or start_time
+changes. The hook was already firing from reschedule_booking_magic_link()
+in class-wizard-api.php (confirmed from code — TODO comment in loader
+was outdated and removed).
+
+bookit_booking_reassigned is a new hook added to update_booking()
+when staff_id changes. Fires after DB update succeeds, passing
+($booking_id, $old_staff_id, $new_staff_id, $update_data). Old staff ID
+read from $existing array (pre-update DB row) — no extra query.
+
+Hook documented in Extension_Plugin_API_Spec.md following existing
+hook documentation pattern. File was absent from repo; created at
+bookit-booking-system/Extension_Plugin_API_Spec.md.
+
+New test file: tests/unit/test-sprint6a-hooks.php (6 tests).
+
+─────────────────────────────────────────────
+6A-2 — DB Schema: notification_preferences + digest queue
+Tests: 886 → 893 (+7), 0 failures
+
+Migration 0016: ADD COLUMN notification_preferences LONGTEXT NULL
+DEFAULT NULL on wp_bookings_staff. NULL default (not JSON default) —
+MariaDB 10.x does not support non-literal defaults on TEXT columns.
+column_exists() guard in up() and down(). schema.sql updated.
+
+Migration 0017: CREATE TABLE wp_bookit_notification_digest_queue —
+columns: id, staff_id, event_type ENUM, booking_id, processed, created_at;
+indexes: idx_staff_event_processed (staff_id, event_type, processed),
+idx_booking_id. table_exists() helper uses information_schema.tables
+with exact match (avoids SHOW TABLES LIKE underscore wildcard issue).
+schema.sql updated.
+
+New test file: tests/unit/test-sprint6a-migrations.php (7 tests).
+Note: test_migration_0017_creates_digest_queue_table simplified to not
+test down() — table pre-exists from plugin activation in wp-env, making
+down() assertion unreliable. idempotency and column presence tested
+instead.
+
+─────────────────────────────────────────────
+6A-3 — Bookit_Staff_Notifier (Immediate Dispatch Path)
+Tests: 893 → 904 (+11), 0 failures
+
+New class: includes/notifications/class-bookit-staff-notifier.php
+Static-only class following Bookit_Package_Expiry pattern.
+
+Hooks into:
+- bookit_after_booking_created → assigned staff + all admin staff
+- bookit_booking_rescheduled → same recipients, reschedule preference
+- bookit_after_booking_cancelled → same recipients, cancellation preference
+- bookit_booking_reassigned → new assignee + admins via new_booking
+  preference; old assignee via cancellation preference
+
+Deduplication: array_unique() on staff IDs before iterating — staff
+member appears at most once per event regardless of qualifying reasons.
+
+Routing:
+- immediate preference → Bookit_Notification_Dispatcher::enqueue_email()
+- daily / weekly preference → insert into wp_bookit_notification_digest_queue
+
+Email types: staff_new_booking_immediate, staff_reschedule_immediate,
+staff_cancellation_immediate, staff_reassigned_to_immediate,
+staff_reassigned_away_immediate.
+
+Skip rules: inactive staff, deleted staff, empty email (audit log entry
+fired on empty email skip: staff_notification.skipped_no_email).
+
+Registered via Bookit_Staff_Notifier::init() in class-bookit-loader.php
+define_cron_hooks(), immediately after Bookit_Package_Expiry::init().
+
+New test file: tests/unit/test-staff-notifier.php (11 tests).
+
+─────────────────────────────────────────────
+6A-8 — Retire send_business_notification() from New Booking Flow
+Tests: 904 → 905 (+1), 0 failures
+
+Removed send_business_notification() call from:
+1. create_manual_booking() in class-dashboard-bookings-api.php
+   (inside the if ($send_confirmation) block)
+2. send_booking_confirmation_emails_after_webhook() in
+   class-stripe-webhook.php
+
+send_business_notification() method itself preserved in
+class-email-sender.php — only call sites removed.
+
+Replacement comment added at both removed call sites:
+// Business notification removed Sprint 6A-8 — replaced by
+// Bookit_Staff_Notifier which sends to all admin-role staff
+// via their preference settings.
+
+Existing test-stripe-v2-wiring.php updated — tests no longer expect
+business_notification queue row.
+
+New test: test_new_booking_does_not_call_send_business_notification
+added to test-dashboard-bookings-api.php (1 test).
+
+─────────────────────────────────────────────
+6A-4 — Digest Cron Jobs
+Tests: 905 → 914 (+9), 0 failures
+
+Three new cron classes, all following Bookit_Package_Expiry pattern
+exactly (static, init/register/unregister/run_with_tracking):
+
+Bookit_Staff_Digest_Daily (includes/cron/class-bookit-staff-digest-daily.php)
+- Hook: bookit_staff_digest_daily
+- Schedules daily at staff_digest_send_time setting (default 18:00)
+  in business timezone
+- Drains wp_bookit_notification_digest_queue for preference = 'daily'
+- Marks rows processed = 1 BEFORE enqueuing (prevents double-send)
+- Skips bookings with status = 'cancelled' or deleted_at IS NOT NULL
+- Skips inactive/deleted staff and staff with no email
+- email_type: staff_daily_digest
+
+Bookit_Staff_Digest_Weekly (includes/cron/class-bookit-staff-digest-weekly.php)
+- Hook: bookit_staff_digest_weekly
+- Schedules weekly on staff_digest_weekly_day (default 1 = Monday)
+  at staff_digest_send_time
+- Same logic as daily but filters preference = 'weekly'
+- Registers 'weekly' schedule via cron_schedules filter in init()
+  (not register_cron) so it is active at runtime
+- email_type: staff_weekly_digest
+
+Bookit_Staff_Schedule_Daily (includes/cron/class-bookit-staff-schedule-daily.php)
+- Hook: bookit_staff_schedule_daily
+- Schedules daily at staff_schedule_send_time setting (default 08:00)
+- Queries opted-in staff (daily_schedule = true in preferences)
+- Skips staff with no bookings today — no email on empty days
+- email_type: staff_daily_schedule
+
+All three: registered in class-bookit-activator.php, unregistered in
+class-bookit-deactivator.php, init() called from class-bookit-loader.php.
+
+New test file: tests/unit/test-staff-digest-cron.php (9 tests).
+
+─────────────────────────────────────────────
+6A-5 — My Profile: Notification Preferences UI
+Tests: 914 → 919 (+5), 0 failures
+
+GET /dashboard/profile extended to include notification_preferences
+object (decoded from JSON, merged with defaults) in profile response.
+
+New endpoint: PUT /dashboard/profile/notification-preferences
+- Authenticated (check_dashboard_permission, any role)
+- Validates frequency values (immediate/daily/weekly), defaults on invalid
+- Saves to notification_preferences column on current staff row only
+- Cannot be used to update another staff member's preferences
+
+MyProfile.vue: new Notification Preferences card added below Change
+Password card, above My Stats section. Three dropdowns (New Booking,
+Reschedule, Cancellation) + Daily Schedule Email toggle. Saves via
+dedicated endpoint. Success banner 3s, error banner on failure.
+Toggle uses role="switch" + aria-checked.
+
+5 new tests added to tests/unit/test-profile-api.php.
+
+─────────────────────────────────────────────
+6A-6 — Staff Edit Form: Admin-Editable Preferences
+Tests: 919 → 922 (+3), 0 failures
+
+GET /dashboard/staff/{id} extended to include notification_preferences
+(decoded, merged with defaults) in staff detail response.
+
+PUT /dashboard/staff/{id} extended to accept notification_preferences
+object. Validates each subkey individually. Admin-only (existing
+check_admin_permission gate — bookit_staff role automatically blocked).
+
+StaffFormModal.vue: new Notification Preferences section added in
+edit mode only (v-if="isEditing"), below Role/Active/Display Order
+fields, above Google Calendar ID. Same 3 dropdowns + toggle as profile
+page. Loads on modal open, included in save payload.
+
+3 new tests added to new file tests/unit/test-dashboard-staff-api.php.
+
+─────────────────────────────────────────────
+6A-7 — Settings: Digest Send Times + Weekly Day
+Tests: 922 → 925 (+3), 0 failures
+
+Three new settings keys added to get_allowed_settings_keys():
+- staff_digest_send_time (default '18:00') — shared by daily + weekly digest
+- staff_schedule_send_time (default '08:00') — daily schedule summary
+- staff_digest_weekly_day (default 1 = Monday) — weekly digest day
+
+EmailSettings.vue: new "Staff Notification Timing" card added between
+Email Provider card and SMTP Configuration card. Two <input type="time">
+fields + weekly day dropdown (v-model.number). Saves via existing
+saveSettings() mechanism.
+
+3 new tests added to tests/unit/test-notification-settings-api.php.
+
+─────────────────────────────────────────────
+6A-9 — Brevo Template Variable Wiring
+Tests: 925 → 928 (+3), 0 failures
+
+Root cause: Bookit_Brevo_Email_Provider::send() was not passing $params
+to SendTransacEmailRequest when using a template ID. Template variables
+({{ params.X }}) received nothing and rendered blank.
+
+Fix: when $template_id > 0 and $template_params is non-empty, set
+$request_values['params'] = $template_params. Internal keys (email_type,
+template_id) stripped before forwarding to Brevo. SDK field confirmed
+as 'params' from vendor source (vendor/getbrevo/brevo-php/src/
+TransactionalEmails/Requests/SendTransacEmailRequest.php).
+
+Note: staff notifier callers currently pass array() as params —
+params pass-through is ready infrastructure but not yet populated
+with booking data. When Brevo templates are created for staff
+notifications, the notifier will need extending to pass booking fields.
+Tracked in Future_Features_Backlog.md.
+
+8 new email type mappings added to get_template_id_for_email_type():
+staff_new_booking_immediate, staff_reschedule_immediate,
+staff_cancellation_immediate, staff_reassigned_to_immediate,
+staff_reassigned_away_immediate, staff_daily_digest,
+staff_weekly_digest, staff_daily_schedule.
+
+8 new brevo_template_staff_* keys added to get_allowed_settings_keys().
+
+EmailSettings.vue: Staff Notifications sub-section added inside
+Brevo Email Templates block with 8 numeric template ID inputs.
+
+3 new tests added to tests/unit/test-brevo-email-provider.php.
+
+─────────────────────────────────────────────
+6A-10 — Security Review (OWASP Pass)
+Tests: 928, 0 failures (unchanged — 2 fixes applied, no new tests)
+
+11 files reviewed: all Sprint 5 + 6A new and modified files.
+
+2 issues found and fixed:
+
+Issue 1 — class-bookit-staff-notifier.php (Low)
+Email subject lines included raw customer/service/date text without
+sanitisation (header injection risk). Fix: sanitize_text_field()
+applied to all subject fragment variables.
+
+Issue 2 — class-wizard-api.php (Low)
+Content-Disposition filename in iCal download built from booking_reference
+without filesystem-safe sanitisation. Fix: sanitize_file_name() applied
+to reference, with fallback to booking-{id} when empty.
+
+Checklist results (all clean):
+- Input sanitisation: all REST args use sanitize_callback/validate_callback
+- DB queries: all dynamic queries use $wpdb->prepare(); IN (...) clauses
+  use array_fill() + prepare() + int-cast IDs
+- Auth/authz: all dashboard routes use check_dashboard_permission or
+  check_admin_permission; cron classes have no REST routes
+- IDOR: preferences update uses session staff ID only — not request param
+- Output escaping: all email HTML uses esc_html() / esc_url()
+- No JSON_CONTAINS() anywhere in new code
+- Rate limiting: no new public endpoints added without rate limiting
+- Brevo params: email_type and template_id stripped before forwarding
+
+─────────────────────────────────────────────
+Sprint 6A complete. Key decisions and findings:
+
+- bookit_booking_rescheduled was already firing from magic link endpoint
+  (TODO comment in loader was outdated)
+- notification_preferences column uses NULL default — MariaDB 10.x
+  does not support non-literal defaults on LONGTEXT columns
+- SHOW TABLES LIKE with $wpdb->prepare() has underscore wildcard issue
+  in MariaDB — use information_schema.tables with exact match instead
+- weekly WP cron schedule registered via cron_schedules filter in
+  init() not register_cron() — must be active at runtime
+- Digest cron marks rows processed = 1 BEFORE enqueue — prevents
+  double-send if enqueue fails (recoverable via retry system)
+- send_business_notification() retired from new booking flow — replaced
+  by Bookit_Staff_Notifier hooking bookit_after_booking_created
+- Brevo params pass-through now wired but staff notification callers
+  pass empty params — will need populating when Brevo templates created
+- All staff notification email types follow *_immediate suffix convention
+  for immediate dispatch path
+
+Next: Sprint 6B
