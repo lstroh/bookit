@@ -3062,3 +3062,325 @@ Sprint 6A complete. Key decisions and findings:
   for immediate dispatch path
 
 Next: Sprint 6B
+
+
+─────────────────────────────────────────────
+Update 12/04/26
+
+Sprint 6B-1: ✅ Google Calendar OAuth Integration — COMPLETE
+Tests: 928 → 976 (+48), 0 failures
+
+─────────────────────────────────────────────
+
+SPRINT 6B-1: Google Calendar OAuth Integration
+Status: COMPLETE
+Branch: Phase1
+Dates: April 2026
+Test baseline start: 928 | Test baseline end: 976 | Delta: +48
+
+─────────────────────────────────────────────
+WHAT WAS DELIVERED
+─────────────────────────────────────────────
+
+One-way Google Calendar sync: Bookit → Google Calendar.
+When a booking is created, rescheduled, or cancelled, the assigned
+staff member's Google Calendar is updated automatically via a
+background Action Scheduler job. Tokens are encrypted at rest.
+
+Task 1 — Google Cloud Console Setup (manual, no code)
+  One-time developer setup per client installation:
+  - Create Google Cloud project
+  - Enable Google Calendar API
+  - Configure OAuth consent screen with calendar.events scope
+  - Add staff Gmail addresses as Test Users (required — app stays
+    in Testing mode for small client installations)
+  - Create OAuth 2.0 Client ID (Web application type)
+  - Set redirect URI to /wp-json/bookit/v1/google-calendar/callback
+  - Store Client ID and Client Secret in plugin Settings
+
+  Setup guide produced:
+  - Bookit_Google_Calendar_Setup_Guide.md (v1.2)
+  - Covers all steps, troubleshooting, client notes
+  - Documents Test Users requirement and Access Blocked error fix
+
+Task 2 — DB Migrations + Composer Dependency
+  Tests: 928 → 931 (+3)
+
+  Migration 0018: adds to wp_bookings_staff:
+    google_oauth_access_token TEXT NULL
+    google_oauth_refresh_token TEXT NULL
+    google_oauth_token_expiry DATETIME NULL
+    google_calendar_connected TINYINT(1) NOT NULL DEFAULT 0
+    google_calendar_email VARCHAR(255) NULL
+
+  Migration 0019: NOT created — google_calendar_event_id already
+  existed in create_bookings_table() and schema.sql.
+
+  composer.json: google/apiclient ^2.15.0 added with Calendar-only
+  service cleanup (extra.google/apiclient-services: ["Calendar"]).
+  Run locally: cd bookit-booking-system && composer update google/apiclient
+
+Task 3 — Settings: Google Calendar Credentials
+  Tests: 931 → 935 (+4)
+
+  Three new settings in Dashboard → Settings (Integrations section):
+  - google_client_id (plain text)
+  - google_client_secret (masked as SAVED — same pattern as Brevo)
+  - google_calendar_fallback_enabled (toggle)
+
+  Fallback: when enabled, bookings where assigned staff has no Google
+  connection will sync to the first connected admin calendar.
+
+Task 4 — OAuth Connect/Disconnect Flow (per staff)
+  Tests: 935 → 948 (+13, including 2 hotfixes)
+
+  New classes:
+  - includes/utils/class-bookit-encryption.php (Bookit_Encryption)
+    AES-256-CBC, IV prepended to ciphertext, base64-encoded output
+  - includes/integrations/class-bookit-google-calendar-api.php
+    (Bookit_Google_Calendar_Api): get_auth_url, handle_callback,
+    disconnect, fetch_google_account_email (from id_token JWT)
+  - includes/api/class-bookit-google-calendar-rest-controller.php
+    (Bookit_Google_Calendar_Rest_Controller):
+    GET  bookit/v1/google-calendar/auth-url (session required)
+    GET  bookit/v1/google-calendar/callback (public — Google redirect)
+    POST bookit/v1/dashboard/profile/google-calendar/disconnect
+
+  My Profile → Google Calendar card:
+  - Connect / Disconnect buttons
+  - Connected status with Gmail address
+  - Success/error banners on return from Google OAuth
+  - ?google_connected=1 and ?google_error=1 query param handling
+
+  GET bookit/v1/dashboard/profile extended with:
+    google_calendar_connected (bool)
+    google_calendar_email (string)
+
+  Key architectural decisions:
+  - State nonce replaced with stateless HMAC-SHA256
+    (wp_verify_nonce fails on public callback — no session)
+    Format: base64(staff_id:token:expires:hmac_sig), 10-min TTL
+  - hash_equals() used for timing-safe comparison
+  - sanitize_text_field removed from state param (breaks base64)
+  - Email extracted from id_token JWT (no extra HTTP call needed)
+    wp_remote_get() to userinfo endpoint was failing on Hostinger
+  - Scopes: calendar.events + openid + email (guarantees id_token)
+  - home_url() used for redirect (not hardcoded domain)
+
+Task 5 — Token Refresh Helper + Calendar Sync Class (Queue-First)
+  Tests: 948 → 958 (+10)
+
+  New class: includes/integrations/class-bookit-google-calendar.php
+  (Bookit_Google_Calendar):
+  - get_client_for_staff(): reads/decrypts tokens, checks expiry,
+    refreshes via fetchAccessTokenWithRefreshToken(), re-encrypts
+    and updates DB on refresh
+  - create_event(): builds Google Calendar Event with RFC 3339
+    datetimes, business timezone, inserts, stores event ID in
+    wp_bookings.google_calendar_event_id
+  - update_event(): updates existing event or falls back to create
+  - delete_event(): deletes event, clears event ID in DB
+  - process_sync_job(): Action Scheduler callback, loads full
+    booking data from DB, routes to create/update/delete
+  - set_test_client(): static setter for unit test mockability
+
+  bookit_enqueue_calendar_sync($operation, $booking_id, $calendar_staff_id)
+  added to includes/functions-notifications.php following exact
+  same AS/WP-Cron pattern as bookit_enqueue_email().
+
+  bookit_process_calendar_sync action registered in loader (3 args).
+
+  Architecture: sync is ALWAYS non-blocking. Booking hook returns
+  immediately. Google API call happens in background AS job.
+  Follows IntegrationRequirements_Phase1.md §6.1.
+
+  Key findings:
+  - company_name setting key is business_name in this codebase
+  - wp_bookings_staff keyed by id (not a separate staff_id column)
+  - google/apiclient behaviour verified against vendor source directly
+
+Task 6 — Calendar Event Content: Verify & Refine
+  Tests: 958 → 964 (+6)
+
+  All content fields verified against schema.sql before writing:
+  - Summary: {service_name} — {customer_first} {customer_last}
+    (em dash confirmed)
+  - Start/end: EventDateTime, RFC 3339, timezone_string fallback UTC
+  - Description: booking ref, customer name, phone, special requests
+    (special requests line omitted when empty/null)
+  - Location: business_name setting (omitted entirely if empty/whitespace)
+  - Reminders: 15-minute popup (EventReminder/EventReminders)
+  - ColorId: '7' (blue) for visual distinction
+
+  build_calendar_event_from_booking() helper extracted so both
+  create_event() and update_event() share identical event construction.
+
+Task 7 — Hook Listeners + Fallback Logic
+  Tests: 964 → 972 (+8)
+
+  New class: includes/integrations/class-bookit-google-calendar-sync.php
+  (Bookit_Google_Calendar_Sync):
+  - init(): registers 3 hooks
+  - on_booking_created(): status filter (confirmed/pending_payment only)
+  - on_booking_rescheduled(): enqueues update
+  - on_booking_cancelled(): enqueues delete (no status check)
+  - resolve_staff_id(): fallback logic — if staff not connected,
+    checks google_calendar_fallback_enabled, finds first admin with
+    google_calendar_connected = 1 ORDER BY id ASC
+
+  Architecture issue found and resolved:
+  bookit_enqueue_calendar_sync() extended with optional third param
+  $calendar_staff_id. process_sync_job() uses this to override the
+  OAuth staff when fallback applies. DB booking row unchanged.
+  delete_event() also has internal fallback for events created on
+  admin calendar.
+
+  Audit log: google_calendar.sync_skipped with notes=no_connected_staff
+  when no calendar available after fallback check.
+
+  AS args changed from associative to positional array to match
+  three-parameter callback signature.
+
+Task 8 — Staff Edit Form: Google Calendar Status (Admin View)
+  Tests: 972 → 976 (+4)
+
+  GET bookit/v1/dashboard/staff/{id} extended:
+    google_calendar_connected (bool)
+    google_calendar_email (string|null)
+    NOTE: google_oauth_access_token, google_oauth_refresh_token,
+    google_oauth_token_expiry are explicitly unset before response —
+    tokens must NEVER travel over the wire. Security fix applied
+    after tokens were found in initial API response.
+
+  New endpoint:
+  POST bookit/v1/dashboard/staff/{id}/google-calendar/disconnect
+  - Admin only (check_admin_permission_callback — refactored to static
+    for reuse across controllers without double route registration)
+  - Validates id > 0 (400), staff exists (404)
+  - Calls Bookit_Google_Calendar_Api::disconnect()
+  - Returns { success: true }
+
+  StaffFormModal.vue: Google Calendar card added in edit mode only
+  (v-if="isEditing"), below Notification Preferences:
+  - Connected state: green panel (bg-green-50), large dot with ring,
+    bold Connected label, email on own line, Disconnect button
+  - Not connected state: grey panel, hollow dot, italic helper text
+  - Disconnect updates local refs immediately without page reload
+  - googleCalendarConnected/googleCalendarEmail as dedicated refs
+    (not read from staffDetails directly — avoids 0/1 vs bool issues)
+
+─────────────────────────────────────────────
+DEPLOYMENT NOTES — LIVE SITE (Hostinger)
+─────────────────────────────────────────────
+
+Three cache layers must ALL be cleared after every frontend deployment:
+
+1. LiteSpeed Cache plugin (WordPress admin → LiteSpeed Cache →
+   Manage → Purge All). Also disable JS Minify/Combine in
+   Page Optimization → JS Settings.
+
+2. Hostinger Server Cache (hPanel → Hosting → Manage →
+   Cache Manager → Purge All).
+
+3. Hostinger CDN Cache (hPanel → CDN → Purge Cache).
+   This was the primary culprit — CDN serves cached JS from edge
+   servers independently of WordPress and server-level purges.
+
+Always test in incognito with DevTools cache disabled after purging.
+
+dist/ is gitignored — must be manually built (npm run build in
+bookit-booking-system/dashboard/) and uploaded via File Manager
+after every Vue change. Plugin reinstall does NOT reliably replace
+dist/ because WordPress preserves existing files during reinstall
+when chunk filenames are unchanged.
+
+─────────────────────────────────────────────
+GOOGLE CLOUD CONSOLE — PER-CLIENT NOTES
+─────────────────────────────────────────────
+
+- Each client needs their own Google Cloud project (redirect URIs
+  are domain-specific)
+- OAuth app stays in Testing mode for all small client installs
+- Each staff member's Gmail must be added to Test Users list in
+  Google Cloud Console before they can connect (max 100 users)
+- "Access blocked: has not completed the Google verification process"
+  = staff Gmail not in Test Users list
+- Redirect URI must exactly match (no trailing slash, https, correct
+  subdomain) — mismatch causes redirect_uri_mismatch error
+- Store Client Secret in password manager, not notes
+
+Setup guide: Bookit_Google_Calendar_Setup_Guide.md (v1.2)
+Located in project outputs — add to client onboarding pack.
+
+─────────────────────────────────────────────
+NEXT STEPS (decided during Sprint 6B-1)
+─────────────────────────────────────────────
+
+IMMEDIATE — Before next sprint starts:
+
+1. Cache-busting fix (~1h)
+   Add version-based cache busting to the PHP JS enqueue so the
+   browser and CDN automatically fetch fresh JS after every build.
+   Find where dashboard/dist/index.js is enqueued in PHP and ensure
+   the version parameter is set to BOOKIT_VERSION (or equivalent).
+   This eliminates the 3-layer manual cache purge after every
+   frontend deployment.
+   File to check: whichever PHP file calls wp_enqueue_script for
+   the dashboard dist/index.js.
+
+SHORT-TERM — Email notification hotfix sprint:
+   Three bugs discovered during Sprint 6B-1 live testing:
+
+   Bug 1: Reschedule confirmation email (to customer) is missing
+   the Reschedule, Cancel, and Add to Calendar buttons. These appear
+   in the booking confirmation email but not in the reschedule email.
+
+   Bug 2: Staff member does not receive the reschedule notification
+   email when a booking is rescheduled.
+
+   Bug 3: Neither admin nor staff receive the cancellation
+   notification email when a booking is cancelled.
+
+   These are pre-existing email notification bugs from the Sprint 6A
+   notification system — not introduced by Sprint 6B-1. Raise as a
+   focused hotfix sprint after the cache-busting fix is done.
+
+NEXT MAJOR SPRINT — To be decided with PA:
+   Options in priority order based on project status:
+
+   Option A: Invoice generation (~10-14h)
+   Flagged as high priority before first client go-live with payments.
+   Native PDF invoice generation (DOMPDF), VAT-aware, sequential
+   invoice numbering. See Future_Features_Backlog.md for full spec.
+   Migration 0020+ required.
+
+   Option B: UK Compliance checklist completion
+   Review UK_Compliance_Checklist_v1_0.md for any remaining items
+   before first client go-live.
+
+   Option C: Launch preparation
+   First client onboarding documentation, deployment runbook,
+   Stripe live key switch (5 minutes of config).
+
+   Consult PA chat to confirm priority order and plan next sprint.
+
+─────────────────────────────────────────────
+KNOWN TECHNICAL DECISIONS FROM SPRINT 6B-1
+─────────────────────────────────────────────
+
+- wp_verify_nonce() cannot be used on public REST endpoints —
+  requires session. Use stateless HMAC-SHA256 with expiry instead.
+- sanitize_text_field() must NOT be applied to base64 state params —
+  strips +, /, = characters silently.
+- Google id_token JWT contains email in payload — no extra HTTP call
+  to userinfo endpoint needed. Requires openid + email scopes.
+- AES-256-CBC with prepended IV and base64 output is the encryption
+  pattern for all sensitive OAuth token storage.
+- Action Scheduler args for 3-parameter callbacks must be positional
+  array, not associative — AS and WP-Cron arg passing differs.
+- wp_bookings_staff.id is the primary key (not staff_id column).
+  Always query WHERE id = %d.
+- business_name is the setting key for company name (not company_name).
+- dist/ deployment: always delete entire dist/ folder on server before
+  uploading fresh build. Overwriting individual files leaves stale
+  chunks when Vite hash changes.
