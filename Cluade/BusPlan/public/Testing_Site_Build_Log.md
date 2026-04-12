@@ -303,6 +303,31 @@ notifications |
 
   ----
 
+  ### Step 17 — Caching layers: clear after every frontend deployment
+**Status:** 📋 Development reference — action required after every plugin update
+
+Three separate caching layers exist on the Hostinger setup. All three must be 
+cleared after every frontend deployment, in this order:
+
+**1 — LiteSpeed Cache Plugin (WordPress)**
+- WordPress Admin → LiteSpeed Cache → Manage → Purge All
+- Also check: LiteSpeed Cache → Page Optimization → JS Settings
+- Confirm JS Minify and JS Combine are both OFF
+
+**2 — Hostinger Server Cache (hPanel)**
+- hPanel → Hosting → Manage → Cache Manager → Purge All / Clear Cache
+- ⚠️ This caches static JS/CSS files at server level independently of WordPress
+- This was the cache causing deployment issues — must not be skipped
+
+**3 — Hostinger CDN Cache**
+- hPanel → find CDN section → Purge / Clear CDN cache
+- CDN serves cached JS files from edge servers and ignores both WordPress 
+  and server-level purges
+- This was the final culprit — always clear last, after the above two
+
+**⚠️ All three must be cleared every time. Clearing only one or two is not 
+sufficient — stale JS/CSS will persist at whichever layer was skipped.**
+
 ## Outstanding — To Complete in Next Session
 
 | Item | Notes |
