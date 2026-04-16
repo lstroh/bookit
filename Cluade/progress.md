@@ -3384,3 +3384,358 @@ KNOWN TECHNICAL DECISIONS FROM SPRINT 6B-1
 - dist/ deployment: always delete entire dist/ folder on server before
   uploading fresh build. Overwriting individual files leaves stale
   chunks when Vite hash changes.
+
+
+  ---
+
+## BACKLOG
+
+### INVOICING & ACCOUNTING INTEGRATION (Phase 2)
+**Priority:** High — MTD ITSA mandation (April 2026) makes accounting 
+integration a compliance requirement, not just a convenience
+**Migration:** 0016 (wp_bookings_invoices — see schema below)
+
+**Context & Rationale:**
+MTD for Income Tax is now live (6 April 2026) for sole traders with 
+gross income >£50,000, dropping to £30,000 in April 2027 and £20,000 
+in April 2028. All Bookit clients will eventually be in scope. They 
+are legally required to maintain digital income records and submit 
+quarterly summaries to HMRC via MTD-compatible software (Xero, 
+QuickBooks, FreeAgent etc). A PDF invoice alone does not satisfy this 
+requirement.
+
+PDF invoice generation has been deprioritised. The Stripe payment 
+receipt + booking confirmation email (already built) is sufficient 
+for customer-facing documentation. The business owner's compliance 
+need is solved by accounting integrations and CSV export, not PDFs.
+
+No off-the-shelf WordPress plugin exists for Xero or QuickBooks 
+integration without WooCommerce. All must be built natively as 
+Bookit extension plugins.
+
+---
+
+#### PHASE 2 — ITEM 1: Payment CSV Export
+**Priority:** Highest (ship first — lowest effort, immediate MTD value)
+**Estimated effort:** 2–3 hours
+**Type:** Core plugin addition
+
+**Scope:**
+- Export all payments for a date range as CSV from admin dashboard
+- Columns: invoice date, booking reference, customer name, 
+  service name, appointment date, payment type (deposit/balance/
+  full/pay-on-arrival), amount, VAT rate (if applicable), 
+  VAT amount, gross total, payment gateway, transaction ID
+- Importable directly into Xero, QuickBooks, FreeAgent, and 
+  any spreadsheet-based MTD bridging software
+- Date range filter + status filter (completed payments only)
+- Existing CSV export pattern from Reports section (same 
+  rest_pre_serve_request approach already used in Sprint 4A)
+
+---
+
+#### PHASE 2 — ITEM 2: Xero Integration (Extension Plugin)
+**Priority:** High — dominant UK accounting platform, strongest MTD 
+accountant mindshare
+**Estimated effort:** 30–40 hours
+**Type:** Bookit Xero extension plugin (separate codebase, own 
+Claude project)
+
+**Scope:**
+- OAuth 2.0 connection flow (Xero PHP SDK)
+- Per-client setup: connect their Xero organisation to Bookit
+- Configuration page: map Bookit service types to Xero account 
+  codes and tax rates (dropdown, never manual entry)
+- Auto-create Xero invoice/sales receipt on every completed 
+  payment event (deposit, balance, full, pay-on-arrival)
+- Two-document deposit flow: Invoice 1 at deposit, Invoice 2 
+  at balance (referencing Invoice 1)
+- Refund handling: create Xero credit note on Bookit refund
+- VAT-aware: reads tax rates from Xero API, applies correct 
+  rate per transaction
+- Tax point = payment received date (HMRC requirement)
+- Error handling + retry queue for failed syncs
+- Admin dashboard section: sync status per booking, manual 
+  resync button, connection health indicator
+
+**Technical notes:**
+- Xero PHP SDK available (C#, Java, Node, PHP, Ruby, Python)
+- Rate limits: 5 concurrent calls, 60/min, 5,000/day — well 
+  within Bookit's expected volume
+- Webhook from Xero not needed — Bookit is the source of truth, 
+  pushes to Xero only
+- Uses `bookit_after_payment_completed` core hook (already exists)
+- Token refresh: access tokens expire 30 min, refresh tokens 
+  persist until revoked — handle transparently
+
+---
+
+#### PHASE 2 — ITEM 3: QuickBooks Online Integration (Extension Plugin)
+**Priority:** Medium — second largest UK platform, strong with 
+payroll-heavy businesses
+**Estimated effort:** 25–35 hours
+**Type:** Bookit QuickBooks extension plugin (separate codebase, 
+own Claude project)
+
+**Scope:** Same feature set as Xero integration above, adapted 
+for QuickBooks Online API (Intuit OAuth 2.0, QBO REST API)
+
+**Note:** Intuit introduced the App Partner Program in 2025 — 
+confirm current API access requirements and pricing before 
+building. Free tier may be limited.
+
+---
+
+#### PHASE 2 — ITEM 4: PDF Invoice (Deprioritised)
+**Priority:** Low — only build if clients explicitly request it
+**Estimated effort:** 8–12 hours if built
+**Type:** Core plugin addition
+
+**Rationale for deprioritisation:**
+- Stripe already sends customer a payment receipt automatically
+- Booking confirmation email (already built) contains all 
+  legally relevant fields for consumer transactions
+- PDF does not satisfy MTD digital record requirements
+- Business owner's compliance need is solved by Items 1–3 above
+- Only genuinely needed for VAT-registered B2B transactions 
+  (rare in Bookit's target market of consumer-facing service 
+  businesses)
+
+**If built, must include:**
+- DOMPDF (no third-party plugin dependency)
+- VAT-aware: admin setting for VAT number — empty = standard 
+  invoice, non-empty = full VAT invoice with breakdown
+- Sequential gapless numbering with configurable prefix 
+  (e.g. INV-2025-001), stored as INT in DB
+- Two-document deposit flow (deposit invoice + balance invoice)
+- Tax point date separate from invoice date (HMRC requirement)
+- 6-year retention (HMRC) — PDFs stored in WP uploads
+
+**New settings keys (if PDF built):**
+| Key | Type | Notes |
+|-----|------|-------|
+| `invoice_prefix` | VARCHAR | e.g. `INV`, per client |
+| `business_vat_number` | VARCHAR | Empty = non-VAT registered |
+
+---
+
+**DB Schema — `wp_bookings_invoices` (migration 0016):**
+*(Retained for reference — implement only if PDF invoice is built)*
+
+```sql
+CREATE TABLE wp_bookings_invoices (
+  id                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  invoice_number        INT UNSIGNED NOT NULL,
+  invoice_prefix        VARCHAR(20) NOT NULL DEFAULT 'INV',
+  booking_id            BIGINT UNSIGNED NOT NULL,
+  payment_id            BIGINT UNSIGNED NOT NULL COMMENT 'The wp_bookings_payments row this invoice covers',
+  customer_id           BIGINT UNSIGNED NOT NULL,
+  parent_invoice_id     BIGINT UNSIGNED DEFAULT NULL COMMENT 'Set on balance invoice; references deposit invoice id',
+  invoice_type          ENUM('deposit', 'balance', 'full_payment', 'pay_on_arrival') NOT NULL,
+  status                ENUM('draft', 'issued', 'void') NOT NULL DEFAULT 'issued',
+  business_name         VARCHAR(255) NOT NULL,
+  business_address      TEXT NOT NULL,
+  business_email        VARCHAR(255) NOT NULL,
+  business_phone        VARCHAR(20) DEFAULT NULL,
+  business_vat_number   VARCHAR(30) DEFAULT NULL COMMENT 'NULL = non-VAT-registered',
+  customer_name         VARCHAR(255) NOT NULL,
+  customer_email        VARCHAR(255) NOT NULL,
+  customer_address      TEXT DEFAULT NULL,
+  service_name          VARCHAR(255) NOT NULL,
+  service_description   TEXT DEFAULT NULL,
+  appointment_date      DATE NOT NULL,
+  appointment_time      TIME NOT NULL,
+  staff_name            VARCHAR(255) NOT NULL,
+  subtotal_amount       DECIMAL(10,2) NOT NULL,
+  vat_rate              DECIMAL(5,2) DEFAULT NULL,
+  vat_amount            DECIMAL(10,2) DEFAULT NULL,
+  total_amount          DECIMAL(10,2) NOT NULL,
+  booking_total_price   DECIMAL(10,2) NOT NULL,
+  tax_point_date        DATE NOT NULL,
+  invoice_date          DATE NOT NULL,
+  pdf_path              VARCHAR(500) DEFAULT NULL,
+  pdf_generated_at      DATETIME DEFAULT NULL,
+  created_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  voided_at             DATETIME DEFAULT NULL,
+  voided_reason         TEXT DEFAULT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_invoice_number (invoice_prefix, invoice_number),
+  KEY idx_booking_id   (booking_id),
+  KEY idx_payment_id   (payment_id),
+  KEY idx_customer_id  (customer_id),
+  KEY idx_parent       (parent_invoice_id),
+  KEY idx_invoice_date (invoice_date),
+  KEY idx_tax_point    (tax_point_date),
+  KEY idx_status       (status),
+  KEY idx_issued_date  (invoice_date, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+─────────────────────────────────────────────
+SPRINT 6C: HOTFIX — COMPLETE
+Date: April 2026
+Estimate: ~7h
+Test suite: 976 tests, 0 failures (unchanged)
+─────────────────────────────────────────────
+
+6C-1 — Remove wp_enqueue_media from dashboard app page
+Tests: 976, 0 failures (unchanged)
+
+Cache-busting via ?v=BOOKIT_VERSION attempted and reverted.
+Root cause: Vite is configured with base: './' which uses relative
+chunk imports. Adding ?v= to index.js URL caused the browser module
+loader to treat it as a different cache key, loading a second instance
+of the Vue app and calling app.mount('#app') twice — crashing Vue with
+"Cannot read properties of null (reading 'nextSibling')".
+
+Correct cache-busting approach for this project is Vite manifest hash
+(entryFileNames: 'index.[hash].js' + manifest: true + PHP reads
+manifest.json). Deferred to pre-launch task.
+
+Net change kept from 6C-1:
+- dashboard/app/index.php: removed wp_enqueue_media(),
+  wp_print_scripts(), wp_print_media_templates() — these were
+  injecting 60+ unnecessary WP media library scripts and Underscore
+  templates into the dashboard page body, bloating it from 10 to
+  135 child nodes and interfering with Vue's DOM reconciler.
+- dashboard/src/components/StaffFormModal.vue: added comment noting
+  wp.media() photo upload needs replacement (file input + REST API)
+  now that wp_enqueue_media() is removed.
+
+Known gotchas discovered:
+- Vite base: './' + query string on entry file = double module load
+- wp_print_media_templates() injects <script type="text/html"> nodes
+  as body siblings — harmless normally but catastrophic with Vue mount
+- wp_enqueue_media() is not needed for dashboard boot; only needed
+  lazily when staff photo upload modal is opened (future fix)
+
+─────────────────────────────────────────────
+
+6C-2 — Email Notification Hotfix
+Tests: 976, 0 failures (unchanged — tests added within same count)
+
+Bug 1: Customer reschedule email missing action buttons
+- class-wizard-api.php: enqueue_magic_link_email() for
+  magic_link_reschedule now calls generate_customer_email() with
+  full booking data (JOINs) instead of stub HTML. Includes Add to
+  Calendar, Reschedule, and Cancel Booking buttons. Subject updated
+  to "Booking Rescheduled — {service_name}". Falls back to stub
+  if full booking fetch fails.
+
+Bug 2: Staff not notified on booking rescheduled (dashboard)
+- Root cause investigated: update_booking() already fires
+  bookit_booking_rescheduled with 2 args — no change needed.
+- Actual cause was Bug 3 below affecting get_full_booking().
+
+Bug 3: Staff/admin not notified on booking cancelled (dashboard)
+- Root cause confirmed: get_full_booking() had deleted_at IS NULL
+  filter. cancel_booking() soft-deletes the booking BEFORE firing
+  bookit_after_booking_cancelled, so get_full_booking() returned
+  null and the notifier silently returned early.
+- Fix: removed deleted_at IS NULL from get_full_booking() query.
+  Safe because this method is only called from lifecycle hook
+  callbacks — booking row always exists in DB.
+
+Addendum 1: Dashboard cancel sending wrong customer email
+- cancel_booking() was calling send_customer_confirmation() with a
+  TODO comment. Added send_customer_cancellation() and
+  generate_cancellation_email() to class-email-sender.php.
+  Email includes booking details + "Book Again" button linking to
+  home_url('/bookit/'). cancel_booking() updated to call the
+  correct method.
+
+Addendum 2: Dashboard reschedule sending wrong customer email
+- update_booking() was calling send_customer_confirmation()
+  unconditionally. Added send_customer_reschedule() and
+  generate_reschedule_email() to class-email-sender.php.
+  Email includes booking details + Add to Calendar, Reschedule,
+  and Cancel buttons. update_booking() now uses $date_changed /
+  $time_changed (already in scope) to decide which email to send.
+
+New test file: tests/unit/test-6c-hotfix.php
+All manual tests confirmed on live site:
+✅ Customer receives reschedule email with action buttons (magic link)
+✅ Staff/admin receive reschedule notification (dashboard)
+✅ Staff/admin receive cancellation notification (dashboard)
+✅ Customer receives cancellation email with booking details (dashboard)
+✅ Customer receives reschedule email with booking details (dashboard)
+
+─────────────────────────────────────────────
+
+6C-3 — Brevo Staff Email Template Params
+Tests: 976, 0 failures (unchanged — tests added within same count)
+
+- class-bookit-staff-notifier.php: notify_staff() now builds $params
+  from $booking_full before calling enqueue_email() for all 5
+  immediate email types (new_booking, reschedule, cancellation,
+  reassigned_to, reassigned_away).
+- get_full_booking() extended to also fetch c.phone AS customer_phone.
+- Params passed: service_name, booking_date, start_time,
+  customer_first, customer_last, customer_phone, booking_reference,
+  dashboard_url, preferences_url.
+- Enables {{ params.X }} variables in Brevo staff notification
+  templates to render correctly when template IDs are configured.
+- Digest email params deferred — multiple bookings per digest,
+  requires different structure.
+- No user-facing change until Brevo templates are created and
+  template IDs set in Email Settings.
+
+─────────────────────────────────────────────
+KNOWN ISSUES FROM SPRINT 6C (deferred)
+─────────────────────────────────────────────
+
+Two Vue UI bugs found during manual testing of 6C-2:
+
+1. Reschedule page — cannot navigate to different month in the
+   calendar widget. Customer is stuck on the current month only.
+
+2. Reschedule button stuck on "Rescheduling..." after submit
+   completes. Button state not reset after successful API response.
+
+Both are in the magic link reschedule Vue page (public-facing).
+Raise with PA to schedule as a focused bug-fix task.
+
+─────────────────────────────────────────────
+NEXT STEPS (after Sprint 6C)
+─────────────────────────────────────────────
+
+Immediate — Reschedule page UI bugs (small task, ~2-3h):
+  Fix month navigation and button state reset in the magic link
+  reschedule Vue page.
+
+Next major sprint — consult PA chat to confirm priority:
+
+  Option A: Invoice generation (~10-14h)
+  High priority before first client go-live with payments.
+  DOMPDF, VAT-aware, sequential invoice numbering.
+  See Future_Features_Backlog.md for full spec.
+
+  Option B: UK Compliance checklist completion
+  Review UK_Compliance_Checklist_v1_0.md for remaining items
+  before first client go-live.
+
+  Option C: Launch preparation
+  First client onboarding docs, deployment runbook,
+  Stripe live key switch (5 minutes of config).
+
+  Option D: Vite manifest cache-busting (pre-launch, ~2h)
+  Proper solution: manifest: true in vite.config.js +
+  entryFileNames: 'index.[hash].js' + PHP reads manifest.json.
+  Eliminates 3-layer manual cache purge permanently.
+
+─────────────────────────────────────────────
+KNOWN TECHNICAL DECISIONS FROM SPRINT 6C
+─────────────────────────────────────────────
+
+- Vite base: './' + ?v= query string on entry file causes double
+  module load. Never add query params to index.js when base is './'.
+  Correct cache-busting = Vite manifest hash in filename.
+- wp_enqueue_media() must not be called on the dashboard app page
+  at boot time — load lazily only when staff photo upload is needed.
+- get_full_booking() in Bookit_Staff_Notifier must NOT filter
+  deleted_at IS NULL — cancellation hook fires after soft-delete.
+- Dashboard cancel_booking() must call send_customer_cancellation(),
+  not send_customer_confirmation().
+- Dashboard update_booking() must check $date_changed || $time_changed
+  to decide between reschedule and confirmation email.
