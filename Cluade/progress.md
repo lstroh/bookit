@@ -3739,3 +3739,516 @@ KNOWN TECHNICAL DECISIONS FROM SPRINT 6C
   not send_customer_confirmation().
 - Dashboard update_booking() must check $date_changed || $time_changed
   to decide between reschedule and confirmation email.
+
+  ─────────────────────────────────────────────
+SPRINT 6D: FINAL PHASE 1 CODE SPRINT — COMPLETE
+Date: April 2026
+Estimate: ~13h
+Actual: ~16h (6D-1 required multiple root-cause debug iterations)
+Test suite: 986 tests, 0 failures (up from 976 at start of sprint)
+─────────────────────────────────────────────
+
+6D-1 — Reschedule Page UI Bugs (month nav + button state)
+Tests: 976 → 976 (0 new tests — frontend only), 0 failures
+Actual: ~6h (multiple root causes discovered)
+
+Root cause investigation log:
+1. First attempt: esc_js() encoding of ✓ and … characters — fixed
+   but did not resolve issue (str_replace edits silently failed to
+   save to disk in Cursor).
+2. Second attempt: booking-wizard-v2.js attaching click listeners to
+   .bookit-v2-day--available on the reschedule page — fixed with
+   data-step guard. Did not resolve issue (same underlying problem).
+3. Third attempt: Full script block rewrite with ASCII-safe strings.
+   Confirmed file on disk still had old content — Cursor str_replace
+   was not persisting. Forced full block replacement. Did not resolve.
+4. Root cause confirmed from rendered page source: WordPress
+   the_content filter pipeline was encoding && as &#038;&#038; inside
+   the <script> block returned by the shortcode. no_texturize_shortcodes
+   filter attempted — did not work because the encoding happens to the
+   full shortcode return value, not just the tag placeholder.
+5. Final fix: Moved both reschedule and cancel <script> blocks out of
+   the shortcode return value entirely and into wp_footer actions in
+   class-shortcodes.php. Scripts output via raw PHP echo after
+   the_content has finished — bypasses all content filters. Both
+   render_reschedule_script() and render_cancel_script() added with
+   static $done guards.
+
+Fixes confirmed working:
+- Month navigation advances and retreats correctly
+- Calendar header updates to correct month/year
+- Prev-month arrow disables when on current month
+- Clicking a date loads available time slots
+- Confirm button resets to enabled state after successful reschedule
+- Success message shown: "Your booking has been rescheduled. ✓"
+- Page redirects to homepage after 3 seconds
+
+Known technical decisions added:
+- Shortcode return values that contain <script> blocks must be output
+  via wp_footer action, not returned from the shortcode handler.
+  WordPress the_content filter encodes && as &#038;&#038; regardless
+  of no_texturize_shortcodes.
+- bookit_reschedule_booking and bookit_cancel_booking added to
+  no_texturize_shortcodes (belt-and-braces, kept in place).
+
+─────────────────────────────────────────────
+
+6D-2 — Customer Email Change Workflow (REQ-LEGAL-007)
+Tests: 976 → 986 (+10), 0 failures
+New test file: tests/unit/test-email-change-workflow.php
+
+Deliverables:
+- database/migrations/0019-add-email-change-columns-to-customers.php
+  Adds pending_email_change, email_change_token, email_change_expires
+  to wp_bookings_customers (information_schema guarded, idempotent)
+- POST /bookit/v1/dashboard/customers/{id}/request-email-change
+  Admin only. Validates email, rejects duplicates (409), rate limited
+  5/hour per admin staff ID, generates token, enqueues verification
+  email to new address and notification to old address, fires audit log.
+- GET /bookit/v1/wizard/verify-email-change (public, token-auth)
+  Validates token (hash_equals) + expiry. On success: updates email,
+  clears pending columns, enqueues confirmed email to both addresses,
+  fires audit log, redirects to /bookit-email-changed/.
+- Three new email generation methods in class-email-sender.php:
+  generate_email_change_verification_email()
+  generate_email_change_notification_email()
+  generate_email_change_confirmed_email()
+- /bookit-email-changed/ page auto-created on activation
+- [bookit_email_changed] shortcode registered
+- CustomerProfile.vue: Change Email button + inline form with new email
+  input, reason dropdown, success/error states
+- Closes GDPR Right to Rectification gap (REQ-LEGAL-007)
+
+─────────────────────────────────────────────
+
+6D-3 — Vite Manifest Hash Cache-Busting
+Tests: 986, 0 failures (unchanged — no new tests)
+
+- dashboard/vite.config.js: manifest: true added to build config.
+  entryFileNames changed from 'index.js' to 'index.[hash].js'.
+  CSS assets changed from 'style.css' to 'style.[hash].css'.
+  base, plugins, server, resolve sections untouched.
+- dashboard/app/index.php: reads dist/.vite/manifest.json to resolve
+  current hashed filenames for JS entry and CSS. Falls back to
+  'index.js'/'style.css' if manifest absent. Dev fallback to
+  localhost:5173 preserved exactly.
+- dist/.vite/manifest.json confirmed generated with correct structure.
+  Entry: index.DuvrpLnL.js, CSS: style.DhcseoZP.css (hashes will
+  change on future content changes).
+- Eliminates 3-layer manual cache purge (LiteSpeed → Hostinger → CDN)
+  after frontend deployments permanently.
+
+─────────────────────────────────────────────
+
+6D-4 — UK Compliance Review
+No code changes. Chat-only review.
+
+All 7 original compliance gaps confirmed closed:
+✅ Privacy Policy template — Sprint 6B-4
+✅ Terms & Conditions template — Sprint 6B-4
+✅ 14-day cooling-off waiver — Sprint 4C
+✅ Right to Rectification (email change) — Sprint 6D-2
+✅ DPA confirmation checklist — Sprint 6B-4
+✅ ICO registration guidance — Sprint 6B-4
+⚠️ Accessibility Statement — DEFERRED post-launch (SHOULD HAVE,
+   not blocking). Produce template within 30 days of go-live.
+
+88/89 compliance items closed. Phase 1 is compliance-ready for launch.
+
+─────────────────────────────────────────────
+PHASE 1 CODE-COMPLETE
+─────────────────────────────────────────────
+
+Sprint 6D is the final code sprint of Phase 1. All planned features,
+compliance requirements, and pre-launch tasks are complete.
+
+Test suite at Phase 1 code-complete: 986 tests, 0 failures
+
+Known technical decisions from Sprint 6D:
+- Shortcode <script> blocks must go through wp_footer, not returned
+  from shortcode handler — WordPress the_content encodes && regardless
+  of no_texturize_shortcodes.
+- Vite base: './' requires manifest hash for cache-busting. Query
+  strings on entry file cause double Vue mount. Never use ?v= on
+  index.[hash].js.
+- Email change token: wp_generate_password(32, false, false),
+  validated with hash_equals(), expires in DAY_IN_SECONDS.
+- Migration 0019 uses information_schema.COLUMNS column check (not
+  SHOW COLUMNS LIKE — MariaDB underscore wildcard issue).
+
+─────────────────────────────────────────────
+NEXT STEPS (post Phase 1 code-complete)
+─────────────────────────────────────────────
+
+Consult PA chat for launch sequencing. Options:
+
+Option A: First client onboarding
+  - Publish Privacy Policy and T&Cs (templates ready)
+  - Switch Stripe to live keys (5 minutes config)
+  - Deployment runbook for production go-live
+
+Option B: Invoice generation (~10-14h)
+  High priority before first client go-live with payments.
+  DOMPDF, VAT-aware, sequential invoice numbering.
+  See Future_Features_Backlog.md for full spec.
+
+Option C: Accessibility Statement (post-launch, ~4h)
+  Produce template within 30 days of first go-live.
+  Required for public sector clients only — not blocking
+  for initial salon/beauty business clients.
+
+
+
+─────────────────────────────────────────────
+CODE REVIEW SPRINT — Dead Code Removal + PHPUnit Coverage
+Date: April 2026
+Test suite: 986 → 993 tests (+7 net), 0 failures
+Git tag: v1.0.0 on branch Phase1
+─────────────────────────────────────────────
+
+Scope: Post-Phase-1 code quality sprint. No new features. Read-before-
+write discipline throughout — all removals confirmed via codebase search
+before any Cursor prompt was produced.
+
+─────────────────────────────────────────────
+
+Task 1 — Remove send_business_notification()
+Tests: 986 → 985 (−1 net: 1 test removed, 1 replacement added), 0 failures
+
+Full codebase search revealed two live call sites missed by Sprint 6A-8:
+- class-payment-processor.php lines 267 and 468 (pay-on-arrival path)
+- public/templates/booking-confirmed.php line 75 (V1 template)
+
+PA confirmed Option A: migrate remaining call sites, then remove method.
+
+Changes made:
+- class-payment-processor.php: removed both send_business_notification()
+  calls. do_action('bookit_after_booking_created') already fires before
+  both calls → Bookit_Staff_Notifier already handled notification.
+  Fixes double-notification bug on pay-on-arrival path.
+  Replacement comment: // Staff notification handled by Bookit_Staff_Notifier
+  via bookit_after_booking_created hook.
+- booking-confirmed.php: removed V1 template call (side effect on GET
+  request; notifications already fired by payment processor before redirect).
+  Replacement comment matches V2 template pattern.
+- class-email-sender.php: removed send_business_notification() method and
+  generate_business_email() helper (no remaining call sites).
+  Class docblock updated — no longer refers to admin business emails.
+- class-dashboard-bookings-api.php: replaced two-line Sprint 6A-8
+  replacement comment with single accurate comment:
+  // Staff notifications handled by Bookit_Staff_Notifier via
+  // bookit_after_booking_created hook (fired above).
+- class-stripe-webhook.php: verified clean (no call site — confirmed).
+- test-notification-dispatcher.php: replaced
+  test_send_business_notification_enqueues_pending_row() with
+  test_poa_booking_created_action_enqueues_staff_notification()
+  (fires hook, asserts staff_new_booking_immediate queue row).
+- test-payment-success.php: removed test_sends_business_notification_email()
+  (Staff Notifier coverage for Stripe path exists in test-stripe-v2-wiring.php).
+
+─────────────────────────────────────────────
+
+Task 2 — TODO/FIXME/HACK/XXX Audit
+No code changes.
+
+Full codebase search results:
+- TODO: 1 hit — BookingModal.vue line 532
+  "// TODO: Filter by service when staff-services relationship is available."
+  → KEEP. Valid deferred feature (staff dropdown filter by selected service).
+- FIXME: 0 hits.
+- HACK: 0 hits.
+- XXX: All hits are XXXX inside booking reference format strings (BK[YYMM]-XXXX).
+  Not code quality markers — intentional placeholder notation.
+- Sprint 4F remnants (meeting_type, preferred_platform, meeting_link):
+  0 hits in core plugin tree. Revert confirmed fully clean.
+
+─────────────────────────────────────────────
+
+Task 3 — Stale Sprint 6A-8 Comments
+Completed as part of Task 1 pass. See Task 1 above.
+
+─────────────────────────────────────────────
+
+Task 4 — V1 Booking Wizard Assessment
+No code changes.
+
+[bookit_booking_wizard] shortcode is registered and fully functional.
+All 5 step templates exist under public/templates/:
+booking-wizard-shell.php, booking-step-1-services.php,
+booking-step-2-staff.php, booking-step-3-datetime.php,
+booking-step-4-contact.php, booking-step-5-payment.php.
+
+Decision: RETAIN. V1 may be in use on existing test pages.
+No removal without explicit PA decision.
+
+Note: booking-step-4-checkout.php also exists in public/templates/ but
+is not loaded by the V1 shell (which uses contact for step 4). Flagged
+as a possible orphan — see Task 7b below.
+
+─────────────────────────────────────────────
+
+Task 5 — Dead Table wp_bookings_working_hours
+No code changes. Confirmed already clean from Sprint 5A Issue 14.
+
+create_working_hours_table() in class-bookit-database.php:
+- Deprecation docblock present and accurate.
+- Not called anywhere in the codebase.
+- Migration 0011 drops the table.
+
+─────────────────────────────────────────────
+
+Task 6 — Sprint 4F Revert Verification
+No code changes. Confirmed fully clean.
+
+Codebase search for meeting_type, preferred_platform, meeting_link:
+0 matches in *.php, *.vue, *.js under bookit-booking-system/.
+Sprint 4F revert was complete.
+
+─────────────────────────────────────────────
+
+Task 7 — wp_enqueue_media() Remnants
+No code changes. Confirmed already clean.
+
+- dashboard/app/index.php: wp_enqueue_media, wp_print_scripts,
+  wp_print_media_templates — all absent (removed Sprint 6C hotfix).
+- StaffFormModal.vue: wp.media() call remains with prompt() fallback;
+  comment in place explaining removal of wp_enqueue_media() and that
+  replacement (file input + REST upload) is deferred.
+- Full PHP codebase: 0 hits for wp_enqueue_media in *.php files.
+
+Photo upload replacement deferred — logged in PA backlog as pre-Phase 2
+task (~3-4h). Endpoint needed before React Native mobile work begins.
+
+─────────────────────────────────────────────
+
+Task 7b — booking-step-4-checkout.php Orphan Check
+Tests: 985 → 985 (no change), 0 failures
+
+Codebase search for booking-step-4-checkout: 0 matches in *.php,
+*.vue, *.js. File confirmed orphaned (superseded by V2 wizard;
+Sprint 4F fully reverted).
+
+PA confirmed removal. File deleted.
+
+Commit message: "Code review: Remove orphaned booking-step-4-checkout.php
+template — no call sites found, superseded by V2 wizard."
+
+─────────────────────────────────────────────
+
+Task 8 — PHPUnit Coverage Report + Gap Analysis
+Tests: 985 → 993 (+8), 0 failures
+
+Coverage report generated with Xdebug inside wp-env Docker container
+(installed as root via pecl install xdebug).
+
+Results:
+  Classes:  1.45% (1/69)   — artefact of PHPUnit counting method
+  Methods: 26.47% (167/631) — coverage; many classes hit indirectly
+  Lines:   52.89% (11228/21229)
+
+Highest-risk uncovered paths identified (genuine silent-failure risk):
+1. Booking_System_Stripe_Checkout — 0% methods, 35.57% lines
+   validate_session_data() missing-field paths uncovered.
+2. Bookit_Notification_Dispatcher — 28.57% methods, 41.46% lines
+   Retry/failure paths — already covered in test-notification-retry.php
+   (test_final_failure_marks_failed_and_fires_hook confirmed present).
+3. Bookit_Migration_Runner — 33.33% methods, 38.03% lines
+   catch(Throwable) block in run_pending() uncovered.
+4. Bookit_Encryption — 33.33% methods, 82.35% lines
+   decrypt() failure paths (garbage/truncated/tampered input) uncovered.
+5. Bookit_Google_Calendar — 18.75% methods, 60.06% lines
+   missing_access_token_after_refresh branch in get_client_for_staff()
+   uncovered (invalid_grant path already covered in test-google-calendar-sync.php).
+
+New test file created: tests/unit/test-coverage-gaps.php
+Four test classes, 8 new tests:
+
+  Test_Encryption_Edge_Cases (3 tests):
+  - test_decrypt_returns_empty_string_for_garbage_input
+  - test_decrypt_returns_empty_string_for_truncated_blob
+  - test_decrypt_returns_empty_string_for_tampered_ciphertext
+
+  Test_Migration_Runner_Error_Path (2 tests):
+  - test_run_pending_stops_on_migration_exception_and_does_not_mark_as_run
+  - test_run_pending_stops_processing_further_migrations_after_exception
+
+  Test_Stripe_Checkout_Validation (2 tests):
+  - test_create_checkout_session_returns_error_for_missing_staff_id
+  - test_create_checkout_session_returns_error_for_missing_required_field
+  (missing_service_id and invalid_email already covered in test-stripe-checkout.php)
+
+  Test_Google_Calendar_Token_Refresh (1 test):
+  - test_get_client_for_staff_returns_null_when_refresh_returns_no_access_token
+  (invalid_grant path already covered in test-google-calendar-sync.php)
+
+Cursor conflict resolutions applied before coding:
+- get_authenticated_client() does not exist; correct method is
+  get_client_for_staff() in class-bookit-google-calendar.php.
+- 4 of the originally planned 13 tests were duplicates of existing
+  coverage — correctly excluded.
+
+─────────────────────────────────────────────
+v1.0.0 RELEASE
+─────────────────────────────────────────────
+
+git tag -a v1.0.0 -m "Phase 1 complete — 993 tests, 0 failures, dead code removed"
+git push origin Phase1
+git push origin v1.0.0
+
+Final test suite: 993 tests, 0 failures
+Dead code removed: send_business_notification(), generate_business_email(),
+booking-step-4-checkout.php
+Double-notification bug fixed: pay-on-arrival path
+Sprint 4F revert: confirmed fully clean
+
+─────────────────────────────────────────────
+PRE-PHASE 2 TASKS REMAINING (from PA backlog)
+─────────────────────────────────────────────
+
+Ordered sequence agreed with PA:
+
+1. Code review + dead code removal + coverage  ✅ COMPLETE (this sprint)
+2. Git tag v1.0.0                              ✅ COMPLETE
+3. Documentation (Sprint 6B-3)                 Separate chat
+4. Legal documents (Sprint 6B-4)               Separate chat
+5. Playwright E2E sprint (~12h)                After tasks 1-4
+6. StaffFormModal photo upload (~4h)           Before Phase 2 mobile
+   New REST endpoint POST bookit/v1/dashboard/staff/{id}/photo
+   (multipart upload → WordPress media library → returns URL)
+   Vue file input replaces wp.media() + prompt() fallback
+7. Bookit Meetings extension (~60h)            New Claude project
+
+
+
+─────────────────────────────────────────────
+V1 BOOKING WIZARD REMOVAL — PA Decision: Remove
+Date: April 2026
+Tests: 993 → 969 (−24 V1-only tests removed), 0 failures
+Branch: Phase1
+─────────────────────────────────────────────
+
+PA confirmed removal after code review sprint confirmed V1 was fully
+superseded by V2 ([bookit_wizard_v2]) and all live pages use V2.
+
+─────────────────────────────────────────────
+
+Files deleted:
+- public/templates/booking-wizard-shell.php
+- public/templates/booking-step-1-services.php
+- public/templates/booking-step-2-staff.php
+- public/templates/booking-step-3-datetime.php
+- public/templates/booking-step-4-contact.php
+- public/templates/booking-step-5-payment.php
+- public/templates/booking-confirmed.php
+- public/assets/css/booking-wizard.css
+- public/assets/js/booking-wizard.js
+- public/assets/css/datetime-picker.css
+- public/assets/js/datetime-picker.js
+- public/assets/css/contact-form.css
+- public/assets/js/contact-form.js
+- public/assets/css/payment-step.css
+- public/assets/css/confirmation-page.css
+- tests/unit/test-booking-shortcode.php
+
+Shortcodes removed from class-shortcodes.php:
+- bookit_booking_wizard → render_booking_wizard()
+- bookit_booking_confirmation → render_booking_confirmation()
+- bookit_confirmation → bookit_confirmation_page_shortcode()
+
+Methods removed from class-payment-processor.php:
+- process_payment() — admin-post.php handler (V1-only entry point)
+- process_stripe_payment() — inline HTML Stripe redirect (V1-only)
+- Constructor hooks: admin_post_bookit_process_payment (both priv/nopriv)
+
+Asset enqueue cleanup in enqueue_wizard_assets():
+- Removed $has_wizard and $has_confirmation guards
+- Removed V1 asset enqueues: bookit-wizard CSS/JS, datetime-picker
+  CSS/JS, contact-form CSS/JS, payment-step CSS, confirmation CSS
+- CSS token block (:root --bookit-* variables) merged into
+  booking-wizard-v2.css with $needs_v2_tokens guard covering all
+  remaining shortcodes (cancel, reschedule, confirmation-v2,
+  my-packages, wizard-v2)
+
+Tests updated:
+- test-wizard-navigation.php: kept, updated to use [bookit_wizard_v2]
+  and V2 class names; test_browser_back_button_works removed (V1-specific)
+- test-wizard-flow.php: updated shortcode calls to [bookit_wizard_v2]
+- test-booking-wizard-v2.php: removed test_v2_shortcode_does_not_break_existing_wizard
+- test-booking-confirmed-v2.php: removed two V1-asserting tests
+  (test_original_booking_confirmed_shortcode_still_works,
+  test_original_booking_confirmation_template_unchanged)
+- test-payment-success.php: removed two tests loading booking-confirmed.php
+- phpunit.xml: replaced test-booking-shortcode.php with
+  test-my-packages-shortcode.php (my-packages cases moved out)
+
+Additional changes:
+- class-bookit-activator.php: removed creation of legacy booking-confirmed
+  page that used [bookit_confirmation]
+- class-bookit-loader.php: verified clean — no additional V1 hooks
+
+What was NOT changed:
+- [bookit_wizard_v2], [bookit_booking_confirmed_v2], [bookit_cancel_booking],
+  [bookit_reschedule_booking], [bookit_my_packages], [bookit_email_changed]
+- All V2 templates, assets, REST endpoints
+- process_pay_on_arrival(), process_use_package() in payment processor
+  (both used by V2 REST API path via class-wizard-api.php)
+
+─────────────────────────────────────────────
+BUG FIX — Step 4 Contact Form Broken by V1 Removal
+Tests: 969 → 969 (no change), 0 failures
+─────────────────────────────────────────────
+
+Root cause: contact-form.js handled Step 4 form validation, session
+save, and Step 4→5 navigation. It was correctly identified as a V1
+asset and deleted. However it was also the only file handling Step 4
+submission for V2 — initStep4() in booking-wizard-v2.js only wired
+the special requests toggle.
+
+Result: filling in Step 4 details and clicking Continue did nothing.
+No validation, no session save, no navigation to Step 5.
+
+Discovered during manual testing immediately after V1 removal.
+
+Fixes applied:
+
+1. booking-wizard-v2.js — initStep4() rewritten:
+   - Listens for #bookit-contact-form submit
+   - Validates: first_name, last_name, email (format), phone (non-empty)
+   - If cooling-off waiver group visible: requires checkbox checked
+   - Clears .bookit-v2-field-error spans before each run
+   - On pass: postToSession() with current_step:4, customer_first_name,
+     customer_last_name, customer_email, customer_phone,
+     customer_special_requests, cooling_off_waiver, marketing_consent,
+     bookit_booking_nonce from hidden field
+   - On res.success: advanceStep(4) → Step 5
+   - On failure: inline error + .bookit-v2-step4-submit-error message
+
+2. class-wizard-api.php — update_session() extended:
+   - Previously only accepted: current_step, service_id, staff_id,
+     date, time, service_name, service_duration, payment_method,
+     customer (array)
+   - Now also accepts and sanitizes: customer_first_name,
+     customer_last_name, customer_email, customer_phone,
+     customer_special_requests, cooling_off_waiver, marketing_consent
+   - This was a pre-existing gap independent of the V1 removal —
+     Step 4 data would never have persisted to session correctly
+     even with contact-form.js present
+
+Manual tests confirmed:
+✅ Step 4 → Step 5 navigation works
+✅ Validation fires correctly (blank fields, invalid email)
+✅ Pay-on-arrival end-to-end booking creates correctly
+✅ Customer details appear in booking record
+
+─────────────────────────────────────────────
+UPDATED PRE-PHASE 2 TASK STATUS
+─────────────────────────────────────────────
+
+1. Code review + dead code removal + coverage  ✅ COMPLETE
+2. Git tag v1.0.0                              ✅ COMPLETE
+3. V1 booking wizard removal                   ✅ COMPLETE
+4. Documentation (Sprint 6B-3)                 Separate chat
+5. Legal documents (Sprint 6B-4)               Separate chat
+6. Playwright E2E sprint (~12h)                After tasks 4-5
+7. StaffFormModal photo upload (~4h)           Before Phase 2 mobile
+8. Bookit Meetings extension (~60h)            New Claude project
