@@ -292,3 +292,364 @@ In addition to the gotchas already in `cursor-prompt-generator-meetings.md`:
 | Two wp-env environments | `localhost:8890` = dev site, `localhost:8891` = test site. SQL commands need `wp-env run development` vs `wp-env run tests-cli`. Settings set in one environment are not visible in the other. |
 | `metting.local` is a separate env | Manual end-to-end testing uses a local site (`metting.local`) separate from wp-env. Settings must be set independently in each environment. |
 | Confirmation page needs booking_id in URL | The confirmation page template reads `?booking_id=` from the URL. Navigating directly to `/booking-confirmed-v2/` without a `booking_id` param shows the page with no booking context. |
+
+
+# Bookit Meetings — Sprint Progress Log
+
+---
+
+## Sprint 2 — Dashboard Vue App
+
+**PHPUnit baseline entering Sprint 2:** 45 tests, 94 assertions, 0 failures
+**PHPUnit baseline exiting Sprint 2:** 51 tests, 107 assertions, 0 failures
+
+---
+
+### Task 1 — Backend Wiring ✅ Complete
+
+**What was built:**
+- `bookit_dashboard_loaded` action → enqueues Vue app JS/CSS via `Bookit_Meetings_Assets`
+- `bookit_dashboard_js_data` filter → injects `meetings_enabled`, `meetings_platform`, `meetings_manual_url` into JS data object (localised as `window.bookitMeetings`)
+- `bookit_booking_response` filter → adds `meeting_link` to every booking API response (re-read from DB)
+- New class: `bookit-meetings/includes/class-bookit-meetings-assets.php`
+
+**Fix applied mid-task:**
+- `bookit_booking_response` filter signature: second argument is `int $booking_id`, NOT `array $booking`. Core calls `apply_filters('bookit_booking_response', $response, $booking_id)` — the ID is an integer. Cursor initially typed the parameter as `array $booking` causing a PHP fatal. Corrected to `int $booking_id`.
+
+**Also fixed:**
+- `down()` in `0001-add-meetings-schema.php` — `ALTER TABLE ... DROP COLUMN IF EXISTS` is not supported on older MariaDB. Replaced with `information_schema.COLUMNS` guard check + plain `DROP COLUMN` (no `IF EXISTS`).
+- Migration `up()` settings insert changed to `INSERT ... ON DUPLICATE KEY UPDATE setting_value = IFNULL(VALUES(setting_value), setting_value)` for reliable idempotency.
+
+**PHPUnit result:** 51 tests, 107 assertions, 0 failures
+
+---
+
+### Task 2 — Vite Scaffold ✅ Code complete | ⚠️ Visual rendering pending core hook
+
+**What was built:**
+- `dashboard/vite.config.js` — `base: './'`, fixed output filenames (`app.js` / `app.css`)
+- `dashboard/package.json` — Vue 3.5, Vite 8, @vitejs/plugin-vue 6
+- `dashboard/index.html`, `dashboard/src/main.js`, `dashboard/src/App.vue` (placeholder)
+- Asset enqueue updated: `glob()` → `file_exists()` on fixed paths
+- Mount point div injected via `ob_start()` callback (see Architecture Discovery below)
+
+**Architecture discovery — permanent pattern:**
+The Bookit dashboard HTML page does NOT call `wp_head()` or `wp_footer()`. It is a fully custom PHP template at `bookit-booking-system/dashboard/app/index.php`. This means:
+- `wp_enqueue_script()` does NOT output script tags on the dashboard
+- `wp_enqueue_style()` DOES work (core calls `wp_print_styles()` in `<head>`)
+- Mount point divs and JS module scripts must be injected via `ob_start()` buffer
+
+**Confirmed working (JS injection):**
+```php
+ob_start( function( string $html ) use ( $js_url ): string {
+    $current_path = $_SERVER['REQUEST_URI'] ?? '';
+    if ( str_contains( $current_path, '/bookit-dashboard/app/meetings' ) ) {
+        $data   = apply_filters( 'bookit_dashboard_js_data', [] );
+        $json   = wp_json_encode( $data );
+        $inject = '<script>window.bookitMeetings = ' . $json . ';</script>' . "\n";
+        $inject .= '<script type="module" src="' . esc_url( $js_url ) . '"></script>' . "\n";
+        $inject .= '<div id="bookit-meetings-app"></div>' . "\n";
+        return str_replace( '</body>', $inject . '</body>', $html );
+    }
+    return $html;
+} );
+```
+`window.bookitMeetings` confirmed populated in browser console ✅
+`app.js` confirmed loading (HTTP 200) ✅
+
+**Visual rendering blocked:**
+The `#bookit-meetings-app` div is injected before `</body>` but renders BELOW core's fixed-height `#app` container (y: 698px, outside viewport). Requires core hook `bookit_dashboard_extension_content` to inject inside core's layout. See Core Hook Requests below.
+
+**Route guard confirmed working:**
+`main.js` guards mount to `/bookit-dashboard/app/meetings` path only. Other pages unaffected.
+
+**PHPUnit result:** 51 tests, 107 assertions, 0 failures
+
+---
+
+### Task 3 — Meetings Settings Page ✅ Code complete | ⚠️ Visual rendering pending core hook
+
+**What was built:**
+- `dashboard/src/router/index.js` — Vue Router with `createWebHashHistory()` (hash mode avoids conflict with core URL routing)
+- `dashboard/src/views/SettingsView.vue` — full settings form
+- `dashboard/src/components/ToggleSwitch.vue`
+- `dashboard/src/components/PlatformSelector.vue` — WhatsApp, Teams, Generic (active); Zoom, Google Meet (disabled, "Coming Soon")
+- `dashboard/src/components/ManualUrlField.vue`
+- `dashboard/src/App.vue` updated to use `<RouterView />`
+
+**API wiring:**
+- `GET bookit-meetings/v1/settings` on mount
+- `POST bookit-meetings/v1/settings` on save
+- All requests include `X-WP-Nonce: window.BOOKIT_DASHBOARD.nonce`
+- `meetings_enabled` converted: string `"0"`/`"1"` at API boundary ↔ boolean inside Vue
+
+**Visual rendering:** Blocked on `bookit_dashboard_extension_content` core hook (same as Task 2).
+
+**PHPUnit result:** 51 tests, 107 assertions, 0 failures
+
+---
+
+### Task 4 — Booking Detail Panel ✅ Code complete | ⚠️ Visual rendering pending core hook
+
+**What was built:**
+- `dashboard/src/views/BookingDetailView.vue` — always-mounted, renders nothing until booking detected
+- `dashboard/src/components/MeetingInfoPanel.vue` — Teams/Generic: join link + copy button; WhatsApp: customer phone + `tel:` link
+
+**Architecture discovery — booking detail approach:**
+Core's booking detail is a modal-only (`BookingViewModal.vue`) with no URL change. The booking ID is not stored in the DOM. Extension uses `window.fetch` intercept to detect `GET /dashboard/bookings/{id}` calls and MutationObserver to detect modal close:
+
+```js
+// Detect booking open
+const originalFetch = window.fetch
+window.fetch = async ( ...args ) => {
+    const url = typeof args[0] === 'string' ? args[0] : args[0]?.url ?? ''
+    const match = url.match( /\/dashboard\/bookings\/(\d+)$/ )
+    if ( match ) {
+        activeBookingId.value = parseInt( match[1], 10 )
+        await loadMeetingInfo( activeBookingId.value )
+    }
+    return originalFetch( ...args ) // use original to avoid recursion
+}
+// Detect modal close via MutationObserver
+// selector: div[role="dialog"][aria-labelledby="booking-view-modal-title"]
+```
+
+**Key confirmed field:** `customer_phone` (confirmed from `class-dashboard-bookings-api.php` SQL alias).
+
+**Visual rendering:** Blocked on `bookit_dashboard_extension_content` core hook.
+
+**PHPUnit result:** 51 tests, 107 assertions, 0 failures
+
+---
+
+### Task 5 — My-Schedule Meeting Indicator 🚫 Blocked — requires core changes
+
+**Blocked on:**
+
+1. `GET /dashboard/my-schedule` does not apply `bookit_booking_response` filter. It uses `format_schedule_booking()` which returns a fixed shape with no `meeting_link` field and no extension filter point.
+
+2. Booking card DOM elements in `MySchedule.vue` have no `data-*` attribute containing the booking ID — only `:key="booking.id"` which is a Vue internal and not rendered to the DOM. Badge injection requires a stable DOM selector.
+
+**Required core changes (see Core Hook Requests below):**
+- `bookit_schedule_booking_response` filter in `format_schedule_booking()`
+- `data-booking-id` attribute on booking card `<div>` elements in `MySchedule.vue`
+
+**PHPUnit result:** 51 tests, 107 assertions, 0 failures (unchanged — no code written)
+
+---
+
+## Core Hook Requests — Sprint 2
+
+### REQUEST 4 — `bookit_dashboard_extension_content` action (BLOCKING)
+
+**File to modify:** `bookit-booking-system/dashboard/app/index.php`
+
+**What to add:**
+```php
+<?php do_action( 'bookit_dashboard_extension_content' ); ?>
+```
+
+**Where:** Inside the main content area `<div>`, after the `<router-view>` equivalent and before the closing content container div. Must be inside core's layout container, not after `</body>`.
+
+**Why:** The dashboard HTML page is a fully custom PHP template that does not use WordPress's standard `wp_head()`/`wp_footer()` hooks. Extension Vue apps inject their mount point div before `</body>` via `ob_start()`, but this places them below core's fixed-height `#app` container (y: 698px), making them invisible. The `bookit_dashboard_extension_content` action would fire inside the layout where extensions can render their content correctly.
+
+**Impact:** Tasks 2, 3, and 4 are all code-complete but cannot be visually verified or used until this hook lands. This blocks sprint acceptance for all Vue dashboard work.
+
+**Priority:** High — blocking.
+
+---
+
+### REQUEST 5 — `bookit_schedule_booking_response` filter (BLOCKING Task 5)
+
+**File to modify:** `bookit-booking-system/includes/api/class-dashboard-bookings-api.php`
+
+**What to add:** At the end of `format_schedule_booking()`, before `return`:
+```php
+$formatted = apply_filters( 'bookit_schedule_booking_response', $formatted, (int) $row['id'] );
+return $formatted;
+```
+
+**Why:** `GET /dashboard/my-schedule` uses `format_schedule_booking()` which returns a fixed shape without calling `bookit_booking_response`. Extensions cannot add fields (e.g. `meeting_link`) to schedule booking cards without this filter point. Follows the exact same pattern as the existing `bookit_booking_response` filter.
+
+**Priority:** Medium — blocks Task 5 only.
+
+---
+
+### REQUEST 6 — `data-booking-id` attribute on my-schedule booking cards (BLOCKING Task 5)
+
+**File to modify:** `bookit-booking-system/dashboard/src/views/MySchedule.vue`
+
+**What to add:** On each booking card `<div>` in the `v-for` loops (Today, Week, Upcoming sections):
+```html
+<div
+  v-for="booking in todayBookings"
+  :key="booking.id"
+  :data-booking-id="booking.id"
+  class="bg-white rounded-lg shadow p-4"
+>
+```
+Same change for week cards and upcoming cards.
+
+**Why:** The extension needs to inject a meeting indicator badge into booking cards via MutationObserver + DOM selector. Currently cards have no stable DOM attribute containing the booking ID — only `:key` which is Vue-internal. Without `data-booking-id`, the extension cannot reliably target individual cards for badge injection.
+
+**Priority:** Medium — blocks Task 5 badge injection approach.
+
+---
+
+### REQUEST 7 — Confirm `bookit_booking_response` filter signature in API spec (DOCUMENTATION)
+
+**Spec to update:** `Extension_Plugin_API_Spec.md` — `bookit_booking_response` filter documentation.
+
+**Issue:** The spec example implies `$booking` is an array:
+```php
+add_filter( 'bookit_booking_response', function( array $response_data, int $booking_id ): array {
+```
+But the actual core call is:
+```php
+apply_filters( 'bookit_booking_response', $response, $booking_id )
+```
+Where `$booking_id` is an **integer**, not an array. Cursor initially typed the second parameter as `array $booking` which caused a PHP fatal (`TypeError: Argument #2 ($booking) must be of type array, int given`).
+
+**Requested action:** Confirm whether the spec example is correct or if the second parameter was intended to be an array. If integer is correct, update the spec to explicitly type it as `int $booking_id` and add a note that the full booking array is NOT passed — only the ID. Extensions that need booking data must re-read from DB.
+
+**Priority:** Low — documentation only, no code change needed.
+
+---
+
+## Core Hook Discoveries — Sprint 2
+
+These are behaviours discovered during Sprint 2 that differ from what the
+documentation or spec implied. Captured here so future prompts don't repeat
+mistakes.
+
+### Discovery 1 — Dashboard template does not use wp_head()/wp_footer()
+
+`bookit-booking-system/dashboard/app/index.php` is a fully custom PHP HTML
+template. It does NOT call `wp_head()` or `wp_footer()`.
+
+**Consequences for extension development:**
+- `wp_enqueue_script()` does NOT output `<script>` tags on the dashboard — scripts must be echoed directly or injected via `ob_start()`
+- `wp_enqueue_style()` DOES work — core calls `wp_print_styles()` in `<head>`
+- `wp_localize_script()` does NOT work — use inline `<script>window.myData = {...}</script>` instead
+- Mount point divs must be injected via `ob_start()` buffer on the `bookit_dashboard_loaded` hook
+
+**Confirmed working pattern (JS injection only — DOM placement pending core hook):**
+See Task 2 implementation above.
+
+### Discovery 2 — `bookit_dashboard_loaded` fires before `<!DOCTYPE html>`
+
+The `do_action('bookit_dashboard_loaded', $current_staff)` call in
+`index.php` fires at line ~30, before the HTML template begins output at
+line ~59. Any `echo` inside a `bookit_dashboard_loaded` callback lands
+before `<!DOCTYPE html>`, breaking the HTML document.
+
+Use `ob_start()` to capture subsequent output and inject via `str_replace('</body>', ...)`.
+
+### Discovery 3 — Core routing: sidebar extension links are plain `<a href>` not router-links
+
+Extension nav items registered via `bookit_register_nav_item()` are rendered
+in `Sidebar.vue` as plain `<a :href="item.route">` anchors, not `<router-link>`
+components. Clicking an extension nav item causes a **full page reload** to the
+registered route URL, not a client-side navigation.
+
+**Consequence:** Each extension page load is a fresh PHP request. The extension
+Vue app must initialise from scratch on each visit. State does not persist
+across navigation (as expected for separate pages).
+
+### Discovery 4 — Core catch-all rewrite serves core SPA shell for all /app/* routes
+
+`bookit-booking-system/includes/class-bookit-loader.php` registers:
+```php
+add_rewrite_rule( '^bookit-dashboard/app(/.*)?$', 'index.php?bookit_dashboard_page=app', 'top' );
+```
+This means `/bookit-dashboard/app/meetings` is served by the same core SPA
+template as `/bookit-dashboard/app/bookings`. Core does NOT have separate
+template handlers per extension route.
+
+### Discovery 5 — Booking detail is modal-only, no URL change
+
+`BookingViewModal.vue` is mounted by `Bookings.vue` with no URL update when
+opened. The booking ID is not stored in any DOM attribute — only in Vue's
+reactive state (`selectedBookingId`). Extensions must use `window.fetch`
+intercept to detect booking detail opens.
+
+Reliable modal selector: `div[role="dialog"][aria-labelledby="booking-view-modal-title"]`
+
+### Discovery 6 — `GET /dashboard/my-schedule` bypasses `bookit_booking_response` filter
+
+`get_my_schedule()` uses `format_schedule_booking()` — a private helper that
+returns a fixed shape without calling `apply_filters('bookit_booking_response', ...)`.
+Extensions cannot add fields to schedule booking responses without a dedicated
+filter point (`bookit_schedule_booking_response` — see Core Hook Requests).
+
+### Discovery 7 — MariaDB does not support `DROP COLUMN IF EXISTS`
+
+`ALTER TABLE {table} DROP COLUMN IF EXISTS {column}` is not supported on
+older MariaDB versions used by Local by Flywheel. Always guard column drops
+with an `information_schema.COLUMNS` check:
+```php
+$column_exists = $wpdb->get_col( $wpdb->prepare(
+    "SELECT COLUMN_NAME FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = %s",
+    DB_NAME, $wpdb->prefix . 'bookings', 'meeting_link'
+) );
+if ( ! empty( $column_exists ) ) {
+    $wpdb->query( "ALTER TABLE {$wpdb->prefix}bookings DROP COLUMN meeting_link" );
+}
+```
+
+---
+
+## Updated `cursor-prompt-generator-meetings.md` — New Gotchas to Add
+
+Add the following entries to the KNOWN GOTCHAS section:
+
+```markdown
+- **Task enqueues JS on the dashboard** → `wp_enqueue_script()` does NOT output
+  script tags on the Bookit dashboard (the template does not call `wp_footer()`).
+  Use `ob_start()` on the `bookit_dashboard_loaded` hook to inject JS module
+  scripts and inline data directly into the HTML before `</body>`. CSS can still
+  use `wp_enqueue_style()` (core calls `wp_print_styles()` in `<head>`).
+  Do NOT use `wp_localize_script()` — use inline `<script>window.myVar = {...}</script>`.
+
+- **Task injects mount point div on the dashboard** → The div must be injected
+  via `ob_start()` str_replace before `</body>`. Only inject when
+  `$_SERVER['REQUEST_URI']` contains the extension route (e.g.
+  `/bookit-dashboard/app/meetings`) to avoid rendering on all pages.
+  Visual placement requires the core `bookit_dashboard_extension_content`
+  hook (pending — Sprint 2 core request).
+
+- **Task reads booking data in my-schedule context** → `GET /dashboard/my-schedule`
+  uses `format_schedule_booking()` which does NOT apply `bookit_booking_response`
+  filter. `meeting_link` will not be present in my-schedule responses until
+  core adds `bookit_schedule_booking_response` filter (pending — Sprint 2 core request).
+
+- **Task detects open booking detail modal** → Core's booking detail is modal-only
+  with no URL change. Detect via `window.fetch` intercept watching for
+  `/dashboard/bookings/{id}` calls. Detect modal close via MutationObserver
+  watching for removal of `div[role="dialog"][aria-labelledby="booking-view-modal-title"]`.
+  Always use the `originalFetch` reference for the extension's own API calls
+  inside the intercept to avoid infinite recursion.
+
+- **Task uses Vue Router in extension dashboard** → Use `createWebHashHistory()`
+  (hash mode). Never use `createWebHistory()` — it conflicts with core's
+  catch-all URL rewrite rule that serves the core SPA shell for all
+  `/bookit-dashboard/app/*` paths.
+
+- **`bookit_booking_response` filter second argument** → Is `int $booking_id`,
+  NOT `array $booking`. Core calls `apply_filters('bookit_booking_response', $response, $booking_id)`
+  where the second argument is the raw integer ID. Always type as `int $booking_id`.
+  Never type as `array $booking` — this causes a PHP fatal.
+
+- **MariaDB `DROP COLUMN IF EXISTS` not supported** → Use `information_schema.COLUMNS`
+  guard in `down()`. Never use `ALTER TABLE ... DROP COLUMN IF EXISTS`.
+```
+
+---
+
+## PHPUnit Baseline for Sprint 3
+
+**51 tests, 107 assertions, 0 failures**
+
+Tasks blocked (Task 5) and tasks pending visual verification (Tasks 2, 3, 4)
+do not affect the PHPUnit baseline — all tests pass green.

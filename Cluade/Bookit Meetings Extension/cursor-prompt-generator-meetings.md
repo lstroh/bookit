@@ -37,7 +37,7 @@ If any are unknown, use GitHub to read the relevant files first.
    - New REST endpoints → must use `bookit-meetings/v1/` namespace, never `bookit/v1/`
    - Dashboard endpoints → auth via `Bookit_Auth::is_authenticated()`
    - Public endpoints → auth via HMAC-SHA256, never `wp_verify_nonce()`
-   - Settings reads → direct `$wpdb->get_var()` on `{prefix}bookings_settings`, never `get_option()`
+   - Settings reads → `$wpdb->get_col()` on `{prefix}bookings_settings`, never `get_option()` and never `$wpdb->get_var()` (see KNOWN GOTCHAS)
 
 4. **Does the task touch any external library?**
    → Use Context7 to resolve and query current docs before writing
@@ -45,8 +45,14 @@ If any are unknown, use GitHub to read the relevant files first.
 
 5. **What is the current PHPUnit test count?**
    → State the baseline in the prompt so Cursor knows the floor.
-   → Baseline at project start: 0 tests (new plugin — no regression floor yet).
+   → Baseline entering Sprint 2: 45 tests, 94 assertions, 0 failures.
    → Update this after each sprint.
+
+6. **Does the task read data written by a preceding hook in the same request?**
+   → If yes, the `$booking` array passed by core will be stale. Direct
+   Cursor to re-read the required fields from the DB inside the callback.
+   Never rely on `$booking` fields that may have been written after the
+   array was assembled (see KNOWN GOTCHAS).
 
 ---
 
@@ -78,12 +84,11 @@ Format:
 If any file does not exist, stop and report back before proceeding.
 ```
 
-For Sprint 1 Task 1 (scaffold — no files exist yet), direct Cursor to
-read the core plugin's equivalent file as the pattern to follow:
-```
-1. bookit-booking-system/bookit-booking-system.php — pattern for main plugin file
-2. bookit-booking-system/includes/class-bookit-loader.php — pattern for loader class
-```
+For tasks that reference core REST API classes, the correct path is:
+`bookit-booking-system/includes/api/` (not `bookit-booking-system/api/`).
+Confirmed correct files for permission patterns:
+- `bookit-booking-system/includes/api/class-extensions-api.php` — dashboard permission pattern
+- `bookit-booking-system/includes/api/class-customers-api.php` — admin permission pattern
 
 ### 3. CONTEXT
 2–4 sentences explaining:
@@ -121,7 +126,7 @@ Omit any line that does not apply to this task.
 ### 6. PHPUNIT TESTS
 ```
 ## PHPUNIT REQUIREMENTS
-Baseline: [N] tests, 0 failures — must not regress.
+Baseline: [N] tests, [N] assertions, 0 failures — must not regress.
 
 Write tests in: tests/unit/test-[feature-name].php
 
@@ -149,7 +154,7 @@ verifiable. No vague items like "works correctly".
 - [ ] No PHP warnings or notices
 - [ ] No JavaScript console errors
 - [ ] REST namespace is bookit-meetings/v1/ — not bookit/v1/
-- [ ] PHPUnit suite passes ([N]+ tests, 0 failures)
+- [ ] PHPUnit suite passes ([N]+ tests, [N]+ assertions, 0 failures)
 
 ### Must NOT break
 - [ ] Core plugin activates and functions normally alongside this extension
@@ -166,7 +171,7 @@ Sprint [ID], Task [N]: [description]
 - [change 2]
 - [change 3]
 
-Tests: [N] passing, 0 failures
+Tests: [N] passing, [N] assertions, 0 failures
 ```
 
 ---
@@ -231,16 +236,17 @@ actual file for full implementation details.
 |---------|---------------|
 | Main plugin file | `bookit-booking-system/bookit-booking-system.php` |
 | Loader class | `bookit-booking-system/includes/class-bookit-loader.php` |
-| Migration file | `bookit-meetings/database/migrations/0001-*.php` (once created) |
-| Migration class naming | `Bookit_Migration_Meetings_NNNN_Description` — slug prefix prevents PHP class collisions with core and other extensions |
-| Migration ID | `'meetings-NNNN-description'` — matches class name convention |
+| Migration file | `bookit-meetings/database/migrations/0001-add-meetings-schema.php` |
 | Migration runner | `bookit-booking-system/includes/class-bookit-migration-runner.php` |
-| REST endpoint class | `bookit-meetings/api/class-meetings-api.php` (once created) |
+| REST endpoint class | `bookit-meetings/api/class-meetings-api.php` |
+| Dashboard REST auth | `bookit-booking-system/includes/api/class-extensions-api.php` |
+| Admin REST auth | `bookit-booking-system/includes/api/class-customers-api.php` |
 | Auth check | `Bookit_Auth::is_authenticated()` — safe to call from extension |
 | Logger | `Bookit_Logger::info()`, `::error()`, `::warning()` |
 | Extension registry | `Bookit_Extension_Registry::is_registered()` |
-| Settings read | `$wpdb->get_var( $wpdb->prepare( "SELECT setting_value FROM {$wpdb->prefix}bookings_settings WHERE setting_key = %s", $key ) )` |
-REST endpoint class → bookit-booking-system/includes/api/class-extensions-api.php (pattern) + bookit-meetings/api/class-meetings-api.php (extension)
+| Settings read | `$wpdb->get_col()` — see KNOWN GOTCHAS for full pattern |
+| Link generator | `bookit-meetings/includes/class-bookit-meetings-link-generator.php` |
+| Customer surfaces | `bookit-meetings/includes/class-bookit-meetings-customer-surfaces.php` |
 
 ---
 
@@ -250,19 +256,58 @@ Before finalising any prompt, check whether the task touches any of
 these categories:
 
 - **Task touches Vue files** → include `base: './'` Vite note + build instruction
+
 - **Task adds a new DB table or column** → must use migration file, `information_schema` checks only
+
 - **Task checks column existence** → `information_schema.COLUMNS` — never `SHOW COLUMNS LIKE`
+
 - **Task checks table existence** → `information_schema.TABLES` — never `SHOW TABLES LIKE`
+
 - **Task uses JSON column data** → never `JSON_CONTAINS()` — use `json_decode()` + `in_array()` in PHP
+
 - **Task adds a public REST endpoint** → HMAC-SHA256 auth — never `wp_verify_nonce()`
+
 - **Task handles OAuth tokens or base64** → never pass through `sanitize_text_field()`
+
 - **Task does file uploads** → use `fetch()` + `FormData`, not axios/`useApi()`
+
 - **Task reads booking times** → null-guard `start_time` and `end_time` — both are NULL on cancelled bookings
+
 - **Task enqueues assets** → use `bookit_dashboard_loaded` action, never enqueue at `init` or `wp_enqueue_scripts`
+
 - **Task outputs a mount point div** → output via `wp_footer` action, never echo directly in action callback
-- **Task reads settings** → `$wpdb->get_var()` on `{prefix}bookings_settings` — never `get_option()`
-- **Task adds a migration file** → class name must be `Bookit_Migration_Meetings_NNNN_Description` (not `Bookit_Migration_NNNN_Description`) — PHP class names are global and collide across plugins
-- $wpdb->get_var() returns PHP null for empty string values — use $wpdb->get_col() when the value may legitimately be '', then check empty( $results ) and return (string) $results[0]
+
+- **Task reads settings** → use `$wpdb->get_col()` — never `get_option()` and never `$wpdb->get_var()`.
+  Full pattern:
+  ```php
+  $results = $wpdb->get_col( $wpdb->prepare(
+      "SELECT setting_value FROM {$wpdb->prefix}bookings_settings WHERE setting_key = %s LIMIT 1",
+      $key
+  ) );
+  return empty( $results ) ? $default : (string) $results[0];
+  ```
+  Reason: `$wpdb->get_var()` returns PHP `null` for empty string values (`''`),
+  making it impossible to distinguish "row exists with empty value" from "row missing".
+  `get_col()` returns an empty array for missing rows and `['']` for an empty string value.
+
+- **Task adds a migration file** → class name must be `Bookit_Meetings_NNNN_Description`
+  (not `Bookit_Migration_NNNN_Description`) — PHP class names are global across the entire
+  WordPress runtime. Core uses `Bookit_Migration_0001_*` and if the extension also uses
+  that prefix a PHP fatal error occurs on class redefinition. The slug prefix guarantees
+  uniqueness. The existing `class_alias()` workaround in `0001-add-meetings-schema.php`
+  must remain until core REQUEST 2 is implemented.
+
+- **Task adds DDL tests (CREATE TABLE / ALTER TABLE)** → do NOT test `down()` in PHPUnit.
+  `ALTER TABLE` and `CREATE TABLE` cause implicit commits in MariaDB, breaking
+  `WP_UnitTestCase`'s transaction wrapper. Test `up()` only. Verify `down()` manually
+  via plugin deactivation in wp-env.
+
+- **Task reads a `$booking` array passed by a core filter** → the array may be stale.
+  Core assembles `$booking` before firing action hooks, so any field written to the DB
+  by a hook in the same request (e.g. `meeting_link` written by `bookit_after_booking_confirmed`)
+  will be `null` in the filter's `$booking` parameter. Always re-read required fields
+  directly from the DB using `$booking['id']` inside the filter callback. Never rely on
+  `$booking['meeting_link']` or any other field that a preceding hook may have written.
 
 ---
 
@@ -271,12 +316,14 @@ these categories:
 - [ ] READ FIRST section lists all files that will be touched
 - [ ] Every implementation requirement is file-specific
 - [ ] Extension infrastructure wiring checklist is explicit
-- [ ] PHPUnit section states the baseline test count
+- [ ] PHPUnit section states the baseline test count AND assertion count
 - [ ] Acceptance criteria are all binary and verifiable
 - [ ] No vague instructions ("handle errors appropriately")
 - [ ] Context7 note included for any library-specific code
 - [ ] Frontend build instruction included if Vue files are modified
 - [ ] REST namespace is `bookit-meetings/v1/` throughout
 - [ ] Admin-only note included for any admin-restricted feature
-- [ ] Git commit message is complete and accurate
+- [ ] Git commit message includes test count AND assertion count
 - [ ] Escalation note present at the end
+- [ ] Settings reads use `get_col()` pattern — not `get_var()`
+- [ ] Any filter reading `$booking` data re-reads from DB if the field may be stale
