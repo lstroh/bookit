@@ -4592,3 +4592,106 @@ First Phase 2 plugin task (required before React Native build):
   POST bookit/v1/mobile/auth/logout  → invalidate refresh token
   All existing dashboard/* and wizard/* endpoints accept
   Authorization: Bearer {jwt} alongside existing session auth.
+
+
+
+
+─────────────────────────────────────────────
+Update 03/05/26
+
+Sprint 7: ✅ Extension API Improvements — COMPLETE
+Branch: Phase2 (branched from Phase1)
+Date: May 2026
+Estimate: ~5–6h | Actual: ~5h
+Test suite: 976 (baseline) → 985 (+9), 0 failures
+Version: v1.5.1 (patch — all additive, no breaking changes)
+Tagged: v1.5.1 | git push origin Phase2 --tags
+─────────────────────────────────────────────
+
+WHAT WAS DELIVERED
+─────────────────────────────────────────────
+
+7 improvements to the core plugin's extension API, all requested
+by the Bookit Meetings extension during Phase 1 development.
+All changes are additive — no existing behaviour modified.
+
+Task 1: bookit_staff_email_meeting_section filter
+- New filter in class-bookit-staff-notifier.php build_html_body()
+- Mirrors bookit_email_meeting_section pattern from customer emails
+- Fires with (string $html, array $booking, int $staff_id)
+- staff_id passed correctly via Option A (1 call site — clean)
+- Output via wp_kses_post() between booking detail rows and action links
+- +3 PHPUnit tests
+
+Task 2: bookit_dashboard_extension_content action
+- New do_action() in dashboard/app/index.php after <div id="app">
+- Fires before </body>, inside the layout — replaces broken wp_footer
+  workaround which placed mount divs outside the layout container
+- +1 PHPUnit test (template loaded in test context)
+
+Task 3: bookit_schedule_booking_response filter
+- New filter at end of format_schedule_booking() in
+  class-dashboard-bookings-api.php
+- Mirrors bookit_booking_response pattern from format_booking()
+- Fires with (array $formatted, int $booking_id)
+- Allows extensions to add fields (e.g. meeting_link) to
+  GET /dashboard/my-schedule responses
+- +3 PHPUnit tests
+
+Task 4: data-booking-id attribute on MySchedule.vue cards
+- :data-booking-id="booking.id" added to all three booking card
+  divs in MySchedule.vue (today, this week, upcoming sections)
+- Enables extensions to identify cards by booking ID via DOM
+- Template-only change; npm run build confirmed clean
+
+Task 5: Migration runner class lookup by migration_id(), not filename
+- New private static find_migration_class() using get_declared_classes()
+- run_pending() and rollback_single() now resolve class by
+  migration_id() + plugin_slug() instead of filename-derived name
+- Eliminates filename→classname coupling; removes need for
+  class_alias() in extension migrations
+- class_name_from_filename() retained as private method (not called)
+- All existing test-migration-runner.php tests pass unmodified
+- +2 PHPUnit tests
+
+Task 6: Re-fetch $booking after bookit_after_booking_confirmed
+- In booking-confirmed-v2.php, $booking re-fetched from DB between
+  do_action('bookit_after_booking_confirmed') and
+  apply_filters('bookit_confirmation_meeting_section')
+- Ensures filter receives data written by action callbacks
+  (e.g. meeting link generated and stored by extension)
+- Graceful fallback if re-fetch returns null
+- Confirmed working via manual test (ACTION result=1, FILTER
+  receives same booking_id)
+
+Task 7: Fix bookit_booking_response filter signature in API spec +
+        add Sprint 7 hooks to Extension_Plugin_API_Spec.md
+- bookit_booking_response example updated: added re-fetch comment
+  showing how to get full booking array from int $booking_id
+- bookit_dashboard_extension_content action documented (§4, @since 1.5.1)
+- bookit_schedule_booking_response filter documented (§5, @since 1.5.1)
+- bookit_staff_email_meeting_section filter documented (§5, @since 1.5.1)
+- Migration naming convention section updated: class lookup by
+  migration_id() not filename; class_alias() no longer needed
+- Spec version bumped to 1.5.1, last updated May 2026
+
+─────────────────────────────────────────────
+TECHNICAL DECISIONS
+─────────────────────────────────────────────
+
+- build_html_body() Option A chosen (1 call site): staff_id added as
+  third parameter, passed correctly from notify_staff()
+- Migration runner: get_declared_classes() scan approach chosen over
+  filename convention; instantiates candidate classes to read
+  migration_id() and plugin_slug() identifiers
+- Re-fetch query shape matches Booking_System_Booking_Retriever::
+  get_booking_by_id() exactly including staff_name and customer_name
+  computed fields
+
+─────────────────────────────────────────────
+NEXT STEPS
+─────────────────────────────────────────────
+
+Bookit Meetings extension project (~60h, separate Claude project).
+Extension Plugin API Spec v1.5.1 is now current and ready to share
+with the Meetings extension project as its API reference.

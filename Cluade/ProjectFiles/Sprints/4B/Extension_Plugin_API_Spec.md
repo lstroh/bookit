@@ -1,7 +1,7 @@
 # Bookit Extension Plugin API Specification
-**Version:** 1.0.0
+**Version:** 1.5.1
 **Applies to core version:** 1.0.0+
-**Last updated:** February 2026
+**Last updated:** May 2026
 
 ---
 
@@ -338,6 +338,26 @@ add_action( 'bookit_dashboard_loaded', function( array $current_user ) {
 
 ---
 
+### `bookit_dashboard_extension_content`
+
+Fires inside the dashboard HTML template after `<div id="app"></div>` and
+before `</body>`. Use this to inject a Vue mount point div **inside the
+dashboard layout**. Extensions that use `wp_footer` instead will have their
+mount div placed outside the layout container, making their UI invisible.
+
+**Parameters:** None.
+
+**Since:** 1.5.1
+
+**Example:**
+```php
+add_action( 'bookit_dashboard_extension_content', function() {
+    echo '<div id="bookit-recurring-app"></div>';
+} );
+```
+
+---
+
 ## 5. Filter hooks
 
 Filter hooks let extensions modify data that core is about to use or return.
@@ -408,9 +428,75 @@ dashboard. Use this to append extension-specific data to booking responses
 **Example:**
 ```php
 add_filter( 'bookit_booking_response', function( array $response_data, int $booking_id ): array {
+    // Note: the second parameter is the booking ID integer, not the full booking array.
+    // If you need the full booking record, re-fetch it from the database:
+    // global $wpdb;
+    // $booking = $wpdb->get_row(
+    //     $wpdb->prepare(
+    //         "SELECT * FROM {$wpdb->prefix}bookings WHERE id = %d",
+    //         $booking_id
+    //     ),
+    //     ARRAY_A
+    // );
     $response_data['recurring'] = my_get_recurring_data( $booking_id );
     return $response_data;
 }, 10, 2 );
+```
+
+---
+
+### `bookit_schedule_booking_response`
+
+Filters a booking's API response data in the My Schedule endpoint before it
+is returned to the Vue dashboard. Use this to append extension-specific fields
+(e.g. `meeting_link`) to schedule booking responses.
+
+**Value being filtered:** `$formatted` *(array)* — The formatted schedule booking array.
+
+**Additional parameters:**
+- `$booking_id` *(int)* — The booking ID.
+
+**Expected return type:** `array`
+
+**Since:** 1.5.1
+
+**Example:**
+```php
+add_filter( 'bookit_schedule_booking_response', function( array $formatted, int $booking_id ): array {
+    $formatted['meeting_link'] = my_get_meeting_link( $booking_id );
+    return $formatted;
+}, 10, 2 );
+```
+
+---
+
+### `bookit_staff_email_meeting_section`
+
+Filters the HTML injected into staff notification emails between the booking
+detail rows and the action links. Use this to add a meeting link row to
+staff emails, mirroring the `bookit_email_meeting_section` filter on customer
+confirmation emails.
+
+**Value being filtered:** `$html` *(string)* — Default empty string. Return
+non-empty HTML to inject it into the email body via `wp_kses_post()`.
+
+**Additional parameters:**
+- `$booking` *(array)* — Full booking record.
+- `$staff_id` *(int)* — The staff member receiving the notification.
+
+**Expected return type:** `string`
+
+**Since:** 1.5.1
+
+**Example:**
+```php
+add_filter( 'bookit_staff_email_meeting_section', function( string $html, array $booking, int $staff_id ): string {
+    $link = my_get_meeting_link( (int) $booking['id'] );
+    if ( ! $link ) {
+        return $html;
+    }
+    return '<p><strong>Meeting link:</strong> <a href="' . esc_url( $link ) . '">' . esc_html( $link ) . '</a></p>';
+}, 10, 3 );
 ```
 
 ---
@@ -635,8 +721,12 @@ register_deactivation_hook( __FILE__, function() {
 
 Files must match: `NNNN-description.php` (e.g. `0001-add-recurring-tables.php`)
 
-Class name is derived from filename:
-- `0001-add-recurring-tables.php` → `Bookit_Migration_0001_Add_Recurring_Tables`
+The migration runner identifies your class by its `migration_id()` and
+`plugin_slug()` return values — not by the filename. Your class name can be
+anything, as long as it extends `Bookit_Migration_Base` and returns the correct
+identifiers. By convention the class name mirrors the filename (e.g.
+`0001-add-recurring-tables.php` → `Bookit_Migration_0001_Add_Recurring_Tables`),
+but this is not required and no `class_alias()` workaround is needed.
 
 ### Migration file contract
 ```php
