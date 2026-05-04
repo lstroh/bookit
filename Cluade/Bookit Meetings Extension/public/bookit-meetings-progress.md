@@ -11,8 +11,10 @@
 |--------|-------|------------|----------|------|
 | Start  | 0     | 0          | 0        | Apr 2026 |
 | Sprint 1 exit | 45 | 94 | 0 | Apr 2026 |
+| Sprint 2 exit | 51 | 107 | 0 | Apr 2026 |
+| Pre-Sprint 3 Housekeeping exit | 51 | 107 | 0 | May 2026 |
 
-**Sprint 2 baseline: 45 tests, 94 assertions, 0 failures**
+**Sprint 3 baseline: 51 tests, 107 assertions, 0 failures**
 
 ---
 
@@ -53,8 +55,9 @@ to be resolved with the core team — see Core Hook Requests below.
 **Applies to:** All migration files in this plugin, now and in future sprints.
 
 ### Migration ID convention
-**Decision:** `migration_id()` returns `'meetings-NNNN-description'`
-(e.g. `'meetings-0001-add-meetings-schema'`) to match the class naming convention.
+**Decision (corrected Pre-Sprint 3 Housekeeping):** `migration_id()` must return exactly the filename stem — `'NNNN-description'` with no plugin prefix (e.g. `'0001-add-meetings-schema'`). Core v1.5.1 runner matches by `migration_id()` value against `pathinfo( $filename, PATHINFO_FILENAME )`. A prefix causes the match to fail.
+
+Note: The class name still uses the slug prefix (`Bookit_Migration_Meetings_NNNN_Description`) to avoid PHP class name collisions. Only `migration_id()` must drop the prefix.
 
 ### Task 6 deferred — staff email architecture
 **Decision:** Task 6 (staff notification email) is blocked pending core hook
@@ -172,7 +175,9 @@ unprofessional.
 if the hook can be added quickly.
 
 ### `class_alias()` workaround in migration file
-**Status:** Open — needs resolution with core team.
+**Status:** ✅ Resolved — Pre-Sprint 3 Housekeeping, Task 2
+
+Root cause was a `migration_id()` return value mismatch (had a `meetings-` prefix that prevented runner lookup). Fixed by correcting `migration_id()` to return the bare filename stem. `class_alias()` block removed. See Architecture Corrections in Pre-Sprint 3 Housekeeping section.
 
 `Bookit_Migration_Runner` derives the class name it expects from the filename
 (e.g. `0001-add-meetings-schema.php` → expects `Bookit_Migration_0001_Add_Meetings_Schema`).
@@ -332,6 +337,8 @@ In addition to the gotchas already in `cursor-prompt-generator-meetings.md`:
 - `dashboard/index.html`, `dashboard/src/main.js`, `dashboard/src/App.vue` (placeholder)
 - Asset enqueue updated: `glob()` → `file_exists()` on fixed paths
 - Mount point div injected via `ob_start()` callback (see Architecture Discovery below)
+
+**Correction (Pre-Sprint 3 Housekeeping, Task 4):** Mount div injection switched from `ob_start()` + `str_replace` to `add_action('bookit_dashboard_extension_content', ...)`. JS script injection remains in `ob_start()` (still required — core template does not call `wp_footer()`). File: `class-bookit-meetings-assets.php`.
 
 **Architecture discovery — permanent pattern:**
 The Bookit dashboard HTML page does NOT call `wp_head()` or `wp_footer()`. It is a fully custom PHP template at `bookit-booking-system/dashboard/app/index.php`. This means:
@@ -653,3 +660,61 @@ Add the following entries to the KNOWN GOTCHAS section:
 
 Tasks blocked (Task 5) and tasks pending visual verification (Tasks 2, 3, 4)
 do not affect the PHPUnit baseline — all tests pass green.
+
+
+---
+
+## Pre-Sprint 3 Housekeeping — Environment + Cleanup
+
+**Goal:** Upgrade to core v1.5.1, remove workarounds made redundant by that release, keep PHPUnit green throughout.
+**PHPUnit baseline entering:** 51 tests, 107 assertions, 0 failures
+**PHPUnit baseline exiting:** 51 tests, 107 assertions, 0 failures
+
+| Task | Description | Status | Notes |
+|------|-------------|--------|-------|
+| 1 | Update environment to core v1.5.1 | ✅ Complete | Folder copy to `../bookit-booking-system`; `.wp-env.json` unchanged (local path reference) |
+| 2 | Fix `migration_id()` + remove `class_alias()` | ✅ Complete | See Architecture Corrections below |
+| 3 | Remove DB re-reads from customer surfaces | ⛔ Cancelled | See Architecture Corrections below |
+| 4 | Switch dashboard mount point to `bookit_dashboard_extension_content` | ✅ Complete | Mount div now inside `#app`; Vue renders correctly |
+
+### Architecture Corrections (from this housekeeping sprint)
+
+#### Task 2 — `migration_id()` was wrong, not just the alias
+
+The `class_alias()` workaround recorded in Sprint 1 was papering over a deeper bug: `migration_id()` was returning `'meetings-0001-add-meetings-schema'` with a `meetings-` prefix, but core v1.5.1's runner derives `$migration_id` from the filename (`pathinfo()` → `'0001-add-meetings-schema'`) and matches by `migration_id()` value. The prefix caused the match to fail under v1.5.1.
+
+**Fix applied:**
+- `migration_id()` now returns `'0001-add-meetings-schema'` (no prefix)
+- `class_alias()` block removed (runner no longer needs it)
+
+**Updated conventions — supersede Sprint 1 decisions:**
+
+| Convention | Old (Sprint 1) | New (correct) |
+|------------|---------------|---------------|
+| Class name | `Bookit_Migration_Meetings_NNNN_Description` | Unchanged — keep slug prefix to avoid PHP class name collisions |
+| `migration_id()` | `'meetings-NNNN-description'` | `'NNNN-description'` — must match filename exactly (no plugin prefix) |
+| `plugin_slug()` | `'bookit-meetings'` | Unchanged |
+| `class_alias()` | Required workaround | Removed — never use in future migrations |
+
+**Rule for all future migrations:** `migration_id()` must return exactly `pathinfo( $filename, PATHINFO_FILENAME )` — i.e. the filename without `.php`, with no prefix added.
+
+#### Task 3 — DB re-read in customer surfaces is CORRECT, not a workaround
+
+The sprint brief stated that core v1.5.1 re-fetches `$booking` after `bookit_after_booking_confirmed` fires, making the extension's own DB re-read redundant. **This was incorrect.**
+
+Code review of `bookit-booking-system/public/templates/booking-confirmed-v2.php` confirmed that the re-fetch SELECT lists core columns only — it does not and should not include `meeting_link`. Extension-owned data is not core's responsibility to re-fetch.
+
+**Outcome:** The DB re-read inside `confirmation_page_section()` and `confirmation_email_section()` is the correct architectural pattern. It stays. Task 3 was cancelled.
+
+**Updated KNOWN GOTCHA — supersedes previous entry:**
+> The `$booking` array passed to `bookit_confirmation_meeting_section` and `bookit_email_meeting_section` filter callbacks does NOT contain extension-owned fields (e.g. `meeting_link`). Core's re-fetch in `booking-confirmed-v2.php` only covers core columns. Extensions must re-read their own data from the DB inside the filter callback. This is the correct pattern — do not remove it.
+
+#### Task 4 — Dashboard file is `class-bookit-meetings-assets.php`, not `class-bookit-meetings-dashboard.php`
+
+The mount point injection (`ob_start()` + `str_replace`) lived in `bookit-meetings/includes/class-bookit-meetings-assets.php` inside `enqueue_dashboard_assets()`, not in a separate dashboard class. The `ob_start()` callback handled both JS script injection and mount div injection in a single function. Task 4 split these: JS injection remains in `ob_start()` (required — core dashboard template does not call `wp_footer()`), mount div moved to `add_action('bookit_dashboard_extension_content', ...)`.
+
+**Visual verification result:** Vue app renders correctly inside `<div id="app">`. Two cosmetic layout issues noted for Sprint 3:
+1. Nav sidebar overlaps the Vue app in desktop view (pre-existing CSS issue)
+2. Large blank space above the Vue app content (layout/padding issue inside core container)
+
+Neither is a regression from Task 4 — both are Sprint 3 CSS items.
