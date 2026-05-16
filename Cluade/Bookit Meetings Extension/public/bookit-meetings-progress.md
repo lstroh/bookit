@@ -718,3 +718,339 @@ The mount point injection (`ob_start()` + `str_replace`) lived in `bookit-meetin
 2. Large blank space above the Vue app content (layout/padding issue inside core container)
 
 Neither is a regression from Task 4 — both are Sprint 3 CSS items.
+
+
+# Bookit Meetings — Project Progress Log
+**Plugin:** bookit-meetings (extension of bookit-booking-system v1.5.1)
+**Phase:** 1 of 2
+**Last updated:** May 2026
+
+---
+
+## PHPUnit Baseline (Critical — update after every sprint)
+
+| Sprint | Tests | Assertions | Failures | Date |
+|--------|-------|------------|----------|------|
+| Start  | 0     | 0          | 0        | Apr 2026 |
+| Sprint 1 exit | 45 | 94 | 0 | Apr 2026 |
+| Sprint 2 exit | 51 | 107 | 0 | Apr 2026 |
+| Pre-Sprint 3 Housekeeping exit | 51 | 107 | 0 | May 2026 |
+| Sprint 2.5 exit | 51 | 107 | 0 | May 2026 |
+
+**Sprint 3 baseline: 51 tests, 107 assertions, 0 failures**
+
+---
+
+## Sprint Log
+
+### Sprint 1 — Plugin Scaffold + Core PHP
+**Period:** April 2026
+**Goal:** All PHP logic complete, all PHPUnit tests passing, plugin activates cleanly, link generation works end-to-end.
+
+| Task | Description | Status | Tests added | Notes |
+|------|-------------|--------|-------------|-------|
+| 1 | Plugin scaffold | ✅ Complete | 4 tests, 11 assertions | wp-env PHP 8.2 (prompt specified 8.0 — no issues) |
+| 2 | Database migrations | ✅ Complete | +4 tests, +14 assertions | Required significant debugging — see deviations |
+| 3 | REST API | ✅ Complete | +14 tests, +37 assertions | Core API path wrong in prompt — Cursor found correct path |
+| 4 | Link generation | ✅ Complete | +10 tests, +21 assertions | Hooks confirmed in core before implementation |
+| 5 | Customer-facing surfaces | ✅ Complete | +13 tests, +20 assertions | Stale booking array bug found and fixed — see deviations |
+| 6 | Staff notification email | ⏸️ Blocked | 0 | No extension hooks in core staff email — see open questions |
+
+**Sprint 1 exit: 45 tests, 94 assertions, 0 failures**
+
+---
+
+### Sprint 2 — Dashboard Vue App
+**PHPUnit baseline entering Sprint 2:** 45 tests, 94 assertions, 0 failures
+**PHPUnit baseline exiting Sprint 2:** 51 tests, 107 assertions, 0 failures
+
+| Task | Description | Status | Notes |
+|------|-------------|--------|-------|
+| 1 | Backend wiring | ✅ Complete | bookit_dashboard_loaded, bookit_dashboard_js_data, bookit_booking_response |
+| 2 | Vue app scaffold + asset injection | ✅ Complete | ob_start() injection; mount div inside #app via bookit_dashboard_extension_content |
+| 3 | Meetings settings page | ✅ Complete | ToggleSwitch, PlatformSelector, ManualUrlField, SettingsView |
+| 4 | Booking detail panel | ✅ Code complete | Blocked on axios discovery — see Sprint 2.5 Task 3 |
+| 5 | My-schedule meeting indicator | ⏸️ Blocked | Requires core REQUEST 5 + 6 |
+
+**Sprint 2 exit: 51 tests, 107 assertions, 0 failures**
+
+---
+
+### Pre-Sprint 3 Housekeeping — Environment + Cleanup
+**Goal:** Upgrade to core v1.5.1, remove workarounds, confirm Vue mounts correctly inside `#app`.
+**PHPUnit baseline entering:** 51 tests, 107 assertions, 0 failures
+**PHPUnit baseline exiting:** 51 tests, 107 assertions, 0 failures
+
+| Task | Description | Status | Notes |
+|------|-------------|--------|-------|
+| 1 | Update environment to core v1.5.1 | ✅ Complete | |
+| 2 | Fix migration_id() + remove class_alias() | ✅ Complete | See Architecture Corrections |
+| 3 | Remove DB re-reads from customer surfaces | ⛔ Cancelled | DB re-read is correct pattern — see Architecture Corrections |
+| 4 | Switch dashboard mount point to bookit_dashboard_extension_content | ✅ Complete | Vue renders correctly inside #app |
+
+---
+
+### Sprint 2.5 — Verification + Completion
+**PHPUnit baseline entering:** 51 tests, 107 assertions, 0 failures
+**PHPUnit baseline exiting:** 51 tests, 107 assertions, 0 failures
+
+| Task | Type | Description | Status | Notes |
+|------|------|-------------|--------|-------|
+| 1 | Verify | Customer confirmation page | ✅ Passed | Teams, WhatsApp, Disabled all verified |
+| 2 | Verify | Meetings settings page | ✅ Passed | Required Task 2a CSS fix first |
+| 2a | Fix | CSS variables + debug output removal | ✅ Complete | Core dashboard does not provide --bookit-bg-card etc. |
+| 3 | Verify | Booking detail panel | ⛔ Blocked | Core uses axios not window.fetch — see new core REQUEST 8 |
+| 4 | Verify | Customer confirmation email | ✅ Passed | Teams, WhatsApp, Disabled all verified via Mailpit |
+| 5 | Build | My-schedule meeting indicator | ⏸️ Deferred | Blocked on core REQUEST 5 + 6 + 8 |
+| 6 | Build | CSS layout fixes | ⚠️ Partial | padding removed ✅, sidebar overlap fixed ✅, vertical position blocked on core REQUEST 9 |
+
+**Sprint 2.5 exit: 51 tests, 107 assertions, 0 failures**
+
+---
+
+## Decisions Made Mid-Sprint
+
+### Migration class naming convention
+**Decision:** All migration classes must be prefixed with the plugin slug:
+`Bookit_Migration_Meetings_NNNN_Description` (not `Bookit_Migration_NNNN_Description`).
+
+**Reason:** PHP class names are global. Core uses `Bookit_Migration_0001_*` and a collision causes a fatal. The slug prefix guarantees uniqueness.
+
+**Applies to:** All migration files in this plugin, now and in future sprints.
+
+### Migration ID convention (corrected Pre-Sprint 3 Housekeeping)
+`migration_id()` must return exactly the filename stem — `'NNNN-description'` with no plugin prefix. Core v1.5.1 runner matches by `migration_id()` value against `pathinfo( $filename, PATHINFO_FILENAME )`. A prefix causes the match to fail.
+
+### DB re-read for extension-owned fields is the correct pattern
+Core's re-fetch in `booking-confirmed-v2.php` covers core columns only. Extension-owned fields (e.g. `meeting_link`) must always be re-read from DB inside filter callbacks. This is correct architecture, not a workaround.
+
+---
+
+## Architecture Corrections (from Housekeeping + Sprint 2.5)
+
+### `migration_id()` convention
+| Convention | Old (Sprint 1) | New (correct) |
+|------------|----------------|---------------|
+| Class name | `Bookit_Migration_Meetings_NNNN_Description` | Unchanged — keep slug prefix |
+| `migration_id()` | `'meetings-NNNN-description'` | `'NNNN-description'` — must match filename exactly |
+| `class_alias()` | Required workaround | Removed — never use in future migrations |
+
+### CSS variables on the dashboard (discovered Sprint 2.5 Task 2a)
+The Bookit dashboard `:root` block (in `style.*.css`) only defines `--bookit-primary` and `--bookit-primary-*` shade variables. It does NOT define `--bookit-bg-card`, `--bookit-border-color`, `--bookit-text-primary`, `--bookit-text-secondary`, or `--bookit-color-primary`. These variables are defined in `booking-wizard-v2.css` which is a public-facing stylesheet never loaded on the dashboard.
+
+**Fix applied:** All missing variables defined on `#bookit-meetings-app { }` in `App.vue` (unscoped style block). `--bookit-color-primary` maps to `var(--bookit-primary)` which core does provide.
+
+**Rule for all extensions:** Never assume `--bookit-bg-card` or other non-primary variables are available on the dashboard. Define them yourself on your app's root element.
+
+### Vue Router for extension dashboard apps (confirmed Sprint 2.5)
+Vue Router must use `createWebHashHistory()`. The extension app must NOT use Vue Router for routing between dashboard pages — use pathname-based computed refs instead (see SPA navigation discovery below).
+
+**Pattern confirmed working:**
+```js
+const isMeetingsPage = ref(
+    window.location.pathname.includes('/bookit-dashboard/app/meetings')
+)
+const originalPushState = history.pushState.bind(history)
+history.pushState = function(...args) {
+    originalPushState(...args)
+    isMeetingsPage.value = window.location.pathname.includes('/bookit-dashboard/app/meetings')
+}
+```
+
+### Core uses axios, not window.fetch, for booking detail (discovered Sprint 2.5 Task 3)
+`BookingViewModal.vue` fetches booking data via `useApi()` which wraps axios. Axios uses `XMLHttpRequest` by default, completely bypassing `window.fetch`. The extension's `window.fetch` intercept never fires for booking detail modal requests.
+
+**Impact:** The `BookingDetailView.vue` fetch intercept approach does not work for detecting booking modal opens. A new approach is needed — see Core REQUEST 8.
+
+**Lesson for other extension developers:** Do not assume core HTTP calls go through `window.fetch`. Always verify using browser DevTools Network tab — check the "Initiator" column to see if requests come from `axios` or native `fetch`.
+
+### Core SPA navigation is mixed (discovered Sprint 2.5 Task 3)
+Navigation between dashboard pages is a mix of full page reloads and client-side SPA navigation:
+- Clicking extension nav items (registered via `bookit_register_nav_item()`) → **full page reload** (plain `<a href>` anchors)
+- Clicking core nav items from an extension page → **client-side SPA navigation** (Vue Router `pushState`)
+
+**Consequence:** Extension Vue app state does not persist across full reloads (expected), but does need to handle client-side navigation correctly. `window.location.pathname` is not reactive — must be patched via `history.pushState` intercept or `popstate` event listener.
+
+**Pattern confirmed working:** See Vue Router section above.
+
+### `#bookit-meetings-app` is a sibling of `#app`, not inside it (confirmed Sprint 2.5 Task 6)
+The `bookit_dashboard_extension_content` hook fires after core's `#app` container closes. This means `#bookit-meetings-app` is a sibling of `#app` in the DOM, not a child. Consequences:
+- Extension content renders **below** core's content area, not inside it
+- Extension container does not inherit core's `lg:ml-64` margin, so it sits under the fixed sidebar on desktop
+
+**Workaround applied:**
+```css
+@media (min-width: 1024px) {
+  #bookit-meetings-app {
+    margin-left: 16rem; /* matches core's lg:ml-64 */
+  }
+}
+```
+
+**Long-term fix needed:** Core REQUEST 9 — move `do_action('bookit_dashboard_extension_content')` to fire inside core's main content wrapper, not after `#app`.
+
+---
+
+## Open Questions / Carry-Forwards
+
+### Task 5 — My-schedule meeting indicator (BLOCKED)
+**Status:** Blocked pending core REQUEST 5, 6, and 8.
+
+### Task 3 — Booking detail panel (BLOCKED)
+**Status:** Blocked on core REQUEST 8 — core uses axios not window.fetch.
+
+### Sprint 1 Task 6 — Staff notification email (BLOCKED)
+**Status:** Blocked pending core REQUEST 1 (staff email hook).
+
+---
+
+## Core Hook Requests
+
+### REQUEST 1 — Staff notification email hook (Sprint 1)
+**File:** `bookit-booking-system/includes/notifications/class-bookit-staff-notifier.php`
+**What:** `apply_filters('bookit_staff_email_content', $html, $booking_id)` or `do_action('bookit_after_staff_email_sent', $booking_id)` inside or around staff email HTML generation.
+**Why:** No extension hook exists in the staff email build path. Extensions cannot inject meeting link into staff emails without sending a separate email (bad UX).
+**Priority:** Medium.
+
+### REQUEST 2 — Migration runner class lookup by plugin_slug (Sprint 1)
+**File:** `bookit-booking-system/includes/class-bookit-migration-runner.php`
+**What:** Look up migration classes by `plugin_slug()` + `migration_id()` rather than filename-derived class name.
+**Why:** Eliminates need for `class_alias()` workaround and makes naming convention clean.
+**Status:** Workaround removed in Pre-Sprint 3 Housekeeping (migration_id() fix). Still a good improvement.
+**Priority:** Low.
+
+### REQUEST 3 — `bookit_after_booking_confirmed` hook fires for all confirmation paths (Sprint 1)
+**File:** `bookit-booking-system/public/templates/booking-confirmed-v2.php`
+**What:** Confirm hook fires for all booking confirmation paths including pay-on-arrival.
+**Finding (Sprint 2.5):** `bookit_after_booking_created` hook fires reliably for all bookings. The extension now hooks this instead. `bookit_after_booking_confirmed` may never fire in local testing because pay-on-arrival bookings stay at `pending_payment` status and are never manually confirmed.
+**Priority:** Low — extension works correctly without this.
+
+### REQUEST 4 — `bookit_dashboard_extension_content` action (Sprint 2) ✅ IMPLEMENTED in v1.5.1
+**File:** `bookit-booking-system/dashboard/app/index.php`
+**Status:** Confirmed working in v1.5.1. Hook fires after `<div id="app">`. Extension mount div injected correctly.
+**Remaining issue:** Hook fires as a sibling of `#app`, not inside core's main content wrapper. See REQUEST 9 for the follow-up.
+
+### REQUEST 5 — `bookit_schedule_booking_response` filter (Sprint 2)
+**File:** `bookit-booking-system/includes/api/class-dashboard-bookings-api.php`
+**What:** At end of `format_schedule_booking()`, before `return`:
+```php
+$formatted = apply_filters( 'bookit_schedule_booking_response', $formatted, (int) $row['id'] );
+return $formatted;
+```
+**Why:** `GET /dashboard/my-schedule` uses `format_schedule_booking()` which returns a fixed shape without calling `bookit_booking_response`. Extensions cannot add `meeting_link` to schedule booking cards without this filter.
+**Priority:** Medium — blocks Task 5.
+
+### REQUEST 6 — `data-booking-id` attribute on my-schedule booking cards (Sprint 2)
+**File:** `bookit-booking-system/dashboard/src/views/MySchedule.vue`
+**What:** Add `:data-booking-id="booking.id"` on each booking card `<div>` in the `v-for` loops (Today, Week, Upcoming sections).
+**Why:** Extension needs to inject meeting indicator badges into booking cards via MutationObserver. Currently cards have no stable DOM attribute containing the booking ID.
+**Priority:** Medium — blocks Task 5 badge injection.
+
+### REQUEST 7 — Confirm `bookit_booking_response` filter signature (Sprint 2 — documentation)
+**What:** Confirm that second parameter is `int $booking_id` (confirmed correct). Update `Extension_Plugin_API_Spec.md` to explicitly note that the full booking array is NOT passed — only the ID. Extensions needing booking data must re-read from DB.
+**Priority:** Low — documentation only.
+
+### REQUEST 8 — JS event when booking detail modal opens (Sprint 2.5 — NEW, BLOCKING)
+**Discovery:** `BookingViewModal.vue` uses axios (`useApi()`) to fetch booking data, not `window.fetch`. The extension's `window.fetch` intercept never fires for booking modal requests. There is no way to reliably detect when a booking modal opens without a core hook.
+
+**Recommended solution:** Fire a custom browser event when `BookingViewModal` mounts and data loads:
+
+**File:** `bookit-booking-system/dashboard/src/components/BookingViewModal.vue`
+
+**What to add** (inside `onMounted` after `loadBooking()` resolves):
+```js
+// After booking data is loaded successfully:
+window.dispatchEvent( new CustomEvent( 'bookit:booking-modal-opened', {
+    detail: { bookingId: props.bookingId }
+} ) )
+```
+
+And when modal closes (inside `@close` handler or `onUnmounted`):
+```js
+window.dispatchEvent( new CustomEvent( 'bookit:booking-modal-closed', {
+    detail: { bookingId: props.bookingId }
+} ) )
+```
+
+**Extension usage:**
+```js
+window.addEventListener( 'bookit:booking-modal-opened', async ( e ) => {
+    const bookingId = e.detail.bookingId
+    // load meeting info for this booking
+} )
+```
+
+**Why this is better than alternatives:**
+- Patching `XMLHttpRequest` is fragile and breaks other extensions
+- Patching the axios instance requires access to core's internal instance
+- MutationObserver on the modal DOM cannot reliably extract the booking ID
+- A custom event is clean, documented, and survives core refactors
+
+**Priority:** High — blocks Task 3 (booking detail panel) and Task 5 (my-schedule indicator).
+
+### REQUEST 9 — Move `bookit_dashboard_extension_content` inside core's main content wrapper (Sprint 2.5 — NEW)
+**File:** `bookit-booking-system/dashboard/app/index.php`
+**Current behaviour:** `do_action('bookit_dashboard_extension_content')` fires after `</div>` closing core's `#app` container. Extension content renders as a sibling of `#app`, not inside the content area.
+**What:** Move the `do_action('bookit_dashboard_extension_content')` call to fire inside core's main content wrapper div (the div that wraps `<router-view>` output), before the closing tag.
+**Why:** Extension content currently renders below core's content area. Extensions must apply a `margin-left: 16rem` workaround to avoid sidebar overlap, and content vertical position cannot be controlled from the extension side.
+**Impact:** All extensions using `bookit_dashboard_extension_content` will render inside the main content area automatically. Removes need for the `margin-left` workaround.
+**Priority:** Medium — visual quality improvement for all extensions.
+
+---
+
+## Core Hook Discoveries
+
+### Discovery 1 — Dashboard template does not use wp_head()/wp_footer()
+`bookit-booking-system/dashboard/app/index.php` is a fully custom PHP HTML template. It does NOT call `wp_head()` or `wp_footer()`.
+
+**Consequences:**
+- `wp_enqueue_script()` does NOT output `<script>` tags — use `ob_start()` on `bookit_dashboard_loaded`
+- `wp_enqueue_style()` DOES work — core calls `wp_print_styles()` in `<head>`
+- `wp_localize_script()` does NOT work — use inline `<script>window.myData = {...}</script>`
+
+### Discovery 2 — `bookit_dashboard_loaded` fires before `<!DOCTYPE html>`
+The action fires at ~line 30 of `index.php`, before the HTML template begins at ~line 59. Any direct `echo` inside a `bookit_dashboard_loaded` callback breaks the HTML document. Always use `ob_start()`.
+
+### Discovery 3 — Extension nav items are plain `<a href>` anchors
+Nav items registered via `bookit_register_nav_item()` render as plain `<a :href>` in `Sidebar.vue`, not `<router-link>`. Clicking causes a **full page reload**, not client-side navigation.
+
+**Consequence:** Extension pages must initialise from scratch on each visit. Do not rely on Vue state persisting across navigation.
+
+### Discovery 4 — Core catch-all rewrite serves core SPA for all /app/* routes
+`/bookit-dashboard/app/meetings` is served by the same PHP template as `/bookit-dashboard/app/bookings`. The path is available in `$_SERVER['REQUEST_URI']` and `window.location.pathname`.
+
+### Discovery 5 — Core SPA navigation is client-side for core pages (Sprint 2.5)
+When the user is on an extension page and clicks a **core** nav item, navigation is **client-side** via `history.pushState` (Vue Router). The extension Vue app is NOT unmounted and remounted — it stays alive. `window.location.pathname` changes but Vue does not re-render unless told to.
+
+**Consequence:** Extension Vue computed values based on `window.location.pathname` must be reactive. Plain `computed(() => window.location.pathname.includes(...))` does not update. Must intercept `history.pushState` and update a `ref` manually.
+
+### Discovery 6 — Core uses axios (not window.fetch) for all dashboard API calls (Sprint 2.5)
+`useApi()` composable in `bookit-booking-system/dashboard/src/composables/useApi.js` wraps axios. All core dashboard HTTP calls use axios with `XMLHttpRequest`, not `window.fetch`.
+
+**Consequence:** Patching `window.fetch` does NOT intercept core API calls. This approach only catches native `fetch()` calls, not axios requests.
+
+**Always verify:** Before assuming `window.fetch` intercept will work, check whether the target request comes from axios or native fetch using browser DevTools Network tab → Initiator column.
+
+### Discovery 7 — CSS variable availability differs between dashboard and public pages (Sprint 2.5)
+The Bookit dashboard only provides `--bookit-primary` and `--bookit-primary-*` in its `:root`. The full set of `--bookit-*` variables (bg, text, border) are only available on public-facing pages that load `booking-wizard-v2.css`.
+
+**Rule:** Extensions must define their own fallback values for any CSS variables beyond `--bookit-primary-*`. Define them scoped to your app's root element.
+
+---
+
+## Known Gotchas (consolidated — for Cursor prompts and future sprints)
+
+- **Dashboard JS injection** → `ob_start()` on `bookit_dashboard_loaded` — never `wp_enqueue_script()` or direct echo
+- **Dashboard mount div** → `add_action('bookit_dashboard_extension_content', ...)` — never `ob_start()` + `str_replace`
+- **Settings reads** → `$wpdb->get_col()` — never `get_option()`, never `$wpdb->get_var()`
+- **Extension-owned booking fields** → always re-read from DB inside filter callbacks — core re-fetch covers core columns only
+- **Migration class name** → `Bookit_Migration_Meetings_NNNN_Description` (slug prefix) — no `class_alias()`
+- **Migration ID** → bare filename stem, no plugin prefix — `'0001-add-meetings-schema'` not `'meetings-0001-...'`
+- **DDL tests** → never test `down()` in PHPUnit — MariaDB implicit commits break WP_UnitTestCase
+- **MariaDB DROP COLUMN** → guard with `information_schema.COLUMNS` — never `DROP COLUMN IF EXISTS`
+- **Vue Router** → `createWebHashHistory()` — never `createWebHistory()`
+- **bookit_booking_response second arg** → `int $booking_id` — never `array $booking`
+- **Dashboard CSS variables** → define `--bookit-bg-card`, `--bookit-text-primary` etc. on `#your-app { }` — core dashboard does not provide them
+- **Core HTTP calls** → axios (XMLHttpRequest), not window.fetch — intercept window.fetch does NOT catch core API calls
+- **SPA navigation** → client-side pushState for core→core navigation; full reload for extension nav items — handle both
+- **#bookit-meetings-app position** → sibling of #app, not inside — needs `margin-left: 16rem` at lg breakpoint until REQUEST 9 is implemented

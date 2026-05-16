@@ -45,11 +45,15 @@ If any are unknown, use GitHub to read the relevant files first.
    → If yes, the `$booking` array passed by core will be stale. Direct Cursor to re-read
    the required fields from the DB inside the callback. Never rely on `$booking` fields
    that may have been written after the array was assembled (see KNOWN GOTCHAS).
+   → NOTE: Core's re-fetch in `booking-confirmed-v2.php` covers core columns only —
+   it does NOT include extension-owned fields like `meeting_link`. Extensions must
+   always re-read their own fields from the DB inside filter callbacks.
 
 7. **Does the task enqueue JS or inject a mount point on the Bookit dashboard?**
    → `wp_enqueue_script()` and `wp_footer()` do NOT work on the dashboard template.
-   Use `ob_start()` on `bookit_dashboard_loaded` to inject scripts and mount divs
-   before `</body>`. See KNOWN GOTCHAS for the full pattern.
+   Use `ob_start()` on `bookit_dashboard_loaded` to inject JS scripts before `</body>`.
+   Mount point divs must be injected via `add_action('bookit_dashboard_extension_content', ...)` —
+   NOT via `ob_start()` + `str_replace`. See KNOWN GOTCHAS for the full pattern.
 
 8. **Does the task read booking data in a my-schedule context?**
    → `format_schedule_booking()` does NOT apply `bookit_booking_response`.
@@ -59,6 +63,11 @@ If any are unknown, use GitHub to read the relevant files first.
 9. **Does the task need to detect an open booking detail modal?**
    → Core's booking detail is modal-only with no URL change. Detect via
    `window.fetch` intercept + MutationObserver pattern (see KNOWN GOTCHAS).
+
+10. **Does the task involve READ FIRST files in the core plugin folder?**
+    → If a required READ FIRST file is not accessible on disk (e.g. core plugin
+    files not present in the Cursor workspace), Cursor must STOP and report back.
+    It must NOT proceed on assumption about file contents.
 
 ---
 
@@ -83,7 +92,7 @@ Format:
 2. [path/to/file] — [why it must be read]
 ...
 
-If any file does not exist, stop and report back before proceeding.
+If any file does not exist or is not accessible on disk, stop and report back before proceeding.
 ```
 
 Confirmed correct paths:
@@ -91,6 +100,7 @@ Confirmed correct paths:
 - Dashboard permission pattern: `bookit-booking-system/includes/api/class-extensions-api.php`
 - Admin permission pattern: `bookit-booking-system/includes/api/class-customers-api.php`
 - Dashboard template: `bookit-booking-system/dashboard/app/index.php` — read before any task that enqueues assets or injects HTML on the dashboard
+- Dashboard asset injection: `bookit-meetings/includes/class-bookit-meetings-assets.php` — NOT `class-bookit-meetings-dashboard.php` (that file does not exist)
 
 ### 3. CONTEXT
 2–4 sentences: what the task delivers, where it fits in the sprint, decisions that constrain it, which core hook requests unblock it (if applicable).
@@ -115,7 +125,8 @@ File-by-file breakdown. PHP backend first, then Vue frontend, then tests. Never 
 - [ ] Nav item registered via: bookit_register_nav_item()
 - [ ] JS data passed via: bookit_dashboard_js_data filter
 - [ ] Booking response extended via: bookit_booking_response filter
-- [ ] JS/mount injected via: ob_start() on bookit_dashboard_loaded
+- [ ] JS scripts injected via: ob_start() on bookit_dashboard_loaded
+- [ ] Mount point div injected via: add_action('bookit_dashboard_extension_content', ...)
 ```
 Omit lines that do not apply.
 
@@ -182,6 +193,8 @@ Note: Before implementing [feature], use Context7 to resolve '[library]' and con
 
 **GitHub for existing code.** Any modification of an existing file must instruct Cursor to read it from GitHub first.
 
+**Core plugin files not on disk.** If a READ FIRST file lives in the core plugin folder and is not accessible in the Cursor workspace, Cursor must STOP and report back — never proceed on assumption.
+
 **Frontend builds.** Any Vue/JS task must end with:
 ```
 After implementation, run: npm run build (in bookit-meetings/dashboard/)
@@ -219,7 +232,7 @@ before writing any code.
 | Settings read | `$wpdb->get_col()` — see KNOWN GOTCHAS |
 | Link generator | `bookit-meetings/includes/class-bookit-meetings-link-generator.php` |
 | Customer surfaces | `bookit-meetings/includes/class-bookit-meetings-customer-surfaces.php` |
-| Dashboard loader | `bookit-meetings/includes/class-bookit-meetings-dashboard.php` |
+| Dashboard asset injection | `bookit-meetings/includes/class-bookit-meetings-assets.php` |
 | Settings Vue page | `bookit-meetings/dashboard/src/views/MeetingsSettingsView.vue` |
 | Meeting info panel | `bookit-meetings/dashboard/src/components/MeetingInfoPanel.vue` |
 | Booking detail view | `bookit-meetings/dashboard/src/views/BookingDetailView.vue` |
@@ -268,11 +281,20 @@ before writing any code.
   CSS can still use `wp_enqueue_style()` (core calls `wp_print_styles()` in `<head>`).
   Never use `wp_localize_script()` on the dashboard — use inline `<script>window.myVar = {...};</script>`.
 
-- **Task injects mount point div on the dashboard** → Inject via `ob_start()` + `str_replace` before
-  `</body>`. Only inject when `$_SERVER['REQUEST_URI']` contains the extension route to avoid
-  rendering on all pages. Visual in-layout placement requires `bookit_dashboard_extension_content`
-  core hook (pending — core Request 4). Until that hook lands, div appears below core's `#app`
-  container and is not visible within the layout.
+- **Task injects mount point div on the dashboard** → Use `add_action('bookit_dashboard_extension_content', ...)`
+  to echo the mount div directly. Do NOT use `ob_start()` + `str_replace` for mount div injection —
+  that approach placed the div outside core's `#app` container. The `bookit_dashboard_extension_content`
+  hook fires inside the core layout container after `<div id="app">`. Only echo when
+  `$_SERVER['REQUEST_URI']` contains the extension route:
+  ```php
+  add_action( 'bookit_dashboard_extension_content', function() {
+      $uri = $_SERVER['REQUEST_URI'] ?? '';
+      if ( strpos( $uri, '/bookit-dashboard/app/meetings' ) === false ) {
+          return;
+      }
+      echo '<div id="bookit-meetings-app"></div>';
+  } );
+  ```
 
 - **`bookit_dashboard_loaded` fires before `<!DOCTYPE html>`** → The action fires at ~line 30 of
   `index.php`, before the HTML template begins at ~line 59. Any direct `echo` inside the callback
@@ -291,19 +313,25 @@ before writing any code.
   distinguish "row exists with empty value" from "row missing". `get_col()` returns `[]` for
   missing rows and `['']` for an empty string value.
 
-- **Task adds a migration file** → class name must be `Bookit_Meetings_NNNN_Description` (not
-  `Bookit_Migration_NNNN_Description`). PHP class names are global — core uses `Bookit_Migration_0001_*`
-  and a collision causes a fatal on class redefinition. The `class_alias()` workaround in
-  `0001-add-meetings-schema.php` must remain until core Request 2 is implemented.
+- **Task adds a migration file** → class name must use the plugin slug prefix:
+  `Bookit_Migration_Meetings_NNNN_Description` (not `Bookit_Migration_NNNN_Description`).
+  PHP class names are global — core uses `Bookit_Migration_0001_*` and a collision causes a fatal
+  on class redefinition. The slug prefix guarantees uniqueness.
+  → `migration_id()` must return the bare filename stem with NO plugin prefix:
+  e.g. `'0001-add-meetings-schema'` not `'meetings-0001-add-meetings-schema'`.
+  The runner derives `$migration_id` from `pathinfo( $filename, PATHINFO_FILENAME )` and matches
+  it against `migration_id()` — any prefix causes the match to fail and the migration to error.
+  → Do NOT add `class_alias()` — it is not needed in core v1.5.1+ and must not be used.
 
 - **Task adds DDL tests** → do NOT test `down()` in PHPUnit. `ALTER TABLE` / `CREATE TABLE` cause
   implicit commits in MariaDB, breaking `WP_UnitTestCase`'s transaction wrapper. Test `up()` only.
   Verify `down()` manually via plugin deactivation in wp-env.
 
-- **Task reads a `$booking` array passed by a core filter** → the array may be stale. Core assembles
-  `$booking` before firing action hooks, so any field written by a hook in the same request (e.g.
-  `meeting_link` written by `bookit_after_booking_confirmed`) will be `null` in the filter parameter.
-  Always re-read required fields from DB using `$booking['id']` inside the filter callback.
+- **Task reads a `$booking` array passed by a core filter** → the array will NOT contain
+  extension-owned fields (e.g. `meeting_link`) even after core v1.5.1's re-fetch in
+  `booking-confirmed-v2.php`. Core's re-fetch SELECT covers core columns only — it does not
+  and should not include extension data. Always re-read extension-owned fields from the DB
+  using `$booking['id']` inside the filter callback. This is the correct permanent pattern.
 
 - **Task reads booking data in my-schedule context** → `GET /dashboard/my-schedule` uses
   `format_schedule_booking()` which does NOT apply `bookit_booking_response`. `meeting_link`
@@ -342,6 +370,7 @@ before writing any code.
 ## QUALITY CHECKLIST (run before delivering any prompt)
 
 - [ ] READ FIRST section lists all files that will be touched
+- [ ] READ FIRST instruction states: "If any file does not exist or is not accessible on disk, stop and report back before proceeding"
 - [ ] Every implementation requirement is file-specific
 - [ ] Extension infrastructure wiring checklist is explicit
 - [ ] PHPUnit section states the baseline test count AND assertion count
@@ -354,8 +383,11 @@ before writing any code.
 - [ ] Git commit message includes test count AND assertion count
 - [ ] Escalation note present at the end
 - [ ] Settings reads use `get_col()` pattern — not `get_var()`
-- [ ] Any filter reading `$booking` data re-reads from DB if the field may be stale
+- [ ] Any filter reading extension-owned `$booking` fields re-reads from DB — core re-fetch does not cover extension columns
 - [ ] Dashboard JS injection uses `ob_start()` — not `wp_enqueue_script()` or `wp_footer()`
+- [ ] Dashboard mount div uses `add_action('bookit_dashboard_extension_content', ...)` — not `ob_start()` + `str_replace`
+- [ ] Migration `migration_id()` returns bare filename stem — no plugin prefix
+- [ ] Migration class name uses plugin slug prefix — no `class_alias()` added
 - [ ] Vue Router uses `createWebHashHistory()` — not `createWebHistory()`
 - [ ] `bookit_booking_response` filter types second arg as `int $booking_id` — not `array $booking`
 - [ ] Column/table drops in `down()` guard with `information_schema` check — not `IF EXISTS`
