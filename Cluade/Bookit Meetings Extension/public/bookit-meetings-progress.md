@@ -297,6 +297,13 @@ In addition to the gotchas already in `cursor-prompt-generator-meetings.md`:
 | Two wp-env environments | `localhost:8890` = dev site, `localhost:8891` = test site. SQL commands need `wp-env run development` vs `wp-env run tests-cli`. Settings set in one environment are not visible in the other. |
 | `metting.local` is a separate env | Manual end-to-end testing uses a local site (`metting.local`) separate from wp-env. Settings must be set independently in each environment. |
 | Confirmation page needs booking_id in URL | The confirmation page template reads `?booking_id=` from the URL. Navigating directly to `/booking-confirmed-v2/` without a `booking_id` param shows the page with no booking context. |
+- **Plugin deactivation wipes settings** → deactivating the extension runs 
+  migration down() which deletes all rows from {prefix}bookings_settings 
+  that belong to this plugin (meetings_enabled, meetings_platform, 
+  meetings_manual_url). After reactivation, all settings are back to 
+  defaults. Always re-configure settings in the admin UI after any 
+  deactivate/reactivate cycle in wp-env. This is expected behaviour — 
+  not a bug.
 
 
 # Bookit Meetings — Sprint Progress Log
@@ -856,7 +863,44 @@ history.pushState = function(...args) {
     isMeetingsPage.value = window.location.pathname.includes('/bookit-dashboard/app/meetings')
 }
 ```
+Full confirmed working pattern (from App.vue):
 
+const isMeetingsPage = ref(
+    window.location.pathname.includes('/bookit-dashboard/app/meetings')
+)
+
+function onPopState() {
+    isMeetingsPage.value = window.location.pathname
+        .includes('/bookit-dashboard/app/meetings')
+}
+
+const originalPushState = history.pushState.bind(history)
+history.pushState = function(...args) {
+    originalPushState(...args)
+    isMeetingsPage.value = window.location.pathname
+        .includes('/bookit-dashboard/app/meetings')
+}
+
+const originalReplaceState = history.replaceState.bind(history)
+history.replaceState = function(...args) {
+    originalReplaceState(...args)
+    isMeetingsPage.value = window.location.pathname
+        .includes('/bookit-dashboard/app/meetings')
+}
+
+onMounted(() => window.addEventListener('popstate', onPopState))
+onUnmounted(() => {
+    window.removeEventListener('popstate', onPopState)
+    history.pushState = originalPushState
+    history.replaceState = originalReplaceState
+})
+
+// Template — BookingDetailView always mounted, SettingsView only on /meetings
+<BookingDetailView />
+<SettingsView v-if="isMeetingsPage" />
+
+Note: history.replaceState must be patched alongside pushState — 
+core uses both. Omitting replaceState causes missed navigation events.
 ### Core uses axios, not window.fetch, for booking detail (discovered Sprint 2.5 Task 3)
 `BookingViewModal.vue` fetches booking data via `useApi()` which wraps axios. Axios uses `XMLHttpRequest` by default, completely bypassing `window.fetch`. The extension's `window.fetch` intercept never fires for booking detail modal requests.
 
@@ -1051,6 +1095,6 @@ The Bookit dashboard only provides `--bookit-primary` and `--bookit-primary-*` i
 - **Vue Router** → `createWebHashHistory()` — never `createWebHistory()`
 - **bookit_booking_response second arg** → `int $booking_id` — never `array $booking`
 - **Dashboard CSS variables** → define `--bookit-bg-card`, `--bookit-text-primary` etc. on `#your-app { }` — core dashboard does not provide them
-- **Core HTTP calls** → axios (XMLHttpRequest), not window.fetch — intercept window.fetch does NOT catch core API calls
+- - **Core HTTP calls** → axios (XMLHttpRequest), not window.fetch — intercept window.fetch does NOT catch core API calls. The window.fetch intercept approach documented in earlier sprints does NOT work for detecting booking modal opens. The correct approach is the custom browser event pattern (core REQUEST 8): `window.addEventListener('bookit:booking-modal-opened', (e) => { const bookingId = e.detail.bookingId })`. Until REQUEST 8 lands in core, booking detail panel detection is not possible.
 - **SPA navigation** → client-side pushState for core→core navigation; full reload for extension nav items — handle both
 - **#bookit-meetings-app position** → sibling of #app, not inside — needs `margin-left: 16rem` at lg breakpoint until REQUEST 9 is implemented
